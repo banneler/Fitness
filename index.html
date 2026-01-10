@@ -2,42 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Constellation Fit</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
+        [v-cloak] { display: none; } /* Prevents curly braces from showing before Vue loads */
         body { -webkit-tap-highlight-color: transparent; background-color: #020617; }
+        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
         .tab-active { color: #3b82f6; }
-        .tab-active i { color: #3b82f6; stroke-width: 3px; }
-        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body class="bg-slate-950 text-white font-sans antialiased selection:bg-blue-500/30">
+<body class="bg-slate-950 text-white font-sans antialiased">
 
-<div id="app" class="min-h-screen flex flex-col">
+<div id="app" v-cloak class="min-h-screen flex flex-col">
     
     <div v-if="!session" class="flex-1 flex flex-col items-center justify-center px-8">
         <div class="mb-12 text-center">
-            <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl shadow-blue-600/20">
+            <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl shadow-blue-600/30">
                 <i data-lucide="sparkles" class="w-10 h-10 text-white"></i>
             </div>
-            <h1 class="text-4xl font-black tracking-tighter uppercase italic">Constellation</h1>
-            <p class="text-slate-500 text-xs tracking-[0.3em] uppercase mt-2">Personal Performance</p>
+            <h1 class="text-4xl font-black tracking-tighter uppercase italic text-white">Constellation</h1>
+            <p class="text-slate-500 text-xs tracking-[0.3em] uppercase mt-2 font-bold">Performance Tracking</p>
         </div>
         
         <div class="w-full max-w-sm space-y-4">
-            <div class="space-y-2">
-                <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-            </div>
+            <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            
             <button @click="handleAuth" :disabled="loading" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-lg active:scale-[0.98] transition-all shadow-xl shadow-blue-900/20 disabled:opacity-50">
                 {{ authMode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT' }}
             </button>
+            
             <button @click="authMode = authMode === 'login' ? 'signup' : 'login'" class="w-full text-slate-500 text-sm font-bold uppercase tracking-widest py-2">
                 Switch to {{ authMode === 'login' ? 'Sign Up' : 'Login' }}
             </button>
@@ -55,58 +55,30 @@
             </button>
         </header>
 
-        <main class="flex-1 px-4 overflow-y-auto">
-            <div v-if="activeTab === 'today'" class="animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <main class="flex-1 px-4">
+            <div v-if="activeTab === 'today'" class="space-y-6">
                 <div class="glass rounded-[2rem] p-8 shadow-2xl">
                     <div class="flex items-center gap-3 mb-8">
-                        <div class="p-2 bg-blue-500/10 rounded-lg">
-                            <i data-lucide="zap" class="text-blue-500 w-5 h-5"></i>
-                        </div>
-                        <h3 class="text-white text-lg font-black italic uppercase tracking-tight">Morning Check-In</h3>
+                        <i data-lucide="zap" class="text-blue-500 w-5 h-5"></i>
+                        <h3 class="text-white text-lg font-black italic uppercase tracking-tight">Daily Readiness</h3>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">
-                        <div v-for="(val, label) in metrics" :key="label" class="bg-slate-950/40 p-5 rounded-[1.5rem] border border-white/5">
+                        <div v-for="label in ['Weight', 'Sleep', 'Energy', 'HR']" :key="label" class="bg-slate-950/40 p-5 rounded-[1.5rem] border border-white/5">
                             <span class="block text-[10px] text-slate-500 uppercase font-black mb-1 tracking-widest">{{ label }}</span>
                             <input type="number" v-model="metrics[label]" step="0.1" class="bg-transparent border-none text-3xl font-black w-full focus:ring-0 text-white p-0" placeholder="0">
                         </div>
                     </div>
 
-                    <button @click="saveMetrics" :disabled="loading" class="w-full mt-8 bg-blue-600 py-5 rounded-[1.5rem] font-black text-xl active:scale-[0.98] transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50">
-                        {{ loading ? 'SYNCING...' : 'FINISH LOG' }}
+                    <button @click="saveMetrics" :disabled="loading" class="w-full mt-8 bg-blue-600 py-5 rounded-[1.5rem] font-black text-xl active:scale-[0.98] transition-all disabled:opacity-50">
+                        {{ loading ? 'SYNCING...' : 'SAVE DATA' }}
                     </button>
                 </div>
             </div>
 
-            <div v-if="activeTab === 'vault'" class="space-y-6">
-                <div class="glass rounded-[2rem] p-8">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex items-center gap-3">
-                            <i data-lucide="package" class="text-orange-500 w-5 h-5"></i>
-                            <h3 class="text-white text-lg font-black italic uppercase">Inventory</h3>
-                        </div>
-                        <button @click="addInventoryItem" class="text-blue-500 text-xs font-bold">+ ADD</button>
-                    </div>
-
-                    <div v-if="inventory.length === 0" class="text-center py-10 text-slate-600 text-sm italic">
-                        No supplements tracked yet.
-                    </div>
-
-                    <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-5 rounded-2xl border border-white/5 mb-3">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-bold text-slate-200">{{ item.item_name }}</span>
-                            <span class="text-blue-400 font-black text-xl">{{ Math.floor(item.servings_left) }}</span>
-                        </div>
-                        <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
-                            <div class="bg-blue-600 h-full transition-all duration-1000" :style="{ width: (item.servings_left / item.total_servings * 100) + '%' }"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div v-if="['gym', 'kitchen'].includes(activeTab)" class="flex flex-col items-center justify-center py-20 opacity-20">
-                <i :data-lucide="activeTab === 'gym' ? 'dumbbell' : 'utensils'" class="w-16 h-16 mb-4"></i>
-                <p class="font-black italic uppercase tracking-widest">Locked for Next Module</p>
+            <div v-if="['gym', 'kitchen', 'vault'].includes(activeTab)" class="flex flex-col items-center justify-center py-20 opacity-20">
+                <i :data-lucide="tabs.find(t => t.id === activeTab).icon" class="w-16 h-16 mb-4"></i>
+                <p class="font-black italic uppercase tracking-widest">Awaiting Module Update</p>
             </div>
         </main>
 
@@ -125,7 +97,7 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ';
     const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    createApp({
+    const app = createApp({
         data() {
             return {
                 session: null,
@@ -134,7 +106,6 @@
                 auth: { email: '', password: '' },
                 activeTab: 'today',
                 metrics: { Weight: null, Sleep: null, Energy: null, HR: null },
-                inventory: [],
                 tabs: [
                     { id: 'today', icon: 'zap' },
                     { id: 'gym', icon: 'dumbbell' },
@@ -144,31 +115,34 @@
             }
         },
         async mounted() {
-            const { data } = await supabase.auth.getSession();
-            this.session = data.session;
-            if (this.session) this.initApp();
+            // Initial check for session
+            const { data: { session } } = await supabase.auth.getSession();
+            this.session = session;
             
+            // Listen for changes
             supabase.auth.onAuthStateChange((_event, session) => {
                 this.session = session;
-                if (session) this.initApp();
+                this.$nextTick(() => lucide.createIcons());
             });
+
             lucide.createIcons();
         },
-        updated() { lucide.createIcons(); },
+        updated() {
+            lucide.createIcons();
+        },
         methods: {
             async handleAuth() {
                 this.loading = true;
-                const { error } = this.authMode === 'login' 
+                const { data, error } = this.authMode === 'login' 
                     ? await supabase.auth.signInWithPassword(this.auth)
                     : await supabase.auth.signUp(this.auth);
+                
                 if (error) alert(error.message);
                 this.loading = false;
             },
-            async signOut() { await supabase.auth.signOut(); this.session = null; },
-            initApp() { this.fetchInventory(); },
-            async fetchInventory() {
-                const { data } = await supabase.from('inventory').select('*');
-                this.inventory = data || [];
+            async signOut() {
+                await supabase.auth.signOut();
+                this.session = null;
             },
             async saveMetrics() {
                 this.loading = true;
@@ -176,29 +150,17 @@
                     weight: this.metrics.Weight,
                     sleep_quality: this.metrics.Sleep,
                     energy_level: this.metrics.Energy,
-                    resting_hr: this.metrics.HR
+                    resting_hr: this.metrics.HR,
+                    user_id: this.session.user.id
                 }]);
                 if (error) alert(error.message);
-                else {
-                    this.metrics = { Weight: null, Sleep: null, Energy: null, HR: null };
-                    alert("Sync Complete.");
-                }
+                else alert("Progress Saved.");
                 this.loading = false;
-            },
-            async addInventoryItem() {
-                const name = prompt("Supplement Name:");
-                const servings = prompt("Total Servings:");
-                if (name && servings) {
-                    await supabase.from('inventory').insert([{
-                        item_name: name,
-                        total_servings: parseInt(servings),
-                        servings_left: parseInt(servings)
-                    }]);
-                    this.fetchInventory();
-                }
             }
         }
-    }).mount('#app')
+    });
+
+    app.mount('#app');
 </script>
 </body>
 </html>
