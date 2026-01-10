@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Tracker | Constellation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        [v-cloak] { display: none; }
+        body { background-color: #020617; color: white; }
+        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+    </style>
+</head>
+<body class="font-sans antialiased">
+<div id="app" v-cloak class="min-h-screen p-6">
+    <header class="flex justify-between items-center mb-10">
+        <h1 class="text-3xl font-black italic text-orange-500 uppercase">Tracker</h1>
+        <a href="index.html" class="w-10 h-10 glass rounded-xl flex items-center justify-center"><i data-lucide="home"></i></a>
+    </header>
+
+    <div class="glass rounded-[2.5rem] p-8 shadow-xl">
+        <div class="flex justify-between items-center mb-10">
+            <h3 class="text-white text-lg font-black italic uppercase">Inventory</h3>
+            <button @click="addItem" class="text-blue-500 text-[10px] font-black uppercase tracking-widest">+ Add</button>
+        </div>
+        <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-6 rounded-3xl border border-white/5 mb-4">
+            <div class="flex justify-between items-center mb-4 font-black italic uppercase">
+                <span class="text-xs">{{item.item_name}}</span>
+                <span :class="item.servings_left < 5 ? 'text-red-500' : 'text-blue-400'">{{Math.floor(item.servings_left)}} left</span>
+            </div>
+            <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                <div class="bg-blue-600 h-full" :style="{ width: (item.servings_left/item.total_servings*100) + '%' }"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp } = Vue;
+    const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
+
+    createApp({
+        data() { return { session: null, inventory: [] } },
+        async mounted() {
+            const { data: { session } } = await _client.auth.getSession();
+            this.session = session;
+            if (this.session) this.init();
+            lucide.createIcons();
+        },
+        methods: {
+            async init() {
+                const { data: items } = await _client.from('inventory').select('*');
+                this.inventory = items || [];
+            },
+            async addItem() {
+                const n = prompt("Name:"); const s = prompt("Servings:");
+                if (n && s) { await _client.from('inventory').insert([{ item_name: n, total_servings: parseInt(s), servings_left: parseInt(s), user_id: this.session.user.id }]); this.init(); }
+            }
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
