@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Constellation Fit</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,68 +12,90 @@
     
     <style>
         [v-cloak] { display: none !important; }
-        body { -webkit-tap-highlight-color: transparent; background-color: #020617; color: white; }
-        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+        body { 
+            -webkit-tap-highlight-color: transparent; 
+            background-color: #020617; 
+            color: white; 
+            overscroll-behavior-y: contain;
+        }
+        
+        /* Glassmorphism Design System */
+        .glass { 
+            background: rgba(15, 23, 42, 0.7); 
+            backdrop-filter: blur(16px); 
+            border: 1px solid rgba(255,255,255,0.08); 
+        }
+        
         .tab-active { color: #3b82f6; }
-        .tab-active i { stroke-width: 3px; }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .tab-active i { stroke-width: 3px; color: #3b82f6; }
+        
+        /* Typography & Inputs */
+        input::-webkit-outer-spin-button, 
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
         
+        /* Smooth Transitions */
+        .fade-move, .fade-enter-active, .fade-leave-active { transition: all 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(10px); }
+
         .toast-enter-active, .toast-leave-active { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .toast-enter-from { transform: translateY(-20px); opacity: 0; }
-        .toast-leave-to { transform: translateY(-20px); opacity: 0; }
+        .toast-enter-from { transform: translateY(-100px); opacity: 0; }
+        .toast-leave-to { transform: translateY(-100px); opacity: 0; }
     </style>
 </head>
-<body class="font-sans antialiased">
+<body class="font-sans antialiased selection:bg-blue-500/30">
 
 <div id="app" v-cloak class="min-h-screen flex flex-col">
     
     <transition name="toast">
-        <div v-if="toast.show" class="fixed top-10 left-4 right-4 z-50 flex justify-center pointer-events-none">
-            <div class="glass px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border-l-4 border-blue-500">
+        <div v-if="toast.show" class="fixed top-12 left-4 right-4 z-[100] flex justify-center pointer-events-none">
+            <div class="glass px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border-l-4 border-blue-500 pointer-events-auto">
                 <i :data-lucide="toast.icon" class="w-5 h-5 text-blue-500"></i>
-                <p class="text-sm font-bold uppercase tracking-tight">{{ toast.message }}</p>
+                <p class="text-sm font-black uppercase tracking-tight">{{ toast.message }}</p>
             </div>
         </div>
     </transition>
 
-    <div v-if="!session" class="flex-1 flex flex-col items-center justify-center px-8">
+    <div v-if="!session" class="flex-1 flex flex-col items-center justify-center px-8 bg-slate-950">
         <div class="mb-12 text-center">
-            <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl shadow-blue-600/30">
+            <div class="w-20 h-20 bg-blue-600 rounded-[2rem] mx-auto mb-6 flex items-center justify-center shadow-2xl shadow-blue-600/30">
                 <i data-lucide="sparkles" class="w-10 h-10 text-white"></i>
             </div>
             <h1 class="text-4xl font-black tracking-tighter uppercase italic">Constellation</h1>
-            <p class="text-slate-500 text-xs tracking-[0.3em] uppercase mt-2 font-bold">Performance Tracking</p>
+            <p class="text-slate-500 text-[10px] tracking-[0.4em] uppercase mt-2 font-black">Performance Management</p>
         </div>
         
         <div class="w-full max-w-sm space-y-4">
-            <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none">
-            <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none">
-            <button @click="handleAuth" :disabled="loading" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-lg shadow-xl flex justify-center items-center gap-3">
+            <div class="space-y-2">
+                <input type="email" v-model="auth.email" placeholder="Email Address" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            </div>
+            <button @click="handleAuth" :disabled="loading" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-xl flex justify-center items-center gap-3">
                 <span v-if="loading" class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></span>
                 <span v-else>{{ authMode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT' }}</span>
             </button>
-            <button @click="authMode = authMode === 'login' ? 'signup' : 'login'" class="w-full text-slate-500 text-sm font-bold uppercase tracking-widest py-2">
-                {{ authMode === 'login' ? 'Need an account? Sign Up' : 'Have an account? Login' }}
+            <button @click="authMode = authMode === 'login' ? 'signup' : 'login'" class="w-full text-slate-500 text-xs font-black uppercase tracking-widest py-2 italic">
+                Switch to {{ authMode === 'login' ? 'New Account' : 'Existing Login' }}
             </button>
         </div>
     </div>
 
     <div v-else class="flex-1 flex flex-col pb-24">
+        
         <header class="p-6 flex justify-between items-center">
             <div>
                 <h1 class="text-xl font-black tracking-tighter text-blue-500 uppercase italic">Constellation</h1>
-                <p class="text-slate-500 text-[10px] uppercase tracking-widest font-bold">{{ activeTab }}</p>
+                <p class="text-slate-500 text-[10px] uppercase tracking-widest font-black italic">{{ activeTab }} View</p>
             </div>
-            <button @click="signOut" class="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center border border-slate-800">
+            <button @click="signOut" class="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center border border-slate-800 shadow-lg">
                 <i data-lucide="log-out" class="w-4 h-4 text-slate-400"></i>
             </button>
         </header>
 
-        <main class="flex-1 px-4 overflow-y-auto">
+        <main class="flex-1 px-4 overflow-y-auto space-y-8">
             
-            <div v-if="activeTab === 'today'" class="space-y-6">
-                <div class="glass rounded-[2rem] p-8 shadow-2xl">
+            <div v-if="activeTab === 'today'" class="space-y-8">
+                <div class="glass rounded-[2.5rem] p-8 shadow-2xl">
                     <div class="flex items-center gap-3 mb-8">
                         <i data-lucide="zap" class="text-blue-500 w-5 h-5"></i>
                         <h3 class="text-white text-lg font-black italic uppercase">Readiness</h3>
@@ -83,123 +106,168 @@
                             <input type="number" step="0.1" v-model="metrics[label]" class="bg-transparent border-none text-3xl font-black w-full focus:ring-0 text-white p-0" placeholder="0">
                         </div>
                     </div>
-                    <button @click="saveMetrics" :disabled="loading" class="w-full mt-8 bg-blue-600 py-5 rounded-[1.5rem] font-black text-xl active:scale-95 transition-all">
-                        {{ loading ? 'SYNCING...' : 'SAVE DATA' }}
+                    <button @click="saveMetrics" :disabled="loading" class="w-full mt-8 bg-blue-600 py-5 rounded-[1.5rem] font-black text-xl active:scale-95 transition-all shadow-xl shadow-blue-600/20">
+                        {{ loading ? 'SYNCING...' : 'SAVE READINESS' }}
                     </button>
+                </div>
+
+                <div v-if="readinessHistory.length" class="space-y-4 px-2">
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">Recent Trends</h4>
+                    <div v-for="log in readinessHistory.slice(0, 3)" :key="log.id" class="glass rounded-2xl p-4 flex justify-between items-center">
+                        <span class="text-xs font-black text-slate-400">{{ formatDate(log.created_at) }}</span>
+                        <div class="flex gap-4">
+                            <div class="text-right">
+                                <span class="block text-[8px] text-slate-600 uppercase font-bold">Weight</span>
+                                <span class="font-black text-blue-400">{{ log.weight }}</span>
+                            </div>
+                            <div class="text-right border-l border-white/5 pl-4">
+                                <span class="block text-[8px] text-slate-600 uppercase font-bold">Sleep</span>
+                                <span class="font-black text-purple-400">{{ log.sleep_quality }}/10</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div v-if="activeTab === 'gym'" class="space-y-4">
-                <div v-if="!activeWorkout" class="glass rounded-[2rem] p-8 text-center">
+            <div v-if="activeTab === 'gym'" class="space-y-8">
+                <div v-if="!activeWorkout" class="glass rounded-[2.5rem] p-8 text-center shadow-2xl">
                     <i data-lucide="dumbbell" class="w-12 h-12 text-blue-500 mx-auto mb-4"></i>
                     <h2 class="text-xl font-black uppercase italic mb-6">Vertical Session</h2>
-                    <select v-model="selectedExercise" class="w-full bg-slate-900 border border-slate-800 rounded-xl py-4 px-4 mb-4 text-white outline-none">
-                        <option :value="null">Select Exercise</option>
+                    <select v-model="selectedExercise" class="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 px-6 mb-6 text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        <option :value="null">Select Movement</option>
                         <option v-for="ex in exercises" :key="ex.id" :value="ex.name">{{ ex.name }}</option>
                     </select>
-                    <button @click="startWorkout" :disabled="!selectedExercise" class="w-full bg-white text-black py-4 rounded-2xl font-black text-lg active:scale-95 disabled:opacity-30 transition-all">
-                        START LIFTING
-                    </button>
+                    <button @click="startWorkout" :disabled="!selectedExercise" class="w-full bg-white text-black py-5 rounded-[1.5rem] font-black text-xl active:scale-95 disabled:opacity-20 transition-all">START LIFTING</button>
                 </div>
 
-                <div v-else class="glass rounded-[2rem] p-6 shadow-2xl">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-black uppercase italic text-blue-500">{{ activeWorkout.name }}</h3>
-                        <button @click="activeWorkout = null" class="text-slate-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <div v-else class="glass rounded-[2.5rem] p-6 shadow-2xl border-t-4 border-blue-500">
+                    <div class="flex justify-between items-center mb-8 px-2">
+                        <h3 class="text-2xl font-black uppercase italic text-blue-500">{{ activeWorkout.name }}</h3>
+                        <button @click="activeWorkout = null" class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-slate-500"><i data-lucide="x" class="w-5 h-5"></i></button>
                     </div>
-
-                    <div v-for="(set, index) in activeWorkout.sets" :key="index" class="flex items-center gap-3 mb-4">
-                        <div class="w-10 h-10 flex items-center justify-center bg-slate-900 rounded-xl font-black text-slate-500">{{ index + 1 }}</div>
-                        <input type="number" v-model="set.weight" placeholder="lbs" class="w-full bg-slate-900 border-none rounded-xl py-3 text-center font-bold">
-                        <input type="number" v-model="set.reps" placeholder="reps" class="w-full bg-slate-900 border-none rounded-xl py-3 text-center font-bold">
-                        <button @click="set.done = !set.done" :class="set.done ? 'bg-green-600' : 'bg-slate-700'" class="w-12 h-12 rounded-xl flex items-center justify-center transition-all">
-                            <i data-lucide="check" class="w-5 h-5"></i>
+                    
+                    <div v-for="(set, index) in activeWorkout.sets" :key="index" class="flex items-center gap-3 mb-4 animate-in fade-in slide-in-from-right-4">
+                        <div class="w-10 h-10 flex items-center justify-center bg-slate-950 rounded-xl font-black text-slate-600">{{ index + 1 }}</div>
+                        <input type="number" v-model="set.weight" placeholder="lbs" class="w-full bg-slate-950 border-none rounded-xl py-4 text-center font-black text-white focus:ring-2 focus:ring-blue-500">
+                        <input type="number" v-model="set.reps" placeholder="reps" class="w-full bg-slate-950 border-none rounded-xl py-4 text-center font-black text-white focus:ring-2 focus:ring-blue-500">
+                        <button @click="set.done = !set.done" :class="set.done ? 'bg-green-600' : 'bg-slate-800'" class="w-14 h-14 rounded-xl flex items-center justify-center transition-all shadow-lg">
+                            <i data-lucide="check" class="w-6 h-6 text-white"></i>
                         </button>
                     </div>
 
-                    <button @click="activeWorkout.sets.push({weight:null, reps:null, done:false})" class="w-full py-3 mb-6 border-2 border-dashed border-slate-800 rounded-xl text-slate-500 font-bold text-xs uppercase tracking-widest">+ Add Set</button>
+                    <button @click="activeWorkout.sets.push({weight:null, reps:null, done:false})" class="w-full py-4 mb-8 border-2 border-dashed border-slate-800 rounded-2xl text-slate-500 font-black text-[10px] uppercase tracking-widest">+ Add New Set</button>
                     
-                    <button @click="finishWorkout" class="w-full bg-blue-600 py-5 rounded-[1.5rem] font-black text-xl active:scale-95 shadow-xl shadow-blue-900/40">
-                        FINISH WORKOUT
+                    <button @click="finishWorkout" :disabled="loading" class="w-full bg-blue-600 py-6 rounded-[2rem] font-black text-2xl shadow-2xl shadow-blue-900/40 active:scale-95 transition-all">
+                        {{ loading ? 'SYNCING...' : 'FINISH LIFT' }}
                     </button>
+                </div>
+
+                <div v-if="workoutHistory.length && !activeWorkout" class="space-y-4 px-2">
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">Recent Training</h4>
+                    <div v-for="log in workoutHistory.slice(0, 5)" :key="log.id" class="glass rounded-2xl p-5 border-l-2 border-blue-500/30">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black text-md text-blue-500 uppercase italic">{{ log.exercise_name }}</span>
+                            <span class="text-[10px] text-slate-500 font-bold">{{ formatDate(log.created_at) }}</span>
+                        </div>
+                        <div class="mt-2 flex gap-2 overflow-x-auto pb-1">
+                            <div v-for="(set, i) in log.sets_data" :key="i" class="bg-slate-900 px-3 py-1 rounded-lg text-[10px] font-mono text-slate-400 whitespace-nowrap">
+                                {{ set.weight }} x {{ set.reps }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div v-if="activeTab === 'kitchen'" class="space-y-6">
-                <div class="glass rounded-[2rem] p-8 shadow-2xl">
+            <div v-if="activeTab === 'kitchen'" class="space-y-8">
+                <div class="glass rounded-[2.5rem] p-8 shadow-2xl">
                     <div class="flex items-center gap-3 mb-6">
                         <i data-lucide="utensils" class="text-green-500 w-5 h-5"></i>
                         <h3 class="text-white text-lg font-black italic uppercase">Fuel Diary</h3>
                     </div>
 
-                    <div class="relative mb-4">
-                        <input type="text" v-model="foodSearch" @input="filterMemory" placeholder="Search recent foods..." class="w-full bg-slate-950/50 border border-slate-800 rounded-xl py-4 px-4 outline-none focus:ring-2 focus:ring-blue-500">
+                    <div class="relative mb-6">
+                        <input type="text" v-model="foodSearch" @input="filterMemory" placeholder="Search Memory..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 px-6 outline-none focus:ring-2 focus:ring-blue-500 font-bold">
                         
-                        <div v-if="showMemory && filteredMemory.length" class="absolute left-0 right-0 mt-2 glass rounded-2xl overflow-hidden z-10 shadow-2xl">
-                            <button v-for="item in filteredMemory" :key="item.id" @click="selectFood(item)" class="w-full px-4 py-3 text-left border-b border-white/5 hover:bg-blue-500/10 flex justify-between items-center">
+                        <div v-if="showMemory && filteredMemory.length" class="absolute left-0 right-0 mt-2 glass rounded-2xl overflow-hidden z-[50] shadow-2xl border border-blue-500/20">
+                            <button v-for="item in filteredMemory" :key="item.id" @click="selectFood(item)" class="w-full px-6 py-4 text-left border-b border-white/5 hover:bg-blue-500/10 flex justify-between items-center transition-all">
                                 <div>
-                                    <span class="block font-bold">{{ item.food_name }}</span>
-                                    <span class="text-[10px] text-slate-500 uppercase font-black">{{ item.calories }} cal | {{ item.protein }}g prot</span>
+                                    <span class="block font-black text-sm uppercase">{{ item.food_name }}</span>
+                                    <span class="text-[10px] text-slate-500 uppercase font-black">{{ item.calories }} cal | {{ item.protein }}g protein</span>
                                 </div>
                                 <i data-lucide="plus" class="w-4 h-4 text-blue-500"></i>
                             </button>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div class="bg-slate-950/40 p-4 rounded-2xl border border-white/5">
-                            <span class="block text-[10px] text-slate-500 uppercase font-black mb-1">Calories</span>
-                            <input type="number" v-model="foodEntry.cals" class="bg-transparent border-none text-2xl font-black w-full focus:ring-0 text-white p-0">
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-slate-950/40 p-5 rounded-2xl border border-white/5">
+                            <span class="block text-[10px] text-slate-500 uppercase font-black mb-1 italic">Cals</span>
+                            <input type="number" v-model="foodEntry.cals" class="bg-transparent border-none text-2xl font-black w-full text-white p-0">
                         </div>
-                        <div class="bg-slate-950/40 p-4 rounded-2xl border border-white/5">
-                            <span class="block text-[10px] text-slate-500 uppercase font-black mb-1">Protein (g)</span>
-                            <input type="number" v-model="foodEntry.protein" class="bg-transparent border-none text-2xl font-black w-full focus:ring-0 text-white p-0">
+                        <div class="bg-slate-950/40 p-5 rounded-2xl border border-white/5">
+                            <span class="block text-[10px] text-slate-500 uppercase font-black mb-1 italic">Prot (g)</span>
+                            <input type="number" v-model="foodEntry.protein" class="bg-transparent border-none text-2xl font-black w-full text-white p-0">
                         </div>
                     </div>
 
-                    <button @click="saveFood" :disabled="loading || !foodSearch" class="w-full bg-green-600 py-4 rounded-2xl font-black text-lg active:scale-95 transition-all">
-                        LOG FUEL
+                    <button @click="saveFood" :disabled="loading || !foodSearch" class="w-full bg-green-600 py-5 rounded-[1.5rem] font-black text-xl active:scale-95 shadow-xl shadow-green-900/20 transition-all">
+                        {{ loading ? 'SYNCING...' : 'LOG FUEL' }}
                     </button>
                 </div>
 
-                <div v-if="dailyLogs.length" class="glass rounded-[2rem] p-6">
-                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Today's Log</h4>
-                    <div v-for="log in dailyLogs" :key="log.id" class="flex justify-between items-center py-3 border-b border-white/5 last:border-0">
-                        <span class="font-bold text-sm">{{ log.food_name }}</span>
-                        <span class="text-xs text-slate-400 font-mono">{{ log.calories }} cal / {{ log.protein }}g p</span>
+                <div v-if="dailyLogs.length" class="space-y-4 px-2">
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">Today's Intake</h4>
+                    <div class="glass rounded-2xl p-6">
+                        <div v-for="log in dailyLogs" :key="log.id" class="flex justify-between items-center py-4 border-b border-white/5 last:border-0">
+                            <span class="font-black text-sm uppercase italic">{{ log.food_name }}</span>
+                            <div class="text-right">
+                                <span class="block text-xs font-mono text-slate-400">{{ log.calories }} cal</span>
+                                <span class="block text-[9px] font-black text-green-500 uppercase">{{ log.protein }}g protein</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div v-if="activeTab === 'vault'" class="space-y-6">
-                <div class="glass rounded-[2rem] p-8 shadow-xl">
-                    <div class="flex justify-between items-center mb-6">
+            <div v-if="activeTab === 'tracker'" class="space-y-8">
+                <div class="glass rounded-[2.5rem] p-8 shadow-2xl">
+                    <div class="flex justify-between items-center mb-8">
                         <div class="flex items-center gap-3">
                             <i data-lucide="package" class="text-orange-500 w-5 h-5"></i>
                             <h3 class="text-white text-lg font-black italic uppercase">Inventory</h3>
                         </div>
-                        <button @click="addInventoryItem" class="text-blue-500 text-xs font-bold uppercase tracking-widest">+ Add</button>
+                        <button @click="addInventoryItem" class="bg-slate-900 px-4 py-2 rounded-xl text-blue-500 text-[10px] font-black uppercase tracking-widest border border-slate-800">+ Add Item</button>
                     </div>
 
-                    <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-5 rounded-2xl border border-white/5 mb-3">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-bold text-slate-200 uppercase text-xs tracking-tight">{{ item.item_name }}</span>
-                            <span :class="item.servings_left < 5 ? 'text-red-500' : 'text-blue-400'" class="font-black text-xl">
-                                {{ Math.floor(item.servings_left) }} <span class="text-[8px] text-slate-600">DAYS</span>
-                            </span>
+                    <div v-if="!inventory.length" class="text-center py-10 text-slate-600 italic text-sm">No inventory tracked yet.</div>
+
+                    <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-6 rounded-3xl border border-white/5 mb-4 shadow-inner">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="font-black text-slate-200 uppercase text-xs italic tracking-tight">{{ item.item_name }}</span>
+                            <div class="text-right">
+                                <span :class="item.servings_left < 5 ? 'text-red-500' : 'text-blue-400'" class="font-black text-2xl block">
+                                    {{ Math.floor(item.servings_left) }}
+                                </span>
+                                <span class="text-[8px] text-slate-600 uppercase font-black">Servings Left</span>
+                            </div>
                         </div>
-                        <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
-                            <div class="bg-blue-600 h-full transition-all duration-1000" :style="{ width: (item.servings_left / item.total_servings * 100) + '%' }"></div>
+                        <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                            <div class="bg-blue-600 h-full transition-all duration-1000 ease-out shadow-[0_0_10px_#2563eb]" :style="{ width: (item.servings_left / item.total_servings * 100) + '%' }"></div>
                         </div>
                     </div>
+                </div>
+
+                <div class="glass rounded-[2.5rem] p-8 text-center opacity-30 border border-dashed border-slate-700">
+                    <i data-lucide="bar-chart-3" class="w-8 h-8 mx-auto mb-2 text-slate-500"></i>
+                    <p class="text-[10px] font-black uppercase tracking-widest">Advanced Statistics Module Pending</p>
                 </div>
             </div>
         </main>
 
-        <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around p-3 safe-area-bottom">
-            <button v-for="tab in tabs" @click="activeTab = tab.id" :class="{'tab-active': activeTab === tab.id}" class="flex flex-col items-center px-6 py-2 transition-all">
+        <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around p-3 safe-area-bottom z-[100]">
+            <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" :class="{'tab-active': activeTab === tab.id}" class="flex flex-col items-center px-6 py-2 transition-all">
                 <i :data-lucide="tab.icon" class="w-6 h-6 mb-1 text-slate-600 transition-colors"></i>
-                <span class="text-[8px] font-black uppercase tracking-[0.2em]">{{ tab.id }}</span>
+                <span class="text-[8px] font-black uppercase tracking-[0.2em] italic">{{ tab.id }}</span>
             </button>
         </nav>
     </div>
@@ -209,7 +277,7 @@
     const { createApp } = Vue;
     const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
 
-    createApp({
+    const app = createApp({
         data() {
             return {
                 session: null,
@@ -218,22 +286,30 @@
                 activeTab: 'today',
                 auth: { email: '', password: '' },
                 toast: { show: false, message: '', icon: 'check-circle' },
+                
+                // Data Repositories
                 metrics: { Weight: null, Sleep: null, Energy: null, HR: null },
+                readinessHistory: [],
+                
                 exercises: [],
                 selectedExercise: null,
                 activeWorkout: null,
+                workoutHistory: [],
+                
                 foodSearch: '',
                 foodEntry: { cals: null, protein: null },
                 foodMemory: [],
                 filteredMemory: [],
                 showMemory: false,
                 dailyLogs: [],
+                
                 inventory: [],
+                
                 tabs: [
                     { id: 'today', icon: 'zap' },
                     { id: 'gym', icon: 'dumbbell' },
                     { id: 'kitchen', icon: 'utensils' },
-                    { id: 'vault', icon: 'package' }
+                    { id: 'tracker', icon: 'line-chart' }
                 ]
             }
         },
@@ -246,36 +322,61 @@
                 this.session = session;
                 if (session) this.initApp();
             });
+            
             lucide.createIcons();
         },
-        updated() { lucide.createIcons(); },
+        updated() {
+            lucide.createIcons();
+        },
         methods: {
             showToast(msg, icon = 'check-circle') {
                 this.toast = { show: true, message: msg, icon: icon };
                 setTimeout(() => this.toast.show = false, 4000);
             },
+            formatDate(dt) {
+                return new Date(dt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            },
+            
+            // AUTH ACTIONS
             async handleAuth() {
                 this.loading = true;
                 const { error } = this.authMode === 'login' 
                     ? await _client.auth.signInWithPassword(this.auth)
                     : await _client.auth.signUp(this.auth);
-                if (error) this.showToast(error.message, 'alert-circle');
-                else if (this.authMode === 'signup') this.showToast("Verification email sent!", "mail");
+                
+                if (error) {
+                    this.showToast(error.message, 'alert-circle');
+                } else if (this.authMode === 'signup') {
+                    this.showToast("Verification email sent!", "mail");
+                }
                 this.loading = false;
             },
-            async signOut() { await _client.auth.signOut(); this.session = null; },
-            async initApp() {
-                this.fetchInventory();
-                this.fetchExercises();
-                this.fetchFoodMemory();
-                this.fetchDailyLogs();
+            async signOut() {
+                await _client.auth.signOut();
+                this.session = null;
             },
+
+            // DATA INITIALIZATION
+            async initApp() {
+                this.loading = true;
+                await Promise.all([
+                    this.fetchInventory(),
+                    this.fetchExercises(),
+                    this.fetchFoodMemory(),
+                    this.fetchDailyLogs(),
+                    this.fetchReadiness(),
+                    this.fetchWorkouts()
+                ]);
+                this.loading = false;
+            },
+
+            // INVENTORY ACTIONS
             async fetchInventory() {
                 const { data } = await _client.from('inventory').select('*');
                 this.inventory = data || [];
             },
             async addInventoryItem() {
-                const name = prompt("Item Name:");
+                const name = prompt("Supplement Name:");
                 const servings = prompt("Total Servings:");
                 if (name && servings) {
                     await _client.from('inventory').insert([{
@@ -287,21 +388,21 @@
                     this.fetchInventory();
                 }
             },
+
+            // GYM ACTIONS
             async fetchExercises() {
                 const { data } = await _client.from('exercise_library').select('*');
                 this.exercises = data || [];
             },
-            async fetchFoodMemory() {
-                const { data } = await _client.from('food_memory').select('*').order('use_count', { ascending: false });
-                this.foodMemory = data || [];
-            },
-            async fetchDailyLogs() {
-                const today = new Date().toISOString().split('T')[0];
-                const { data } = await _client.from('food_logs').select('*').gte('created_at', today);
-                this.dailyLogs = data || [];
+            async fetchWorkouts() {
+                const { data } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false });
+                this.workoutHistory = data || [];
             },
             startWorkout() {
-                this.activeWorkout = { name: this.selectedExercise, sets: [{ weight: null, reps: null, done: false }] };
+                this.activeWorkout = {
+                    name: this.selectedExercise,
+                    sets: [{ weight: null, reps: null, done: false }]
+                };
             },
             async finishWorkout() {
                 this.loading = true;
@@ -311,11 +412,27 @@
                     sets_data: completedSets,
                     user_id: this.session.user.id
                 }]);
+                
                 if (!error) {
-                    this.showToast("Lift Synced.", "dumbbell");
+                    this.showToast("Training Logged.", "dumbbell");
                     this.activeWorkout = null;
+                    await this.fetchWorkouts();
+                    await this.fetchInventory(); // Refreshes after auto-deduct trigger
+                } else {
+                    this.showToast(error.message, "alert-circle");
                 }
                 this.loading = false;
+            },
+
+            // KITCHEN ACTIONS
+            async fetchFoodMemory() {
+                const { data } = await _client.from('food_memory').select('*').order('use_count', { ascending: false });
+                this.foodMemory = data || [];
+            },
+            async fetchDailyLogs() {
+                const today = new Date().toISOString().split('T')[0];
+                const { data } = await _client.from('food_logs').select('*').gte('created_at', today);
+                this.dailyLogs = data || [];
             },
             filterMemory() {
                 this.showMemory = this.foodSearch.length > 1;
@@ -339,10 +456,16 @@
                     this.showToast("Fuel Logged.", "check");
                     this.foodSearch = '';
                     this.foodEntry = { cals: null, protein: null };
-                    this.fetchFoodMemory();
-                    this.fetchDailyLogs();
+                    await this.fetchFoodMemory();
+                    await this.fetchDailyLogs();
                 }
                 this.loading = false;
+            },
+
+            // TODAY ACTIONS
+            async fetchReadiness() {
+                const { data } = await _client.from('daily_metrics').select('*').order('created_at', { ascending: false });
+                this.readinessHistory = data || [];
             },
             async saveMetrics() {
                 this.loading = true;
@@ -356,11 +479,14 @@
                 if (!error) {
                     this.showToast("Readiness Synced.", "zap");
                     this.metrics = { Weight: null, Sleep: null, Energy: null, HR: null };
+                    await this.fetchReadiness();
                 }
                 this.loading = false;
             }
         }
-    }).mount('#app');
+    });
+
+    app.mount('#app');
 </script>
 </body>
 </html>
