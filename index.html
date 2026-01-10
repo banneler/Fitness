@@ -4,141 +4,163 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Constellation Fitness</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
-        [v-cloak] { display: none; }
-        body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
+        [v-cloak] { display: none !important; }
+        body { 
+            background-color: #020617; 
+            color: white; 
+            -webkit-tap-highlight-color: transparent; 
+            overscroll-behavior-y: contain;
+        }
         
+        /* Navigation Grid Tiles */
         .nav-card { 
             background: rgba(15, 23, 42, 0.7); 
             backdrop-filter: blur(20px); 
             border: 1px solid rgba(255,255,255,0.08);
             aspect-ratio: 1 / 1;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 2.5rem;
         }
-        .nav-card:active { transform: scale(0.96); background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); }
+        .nav-card:active { 
+            transform: scale(0.96); 
+            background: rgba(59, 130, 246, 0.1); 
+            border-color: rgba(37, 99, 235, 0.4); 
+        }
         
         .status-pill {
             background: rgba(15, 23, 42, 0.8);
             border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.02);
         }
 
-        .logo-glow { filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.4)); }
+        /* Styling the external SVG call */
+        .brand-logo {
+            width: 100%;
+            height: auto;
+            /* Filter to match brand blue #3b82f6 if the source is black/white */
+            filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
+        }
+
+        .logo-container {
+            width: 80px;
+            margin: 0 auto;
+        }
+
+        .header-logo {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+        }
+        
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
 </head>
 <body class="font-sans antialiased">
 
 <div id="app" v-cloak class="min-h-screen flex flex-col">
     
-    <div v-if="!session" class="flex-1 flex flex-col items-center justify-center p-8">
-        <div class="mb-16 text-center">
-            <div class="mb-8 logo-glow">
-                <svg width="120" height="80" viewBox="0 0 2048 1390" xmlns="http://www.w3.org/2000/svg" class="mx-auto">
-                    <path transform="translate(719,89)" d="m0 0h51l41 3 37 5 32 6 30 7 36 10 35 12 32 13 24 11 22 12 16 9 24 15 17 12 16 12 14 11 13 11 12 11 10 9 27 27 7 8 10 11 10 13 2 4v8l-4 6-9 8-11 8-19 14-13 10-16 12-15 12-13 10-42 33-16 13-14 11-10 8-14 11-13 10-10 5-6-1-6-4-5-4-7-8-5-5-6-5-16-16-11-9-15-12-20-14-20-12-23-12-27-11-22-7-26-6-29-4-15-1h-33l-23 2-32 5-26 6-36 12-24 11-22 12-15 10-12 9-11 9-14 12-11 11-7 8-11 13-13 18-11 17-11 19-8 16-10 23-9 27-6 24-4 24-2 16-1 16v29l2 25 5 30 7 28 9 26 11 25 10 19 10 16 11 16 9 11 11 13 23 23 11 9 17 13 20 13 16 9 24 12 26 10 24 7 22 5 37 5 12 1h27l38-4 26-5 26-7 25-9 20-9 20-10 21-13 14-10 14-11 10-9 8-7 15-15 9-11 12-13 3-2h9l10 6 16 13 17 13 18 14 38 29 16 12 13 10 21 16 20 15 16 13 13 10 14 11 5 6v8l-7 12-14 17-9 10-7 8-33 33-11 9-9 8-17 13-18 14-11 8-4 5-4 13-2 19-4 12-9 14-7 7-14 8-15 4h-13l-13-3-16-7-14-3-12 1-20 6-30 10-30 8-37 8-40 6-33 3-17 1h-55l-43-3-39-5-34-6-38-9-30-9-31-11-31-13-29-14-23-13-17-10-24-16-18-13-14-11-11-9-15-13-10-9-15-15-5-4v-2h-2l-7-8-12-12-9-11-9-10-11-14-12-16-12-17-12-19-15-26-13-25-13-29-11-29-11-34-7-26-8-37-5-31-4-37-1-16v-55l3-35 5-36 7-34 6-24 9-29 8-24 15-37 13-28 8-14 4-13 1-6v-9l-3-14-5-18v-13l3-11 7-14 9-10 7-6 14-7 12-3 10-1 9 1h11l7-3 8-6 10-10 7-8 11-11 8-7 15-14 11-9 16-13 19-14 24-16 21-13 26-14 16-8 24-11 31-12 33-11 38-10 38-8 41-6 34-3z" fill="#3b82f6" />
-                    <path transform="translate(636,249)" d="m0 0h9l12 6 8 7 10 6 12 4h16l14-4 13-6 8-1 12 6 27 16 40 24 26 16 22 14 17 11 33 22 2 3v4l-6-1-27-12-37-13-31-8-23-4-29-3h-39l-39 4-27 5-24 6-27 9-24 10-24 12-23 14-18 13-10 8-13 11-15 14-15 16-9 11-10 13-11 16-13 21-14 27-11 26-10 30-6 24-5 28-3 32v38l2 24 4 27 5 23 7 24 8 22 8 18 10 20 13 21 10 14 13 16 18 20 11 10 11 9 16 13 19 14 23 15 19 11 23 12 26 11 30 10 31 7 12 2 35 3h15l6-1 26-2 24-4 26-6 36-12 30-13 24-12 24-14 16-10 22-15 16-12 9-7 3 1 3 36 2 38 1 41 1 8v8l1 12 3 42v11l-6 9-4 5-10 8-14 8-10 4h-8l-26-6-39-10-101-25-19-5-12-5-6-5-7-10-7-12-11-11-11-5-7-2h-16l-16 5-8 4-9 2-15-5-162-66-128-52-24-10-10-6-6-7-2-5-3-17-6-10-9-8-11-7-4-5-2-5-2-42-5-83-1-34-2-36v-12l4-9 7-8 7-7 8-11 5-14v-15l-4-11-7-10-10-10-8-7-4-5-2-6-4-66-2-25-3-50-1-21 4-8 7-6 11-7 9-9 6-10 3-8 2-15 3-6 8-5 25-8 64-20 139-43 60-19z" fill="#ffffff" opacity="0.9" />
-                    <path transform="translate(1028,1195)" d="m0 0h8l8 2 9 5 7 7 4 9 1 9-4 11-6 8-8 6-8 3h-15l-10-5-7-7-4-9v-16l5-10 4-5 9-6z" fill="#ffffff" />
-                    <path transform="translate(238,330)" d="m0 0h9l12 3 9 5 5 5 3 7 1 10-3 10-6 8-7 6-6 3-11 2-13-4-8-6-4-5-4-9v-13l4-10 6-7 8-4z" fill="#ffffff" />
-                    <path transform="translate(693,194)" d="m0 0h8l8 4 7 9 3 6v12l-6 10-9 6-3 1h-13l-10-5-5-6-2-6v-10l5-10 7-6z" fill="#ffffff" />
-                    <path transform="translate(272,942)" d="m0 0 10 2 6 4 5 8 1 3v7l-7 10-6 3-7 1-12-3-5-5-3-6 1-9 5-10 4-3z" fill="#ffffff" />
-                    <path transform="translate(706,1127)" d="m0 0 10 1 6 4 5 8 2 7v7l-3 6-5 4-3 1h-15l-6-4-4-6-1-3v-9l4-8 4-5z" fill="#ffffff" />
-                    <path transform="translate(254,623)" d="m0 0h9l8 4 5 6 2 7v6l-5 9-5 4-2 1h-14l-6-4-4-8v-13l6-8z" fill="#ffffff" />
-                    <path transform="translate(960,370)" d="m0 0h13l6 3 5 6 1 3v10l-6 9-4 3-8 1-8-2-8-7-1-3v-11l4-8z" fill="#ffffff" />
-                </svg>
-            </div>
-            <h1 class="text-3xl font-black tracking-tighter uppercase italic leading-none">
-                <span class="text-blue-500">CONSTELLATION</span> <span class="text-white">FITNESS</span>
-            </h1>
-            <p class="text-slate-500 text-[10px] uppercase tracking-[0.4em] mt-4 font-black">Performance Lifestyle</p>
-        </div>
-        <div class="w-full max-w-sm space-y-4">
-            <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-            <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-            <button @click="handleAuth" class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all tracking-tighter">LOG IN</button>
-        </div>
-    </div>
-
-    <div v-else class="flex-1 flex flex-col p-8">
-        <header class="flex justify-between items-start mb-8">
-            <div class="flex items-center gap-4">
-                <svg width="45" height="45" viewBox="0 0 2048 1390" xmlns="http://www.w3.org/2000/svg" class="logo-glow">
-                    <path transform="translate(719,89)" d="m0 0h51l41 3 37 5 32 6 30 7 36 10 35 12 32 13 24 11 22 12 16 9 24 15 17 12 16 12 14 11 13 11 12 11 10 9 27 27 7 8 10 11 10 13 2 4v8l-4 6-9 8-11 8-19 14-13 10-16 12-15 12-13 10-42 33-16 13-14 11-10 8-14 11-13 10-10 5-6-1-6-4-5-4-7-8-5-5-6-5-16-16-11-9-15-12-20-14-20-12-23-12-27-11-22-7-26-6-29-4-15-1h-33l-23 2-32 5-26 6-36 12-24 11-22 12-15 10-12 9-11 9-14 12-11 11-7 8-11 13-13 18-11 17-11 19-8 16-10 23-9 27-6 24-4 24-2 16-1 16v29l2 25 5 30 7 28 9 26 11 25 10 19 10 16 11 16 9 11 11 13 23 23 11 9 17 13 20 13 16 9 24 12 26 10 24 7 22 5 37 5 12 1h27l38-4 26-5 26-7 25-9 20-9 20-10 21-13 14-10 14-11 10-9 8-7 15-15 9-11 12-13 3-2h9l10 6 16 13 17 13 18 14 38 29 16 12 13 10 21 16 20 15 16 13 13 10 14 11 5 6v8l-7 12-14 17-9 10-7 8-33 33-11 9-9 8-17 13-18 14-11 8-4 5-4 13-2 19-4 12-9 14-7 7-14 8-15 4h-13l-13-3-16-7-14-3-12 1-20 6-30 10-30 8-37 8-40 6-33 3-17 1h-55l-43-3-39-5-34-6-38-9-30-9-31-11-31-13-29-14-23-13-17-10-24-16-18-13-14-11-11-9-15-13-10-9-15-15-5-4v-2h-2l-7-8-12-12-9-11-9-10-11-14-12-16-12-17-12-19-15-26-13-25-13-29-11-29-11-34-7-26-8-37-5-31-4-37-1-16v-55l3-35 5-36 7-34 6-24 9-29 8-24 15-37 13-28 8-14 4-13 1-6v-9l-3-14-5-18v-13l3-11 7-14 9-10 7-6 14-7 12-3 10-1 9 1h11l7-3 8-6 10-10 7-8 11-11 8-7 15-14 11-9 16-13 19-14 24-16 21-13 26-14 16-8 24-11 31-12 33-11 38-10 38-8 41-6 34-3z" fill="#3b82f6" />
-                    <path transform="translate(636,249)" d="m0 0h9l12 6 8 7 10 6 12 4h16l14-4 13-6 8-1 12 6 27 16 40 24 26 16 22 14 17 11 33 22 2 3v4l-6-1-27-12-37-13-31-8-23-4-29-3h-39l-39 4-27 5-24 6-27 9-24 10-24 12-23 14-18 13-10 8-13 11-15 14-15 16-9 11-10 13-11 16-13 21-14 27-11 26-10 30-6 24-5 28-3 32v38l2 24 4 27 5 23 7 24 8 22 8 18 10 20 13 21 10 14 13 16 18 20 11 10 11 9 16 13 19 14 23 15 19 11 23 12 26 11 30 10 31 7 12 2 35 3h15l6-1 26-2 24-4 26-6 36-12 30-13 24-12 24-14 16-10 22-15 16-12 9-7 3 1 3 36 2 38 1 41 1 8v8l1 12 3 42v11l-6 9-4 5-10 8-14 8-10 4h-8l-26-6-39-10-101-25-19-5-12-5-6-5-7-10-7-12-11-11-11-5-7-2h-16l-16 5-8 4-9 2-15-5-162-66-128-52-24-10-10-6-6-7-2-5-3-17-6-10-9-8-11-7-4-5-2-5-2-42-5-83-1-34-2-36v-12l4-9 7-8 7-7 8-11 5-14v-15l-4-11-7-10-10-10-8-7-4-5-2-6-4-66-2-25-3-50-1-21 4-8 7-6 11-7 9-9 6-10 3-8 2-15 3-6 8-5 25-8 64-20 139-43 60-19z" fill="#ffffff" opacity="0.9" />
-                    <path transform="translate(1028,1195)" d="m0 0h8l8 2 9 5 7 7 4 9 1 9-4 11-6 8-8 6-8 3h-15l-10-5-7-7-4-9v-16l5-10 4-5 9-6z" fill="#ffffff" />
-                    <path transform="translate(238,330)" d="m0 0h9l12 3 9 5 5 5 3 7 1 10-3 10-6 8-7 6-6 3-11 2-13-4-8-6-4-5-4-9v-13l4-10 6-7 8-4z" fill="#ffffff" />
-                    <path transform="translate(693,194)" d="m0 0h8l8 4 7 9 3 6v12l-6 10-9 6-3 1h-13l-10-5-5-6-2-6v-10l5-10 7-6z" fill="#ffffff" />
-                </svg>
-                <div>
-                    <h1 class="text-xl font-black tracking-tighter italic uppercase leading-none">
-                        <span class="text-blue-500">CONSTELLATION</span> <span class="text-white">FITNESS</span>
-                    </h1>
-                    <p class="text-slate-600 text-[8px] font-black uppercase tracking-[0.3em] mt-2 italic">Performance Lifestyle</p>
+    <transition name="fade">
+        <div v-if="!session" class="flex-1 flex flex-col items-center justify-center p-10">
+            <div class="mb-12 text-center">
+                <div class="logo-container mb-6">
+                    <img src="c-logo.svg" class="brand-logo" alt="Constellation Logo">
                 </div>
+                <h1 class="text-3xl font-black tracking-tighter uppercase italic text-white leading-none">
+                    <span class="text-blue-500">CONSTELLATION</span> FITNESS
+                </h1>
+                <p class="text-slate-500 text-[10px] uppercase tracking-[0.4em] mt-4 font-black">Performance Lifestyle</p>
             </div>
-            <button @click="signOut" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-slate-500 border border-white/5 shadow-lg">
-                <i data-lucide="log-out" class="w-5 h-5"></i>
-            </button>
-        </header>
-
-        <div class="grid grid-cols-4 gap-2 mb-10">
-            <div class="status-pill rounded-2xl p-3 text-center">
-                <span class="block text-[7px] text-slate-500 font-black uppercase tracking-widest mb-1">CAL</span>
-                <span class="text-sm font-black text-white">{{ dailyTotals.cals }}</span>
-            </div>
-            <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-blue-500">
-                <span class="block text-[7px] text-blue-500 font-black uppercase tracking-widest mb-1">PRO</span>
-                <span class="text-sm font-black text-white">{{ dailyTotals.protein }}g</span>
-            </div>
-            <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-yellow-500">
-                <span class="block text-[7px] text-yellow-500 font-black uppercase tracking-widest mb-1">CHO</span>
-                <span class="text-sm font-black text-white">{{ dailyTotals.carbs }}g</span>
-            </div>
-            <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-red-500">
-                <span class="block text-[7px] text-red-500 font-black uppercase tracking-widest mb-1">FAT</span>
-                <span class="text-sm font-black text-white">{{ dailyTotals.fat }}g</span>
+            <div class="w-full max-w-sm space-y-4">
+                <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                <button @click="handleAuth" class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all tracking-tighter uppercase italic">LOG IN</button>
             </div>
         </div>
+    </transition>
 
-        <nav class="grid grid-cols-2 gap-4">
-            <a href="today.html" class="nav-card rounded-[2.5rem] flex flex-col items-center justify-center gap-4 shadow-xl">
-                <div class="p-5 bg-yellow-500/10 rounded-[1.5rem] text-yellow-500"><i data-lucide="zap" class="w-8 h-8"></i></div>
-                <div class="text-center">
-                    <span class="block text-sm font-black uppercase italic tracking-tighter">Readiness</span>
-                    <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Morning Pulse</span>
+    <transition name="fade">
+        <div v-if="session" class="flex-1 flex flex-col p-8">
+            <header class="flex justify-between items-start mb-8">
+                <div class="flex items-center gap-4">
+                    <img src="c-logo.svg" class="header-logo" alt="C">
+                    <div>
+                        <h1 class="text-xl font-black tracking-tighter italic uppercase leading-none">
+                            <span class="text-blue-500">CONSTELLATION</span> <span class="text-white">FITNESS</span>
+                        </h1>
+                        <p class="text-slate-600 text-[8px] font-black uppercase tracking-[0.3em] mt-2 italic">Performance Lifestyle</p>
+                    </div>
                 </div>
-            </a>
+                <button @click="signOut" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-slate-500 border border-white/5 shadow-lg">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>
+            </header>
 
-            <a href="gym.html" class="nav-card rounded-[2.5rem] flex flex-col items-center justify-center gap-4 shadow-xl">
-                <div class="p-5 bg-blue-500/10 rounded-[1.5rem] text-blue-500"><i data-lucide="dumbbell" class="w-8 h-8"></i></div>
-                <div class="text-center">
-                    <span class="block text-sm font-black uppercase italic tracking-tighter">Performance</span>
-                    <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Vertical Lifts</span>
+            <div class="grid grid-cols-4 gap-2 mb-10">
+                <div class="status-pill rounded-2xl p-3 text-center">
+                    <span class="block text-[7px] text-slate-500 font-black uppercase tracking-widest mb-1">CAL</span>
+                    <span class="text-sm font-black text-white">{{ dailyTotals.cals }}</span>
                 </div>
-            </a>
-
-            <a href="kitchen.html" class="nav-card rounded-[2.5rem] flex flex-col items-center justify-center gap-4 shadow-xl">
-                <div class="p-5 bg-green-500/10 rounded-[1.5rem] text-green-500"><i data-lucide="utensils" class="w-8 h-8"></i></div>
-                <div class="text-center">
-                    <span class="block text-sm font-black uppercase italic tracking-tighter">Kitchen</span>
-                    <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Neural Fuel</span>
+                <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-blue-500">
+                    <span class="block text-[7px] text-blue-500 font-black uppercase tracking-widest mb-1">PRO</span>
+                    <span class="text-sm font-black text-white">{{ dailyTotals.protein }}g</span>
                 </div>
-            </a>
-
-            <a href="tracker.html" class="nav-card rounded-[2.5rem] flex flex-col items-center justify-center gap-4 shadow-xl">
-                <div class="p-5 bg-orange-500/10 rounded-[1.5rem] text-orange-500"><i data-lucide="line-chart" class="w-8 h-8"></i></div>
-                <div class="text-center">
-                    <span class="block text-sm font-black uppercase italic tracking-tighter">Tracker</span>
-                    <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Supply & Stats</span>
+                <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-yellow-500">
+                    <span class="block text-[7px] text-yellow-500 font-black uppercase tracking-widest mb-1">CHO</span>
+                    <span class="text-sm font-black text-white">{{ dailyTotals.carbs }}g</span>
                 </div>
-            </a>
-        </nav>
+                <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-red-500">
+                    <span class="block text-[7px] text-red-500 font-black uppercase tracking-widest mb-1">FAT</span>
+                    <span class="text-sm font-black text-white">{{ dailyTotals.fat }}g</span>
+                </div>
+            </div>
 
-        <footer class="mt-auto pb-4 text-center">
-            <p class="text-[7px] text-slate-800 font-black uppercase tracking-[0.6em]">STRATEGIC PERFORMANCE v2.5</p>
-        </footer>
-    </div>
+            <nav class="grid grid-cols-2 gap-4">
+                <a href="today.html" class="nav-card flex flex-col items-center justify-center gap-4 shadow-xl">
+                    <div class="p-5 bg-yellow-500/10 rounded-[1.5rem] text-yellow-500"><i data-lucide="zap" class="w-8 h-8"></i></div>
+                    <div class="text-center">
+                        <span class="block text-sm font-black uppercase italic tracking-tighter">Readiness</span>
+                        <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Morning Pulse</span>
+                    </div>
+                </a>
+
+                <a href="gym.html" class="nav-card flex flex-col items-center justify-center gap-4 shadow-xl">
+                    <div class="p-5 bg-blue-500/10 rounded-[1.5rem] text-blue-500"><i data-lucide="dumbbell" class="w-8 h-8"></i></div>
+                    <div class="text-center">
+                        <span class="block text-sm font-black uppercase italic tracking-tighter">Performance</span>
+                        <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Vertical Lifts</span>
+                    </div>
+                </a>
+
+                <a href="kitchen.html" class="nav-card flex flex-col items-center justify-center gap-4 shadow-xl">
+                    <div class="p-5 bg-green-500/10 rounded-[1.5rem] text-green-500"><i data-lucide="utensils" class="w-8 h-8"></i></div>
+                    <div class="text-center">
+                        <span class="block text-sm font-black uppercase italic tracking-tighter">Kitchen</span>
+                        <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Neural Fuel</span>
+                    </div>
+                </a>
+
+                <a href="tracker.html" class="nav-card flex flex-col items-center justify-center gap-4 shadow-xl">
+                    <div class="p-5 bg-orange-500/10 rounded-[1.5rem] text-orange-500"><i data-lucide="line-chart" class="w-8 h-8"></i></div>
+                    <div class="text-center">
+                        <span class="block text-sm font-black uppercase italic tracking-tighter">Tracker</span>
+                        <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Supply & Stats</span>
+                    </div>
+                </a>
+            </nav>
+
+            <footer class="mt-auto pb-4 text-center">
+                <p class="text-[7px] text-slate-800 font-black uppercase tracking-[0.6em]">STRATEGIC PERFORMANCE v2.6</p>
+            </footer>
+        </div>
+    </transition>
 </div>
 
 <script>
