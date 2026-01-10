@@ -9,16 +9,35 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        [v-cloak] { display: none; }
+        [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; overscroll-behavior-y: contain; }
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
         .tab-active { color: #3b82f6; }
         .tab-active i { stroke-width: 3px; color: #3b82f6; }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        
+        /* Loading Overlay Mask */
+        .loading-mask {
+            position: fixed;
+            inset: 0;
+            background: #020617;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body class="font-sans antialiased">
 <div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32">
+    
+    <div v-if="initialLoading" class="loading-mask">
+        <div class="animate-pulse flex flex-col items-center gap-4">
+            <div class="w-10 h-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
+            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Synchronizing</p>
+        </div>
+    </div>
+
     <header class="flex justify-between items-center mb-10">
         <h1 class="text-3xl font-black italic text-green-500 uppercase">Kitchen</h1>
         <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg"><i data-lucide="layout-grid" class="w-5 h-5 text-slate-400"></i></a>
@@ -59,15 +78,22 @@
     const { createApp } = Vue;
     const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
     createApp({
-        data() { return { session: null, foodSearch: '', foodEntry: { cals: 0, protein: 0, carbs: 0, fat: 0 }, memory: [], filteredMemory: [], showMemory: false } },
-        async mounted() { const { data: { session } } = await _client.auth.getSession(); this.session = session; if (this.session) this.init(); lucide.createIcons(); },
+        data() { return { session: null, foodSearch: '', foodEntry: { cals: 0, protein: 0, carbs: 0, fat: 0 }, memory: [], filteredMemory: [], showMemory: false, initialLoading: true } },
+        async mounted() { 
+            const { data: { session } } = await _client.auth.getSession(); 
+            this.session = session; 
+            if (this.session) await this.init(); 
+            this.initialLoading = false;
+            this.$nextTick(() => lucide.createIcons());
+        },
         methods: {
             async init() { const { data: memory } = await _client.from('food_memory').select('*').order('use_count', { ascending: false }); this.memory = memory || []; },
             filterMemory() { this.showMemory = this.foodSearch.length > 1; this.filteredMemory = this.memory.filter(f => f.food_name.toLowerCase().includes(this.foodSearch.toLowerCase())).slice(0, 5); },
             selectFood(i) { this.foodSearch = i.food_name; this.foodEntry = { cals: i.calories, protein: i.protein, carbs: i.carbs, fat: i.fat }; this.showMemory = false; },
             async saveFood() { await _client.from('food_logs').insert([{ food_name: this.foodSearch, calories: this.foodEntry.cals, protein: this.foodEntry.protein, carbs: this.foodEntry.carbs, fat: this.foodEntry.fat, user_id: this.session.user.id }]); alert("Fuel Logged."); },
             aiScan() { alert("Vision Engine Initializing..."); }
-        }
+        },
+        updated() { lucide.createIcons(); }
     }).mount('#app');
 </script>
 </body>
