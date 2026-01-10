@@ -3,91 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Constellation Hub</title>
+    <title>Constellation Fit</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         [v-cloak] { display: none; }
-        body { background-color: #020617; color: white; }
-        .module-card { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); transition: all 0.3s ease; }
-        .module-card:active { transform: scale(0.95); background: rgba(59, 130, 246, 0.1); }
+        body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
+        
+        .nav-card { 
+            background: rgba(15, 23, 42, 0.7); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255,255,255,0.08);
+            aspect-ratio: 1 / 1;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-card:active { transform: scale(0.96); background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); }
+        
+        .status-pill {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
     </style>
 </head>
 <body class="font-sans antialiased">
 
-<div id="app" v-cloak class="min-h-screen flex flex-col p-8">
+<div id="app" v-cloak class="min-h-screen flex flex-col">
     
-    <div v-if="!session" class="flex-1 flex flex-col items-center justify-center">
-        <div class="mb-12 text-center">
-            <h1 class="text-5xl font-black tracking-tighter uppercase italic text-blue-500">Constellation</h1>
+    <div v-if="!session" class="flex-1 flex flex-col items-center justify-center p-8">
+        <div class="mb-16 text-center">
+            <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl">
+                <i data-lucide="sparkles" class="w-10 h-10 text-white"></i>
+            </div>
+            <h1 class="text-5xl font-black tracking-tighter uppercase italic text-white leading-none">CONSTELLATION</h1>
             <p class="text-slate-500 text-[10px] tracking-[0.4em] uppercase mt-4 font-black">Performance Cluster</p>
         </div>
         <div class="w-full max-w-sm space-y-4">
-            <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500">
-            <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500">
-            <button @click="handleAuth" class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl">LOG IN</button>
+            <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+            <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+            <button @click="handleAuth" class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all">LOG IN</button>
         </div>
     </div>
 
-    <div v-else class="space-y-6">
-        <header class="flex justify-between items-center mb-12">
-            <h1 class="text-3xl font-black italic text-blue-500">HUB</h1>
-            <button @click="signOut" class="text-slate-500"><i data-lucide="log-out"></i></button>
+    <div v-else class="flex-1 flex flex-col p-8">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-black tracking-tighter italic text-blue-500 uppercase leading-none">CONSTELLATION</h1>
+                <p class="text-[10px] text-slate-600 font-black uppercase tracking-[0.3em] mt-1 italic">Active Session</p>
+            </div>
+            <button @click="signOut" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-slate-500">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+            </button>
         </header>
 
-        <div class="grid grid-cols-1 gap-4">
-            <a href="today.html" class="module-card p-8 rounded-[2.5rem] flex items-center justify-between">
-                <div>
-                    <h2 class="text-2xl font-black uppercase italic">Readiness</h2>
-                    <p class="text-xs text-slate-500 font-bold uppercase tracking-widest">Morning Pulse</p>
-                </div>
-                <i data-lucide="zap" class="text-yellow-500 w-8 h-8"></i>
-            </a>
-
-            <a href="gym.html" class="module-card p-8 rounded-[2.5rem] flex items-center justify-between">
-                <div>
-                    <h2 class="text-2xl font-black uppercase italic">Performance</h2>
-                    <p class="text-xs text-slate-500 font-bold uppercase tracking-widest">Vertical Lifting</p>
-                </div>
-                <i data-lucide="dumbbell" class="text-blue-500 w-8 h-8"></i>
-            </a>
-
-            <a href="kitchen.html" class="module-card p-8 rounded-[2.5rem] flex items-center justify-between">
-                <div>
-                    <h2 class="text-2xl font-black uppercase italic">Kitchen</h2>
-                    <p class="text-xs text-slate-500 font-bold uppercase tracking-widest">AI Fuel Logic</p>
-                </div>
-                <i data-lucide="utensils" class="text-green-500 w-8 h-8"></i>
-            </a>
-
-            <a href="tracker.html" class="module-card p-8 rounded-[2.5rem] flex items-center justify-between">
-                <div>
-                    <h2 class="text-2xl font-black uppercase italic">Tracker</h2>
-                    <p class="text-xs text-slate-500 font-bold uppercase tracking-widest">Supply & Stats</p>
-                </div>
-                <i data-lucide="line-chart" class="text-orange-500 w-8 h-8"></i>
-            </a>
+        <div class="grid grid-cols-4 gap-2 mb-10">
+            <div class="status-pill rounded-2xl p-3 text-center">
+                <span class="block text-[7px] text-slate-500 font-black uppercase tracking-widest mb-1">Cals</span>
+                <span class="text-sm font-black text-white">{{ dailyTotals.cals }}</span>
+            </div>
+            <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-blue-500/50">
+                <span class="block text-[7px] text-blue-500 font-black uppercase tracking-widest mb-1">Prot</span>
+                <span class="text-sm font-black text-white">{{ dailyTotals.protein }}g</span>
+            </div>
+            <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-yellow-500/50">
+                <span class="block text-[7px] text-yellow-500 font-black uppercase tracking-widest mb-1">Carb</span>
+                <span class="text-sm font-black text-white">{{ dailyTotals.carbs }}g</span>
+            </div>
+            <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-red-500/50">
+                <span class="block text-[7px] text-red-500 font-black uppercase tracking-widest mb-1">Fat</span>
+                <span class="text-sm font-black text-white">{{ dailyTotals.fat }}g</span>
+            </div>
         </div>
+
+        <nav class="grid grid-cols-2 gap-4">
+            <a href="today.html" class="nav-card rounded-[2rem] flex flex-col items-center justify-center gap-4 shadow-xl">
+                <div class="p-4 bg-yellow-500/10 rounded-2xl text-yellow-500"><i data-lucide="zap"></i></div>
+                <div class="text-center">
+                    <span class="block text-sm font-black uppercase italic tracking-tighter">Readiness</span>
+                    <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Morning Pulse</span>
+                </div>
+            </a>
+
+            <a href="gym.html" class="nav-card rounded-[2rem] flex flex-col items-center justify-center gap-4 shadow-xl">
+                <div class="p-4 bg-blue-500/10 rounded-2xl text-blue-500"><i data-lucide="dumbbell"></i></div>
+                <div class="text-center">
+                    <span class="block text-sm font-black uppercase italic tracking-tighter">Performance</span>
+                    <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Vertical Lifts</span>
+                </div>
+            </a>
+
+            <a href="kitchen.html" class="nav-card rounded-[2rem] flex flex-col items-center justify-center gap-4 shadow-xl">
+                <div class="p-4 bg-green-500/10 rounded-2xl text-green-500"><i data-lucide="utensils"></i></div>
+                <div class="text-center">
+                    <span class="block text-sm font-black uppercase italic tracking-tighter">Kitchen</span>
+                    <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Neural Fuel</span>
+                </div>
+            </a>
+
+            <a href="tracker.html" class="nav-card rounded-[2rem] flex flex-col items-center justify-center gap-4 shadow-xl">
+                <div class="p-4 bg-orange-500/10 rounded-2xl text-orange-500"><i data-lucide="line-chart"></i></div>
+                <div class="text-center">
+                    <span class="block text-sm font-black uppercase italic tracking-tighter">Tracker</span>
+                    <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Supply & Stats</span>
+                </div>
+            </a>
+        </nav>
+
+        <footer class="mt-auto pb-4 text-center">
+            <p class="text-[7px] text-slate-800 font-black uppercase tracking-[0.6em]">SMG STRATEGIC PERFORMANCE v2.1</p>
+        </footer>
     </div>
 </div>
 
 <script>
     const { createApp } = Vue;
-    const _powerhouse = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
+    const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
 
     createApp({
-        data() { return { session: null, auth: { email: '', password: '' } } },
+        data() { return { session: null, auth: { email: '', password: '' }, dailyLogs: [] } },
+        computed: {
+            dailyTotals() {
+                return this.dailyLogs.reduce((acc, log) => ({
+                    cals: acc.cals + (log.calories || 0), protein: acc.protein + (log.protein || 0),
+                    carbs: acc.carbs + (log.carbs || 0), fat: acc.fat + (log.fat || 0)
+                }), { cals: 0, protein: 0, carbs: 0, fat: 0 });
+            }
+        },
         async mounted() {
-            const { data: { session } } = await _powerhouse.auth.getSession();
+            const { data: { session } } = await _client.auth.getSession();
             this.session = session;
-            _powerhouse.auth.onAuthStateChange((_e, session) => { this.session = session; });
+            if (this.session) this.fetchDailyData();
+            _client.auth.onAuthStateChange((_e, session) => { this.session = session; if(session) this.fetchDailyData(); });
             lucide.createIcons();
         },
+        updated() { lucide.createIcons(); },
         methods: {
-            async handleAuth() { await _powerhouse.auth.signInWithPassword(this.auth); },
-            async signOut() { await _powerhouse.auth.signOut(); this.session = null; }
+            async handleAuth() {
+                const { error } = await _client.auth.signInWithPassword(this.auth);
+                if (error) alert(error.message);
+            },
+            async fetchDailyData() {
+                const today = new Date().toISOString().split('T')[0];
+                const { data } = await _client.from('food_logs').select('*').gte('created_at', today);
+                this.dailyLogs = data || [];
+            },
+            async signOut() { await _client.auth.signOut(); this.session = null; }
         }
     }).mount('#app');
 </script>
