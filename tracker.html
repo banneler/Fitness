@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Intelligence | Constellation</title>
+    <title>Tracker | Constellation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -38,8 +38,8 @@
     <div v-else>
         <header class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-3xl font-black italic text-purple-500 uppercase">Intelligence</h1>
-                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Analytics Engine</p>
+                <h1 class="text-3xl font-black italic text-purple-500 uppercase">Tracker</h1>
+                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Intelligence & Supply</p>
             </div>
             <div class="flex items-center gap-3">
                 <div v-if="streak > 0" class="glass px-3 py-1 rounded-full flex items-center gap-2 border-orange-500/20">
@@ -160,18 +160,26 @@
             </div>
         </main>
 
-        <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around p-4 safe-area-bottom z-[100]">
-            <a href="index.html" class="flex flex-col items-center px-4 text-slate-600 hover:text-white transition-all">
-                <i data-lucide="layout-grid" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Hub</span>
+        <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-between px-6 py-4 safe-area-bottom z-[100]">
+            <a href="index.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
+                <i data-lucide="layout-grid" class="w-6 h-6 mb-1"></i>
+                <span class="text-[8px] font-black uppercase italic tracking-widest">Hub</span>
             </a>
-            <a href="today.html" class="flex flex-col items-center px-4 text-slate-600 hover:text-white transition-all">
-                <i data-lucide="zap" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Ready</span>
+            <a href="today.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
+                <i data-lucide="calendar" class="w-6 h-6 mb-1"></i>
+                <span class="text-[8px] font-black uppercase italic tracking-widest">Today</span>
             </a>
-            <a href="gym.html" class="flex flex-col items-center px-4 text-slate-600 hover:text-white transition-all">
-                <i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Lift</span>
+            <a href="gym.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
+                <i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i>
+                <span class="text-[8px] font-black uppercase italic tracking-widest">Gym</span>
             </a>
-            <a href="#" class="flex flex-col items-center px-4 tab-active text-purple-500">
-                <i data-lucide="brain-circuit" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Intel</span>
+            <a href="kitchen.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
+                <i data-lucide="utensils" class="w-6 h-6 mb-1"></i>
+                <span class="text-[8px] font-black uppercase italic tracking-widest">Kitchen</span>
+            </a>
+            <a href="#" class="flex flex-col items-center tab-active text-purple-500">
+                <i data-lucide="brain-circuit" class="w-6 h-6 mb-1"></i>
+                <span class="text-[8px] font-black uppercase italic tracking-widest">Tracker</span>
             </a>
         </nav>
     </div>
@@ -179,7 +187,7 @@
 
 <script>
     const { createApp } = Vue;
-    // --- UPDATED SUPABASE URL & KEY ---
+    // --- SUPABASE KEYS INCLUDED ---
     const _client = supabase.createClient(
         'https://mvoyrchefjcpjkdtezmz.supabase.co', 
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
@@ -208,12 +216,9 @@
                 }), { cals: 0, protein: 0, carbs: 0, fat: 0 });
             },
             recentActivities() {
-                // Merging data is messy, so we just visualize the raw workout logs beautifully
-                // We filter duplicates by day/type to avoid spam
                 return this.rawWorkouts.slice(0, 5).map(w => {
                     const isRecovery = w.exercise_name.startsWith('Recovery:');
                     const name = isRecovery ? w.exercise_name.replace('Recovery: ', '') : w.exercise_name;
-                    // Try to extract duration if it's recovery (stored in first set reps)
                     let detail = "Session";
                     if(isRecovery && w.sets_data && w.sets_data[0]) {
                         detail = w.sets_data[0].reps + " mins";
@@ -260,48 +265,29 @@
                 this.inventory = data || [];
             },
             async fetchWorkouts() {
-                // Fetch recent workouts for feed AND streak
-                const { data } = await _client.from('workout_logs')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+                const { data } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false });
                 this.rawWorkouts = data || [];
                 this.calculateStreak(data);
             },
             calculateStreak(logs) {
                 if (!logs || !logs.length) return;
-                
-                // Get unique dates YYYY-MM-DD
                 const uniqueDates = [...new Set(logs.map(l => l.created_at.split('T')[0]))].sort().reverse();
-                
                 let streak = 0;
                 let today = new Date().toISOString().split('T')[0];
                 let yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
                 
-                // Check if active today
                 if (uniqueDates.includes(today)) {
                     streak++;
-                    // Iterate backwards from yesterday
                     let checkDate = new Date(Date.now() - 86400000);
                     while (true) {
                         let dateStr = checkDate.toISOString().split('T')[0];
-                        if (uniqueDates.includes(dateStr)) {
-                            streak++;
-                            checkDate.setDate(checkDate.getDate() - 1);
-                        } else {
-                            break;
-                        }
+                        if (uniqueDates.includes(dateStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); } else break;
                     }
                 } else if (uniqueDates.includes(yesterday)) {
-                    // Allowed to miss today if it's early, streak holds from yesterday
                      let checkDate = new Date(Date.now() - 86400000);
                      while (true) {
                         let dateStr = checkDate.toISOString().split('T')[0];
-                        if (uniqueDates.includes(dateStr)) {
-                            streak++;
-                            checkDate.setDate(checkDate.getDate() - 1);
-                        } else {
-                            break;
-                        }
+                        if (uniqueDates.includes(dateStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); } else break;
                     }
                 }
                 this.streak = streak;
@@ -312,8 +298,6 @@
                 const duration = prompt("Duration (minutes):");
                 if (!duration) return;
 
-                // Hack: We store Recovery in workout_logs with specific naming convention
-                // We use 'reps' field to store duration in minutes for the first 'set'
                 const payload = {
                     exercise_name: `Recovery: ${name}`,
                     user_id: this.session.user.id,
@@ -322,19 +306,13 @@
 
                 await _client.from('workout_logs').insert([payload]);
                 alert("Recovery Session Logged.");
-                this.fetchWorkouts(); // Refresh feed & streak
+                this.fetchWorkouts();
             },
-            // Inventory Methods
             async addItem() {
                 const name = prompt("Item Name:");
                 const servings = prompt("Total Servings:");
                 if (name && servings) {
-                    await _client.from('inventory').insert([{
-                        item_name: name,
-                        total_servings: parseInt(servings),
-                        servings_left: parseInt(servings),
-                        user_id: this.session.user.id
-                    }]);
+                    await _client.from('inventory').insert([{ item_name: name, total_servings: parseInt(servings), servings_left: parseInt(servings), user_id: this.session.user.id }]);
                     this.fetchInventory();
                 }
             },
