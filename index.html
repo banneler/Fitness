@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Constellation Fit Pro</title>
+    <title>Constellation Fit Ultimate</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
@@ -14,29 +14,30 @@
         [v-cloak] { display: none !important; }
         body { -webkit-tap-highlight-color: transparent; background-color: #020617; color: white; overscroll-behavior-y: contain; }
         
-        .glass { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
-        .glass-dark { background: rgba(2, 6, 23, 0.6); backdrop-filter: blur(10px); }
+        /* Pro Glass Design */
+        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .glass-header { background: rgba(2, 6, 23, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); }
         
-        .tab-active { color: #3b82f6; transform: translateY(-2px); }
-        .tab-active i { stroke-width: 3px; filter: drop-shadow(0 0 8px #3b82f6); }
+        /* Tab Transitions */
+        .tab-active { color: #3b82f6; }
+        .tab-active i { stroke-width: 3px; filter: drop-shadow(0 0 10px #3b82f6); }
         
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
         
-        .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-        .btn-primary:active { transform: scale(0.96); opacity: 0.9; }
-
-        @keyframes pulse-blue { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .syncing { animation: pulse-blue 1.5s infinite; }
+        .btn-glow { box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.5); }
+        
+        /* Custom Scrollbar for Pro Feel */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
-<body class="font-sans antialiased">
+<body class="font-sans antialiased selection:bg-blue-500/30">
 
 <div id="app" v-cloak class="min-h-screen flex flex-col">
     
     <transition name="toast">
-        <div v-if="toast.show" class="fixed top-14 left-4 right-4 z-[100] flex justify-center pointer-events-none">
-            <div class="glass px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-4 border-l-4 border-blue-500 pointer-events-auto">
+        <div v-if="toast.show" class="fixed top-14 left-6 right-6 z-[100] flex justify-center pointer-events-none">
+            <div class="glass px-6 py-4 rounded-[1.5rem] shadow-2xl flex items-center gap-4 border-l-4 border-blue-500 pointer-events-auto">
                 <i :data-lucide="toast.icon" class="w-5 h-5 text-blue-500"></i>
                 <p class="text-sm font-black uppercase tracking-tight">{{ toast.message }}</p>
             </div>
@@ -45,139 +46,146 @@
 
     <div v-if="!session" class="flex-1 flex flex-col items-center justify-center px-10">
         <div class="mb-16 text-center">
-            <div class="w-24 h-24 bg-blue-600 rounded-[2.5rem] mx-auto mb-8 flex items-center justify-center shadow-[0_0_50px_-12px_rgba(37,99,235,0.5)]">
+            <div class="w-24 h-24 bg-blue-600 rounded-[2.5rem] mx-auto mb-8 flex items-center justify-center shadow-2xl">
                 <i data-lucide="sparkles" class="w-12 h-12 text-white"></i>
             </div>
-            <h1 class="text-5xl font-black tracking-tighter uppercase italic leading-none">Constellation</h1>
-            <p class="text-slate-500 text-[10px] tracking-[0.5em] uppercase mt-4 font-black">Performance Architecture</p>
+            <h1 class="text-5xl font-black tracking-tighter uppercase italic">Constellation</h1>
+            <p class="text-slate-500 text-[10px] tracking-[0.5em] uppercase mt-4 font-black">Performance Management</p>
         </div>
         
         <div class="w-full max-w-sm space-y-4">
-            <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900/50 border border-slate-800 rounded-3xl py-5 px-8 outline-none focus:border-blue-500 transition-all">
-            <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900/50 border border-slate-800 rounded-3xl py-5 px-8 outline-none focus:border-blue-500 transition-all">
-            <button @click="handleAuth" :disabled="loading" class="btn-primary w-full py-5 rounded-3xl font-black text-xl shadow-2xl">
-                {{ authMode === 'login' ? 'SIGN IN' : 'INITIALIZE' }}
+            <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+            <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+            <button @click="handleAuth" :disabled="loading" class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl active:scale-95 transition-all shadow-xl">
+                {{ authMode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT' }}
             </button>
-            <button @click="authMode = authMode === 'login' ? 'signup' : 'login'" class="w-full text-slate-500 text-xs font-black uppercase tracking-widest py-2 italic opacity-60">
-                Switch to {{ authMode === 'login' ? 'Create Account' : 'Login' }}
+            <button @click="authMode = authMode === 'login' ? 'signup' : 'login'" class="w-full text-slate-500 text-xs font-black uppercase tracking-widest py-2 italic underline">
+                Switch to {{ authMode === 'login' ? 'Sign Up' : 'Login' }}
             </button>
         </div>
     </div>
 
     <div v-else class="flex-1 flex flex-col pb-28">
         
-        <header class="p-8 pb-4 flex justify-between items-center">
+        <header class="p-8 pb-4 flex justify-between items-center glass-header sticky top-0 z-[50]">
             <div>
                 <h1 class="text-2xl font-black tracking-tighter text-blue-500 uppercase italic">Constellation</h1>
-                <div class="flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                    <span class="text-slate-500 text-[10px] uppercase tracking-widest font-black italic">{{ activeTab }}</span>
-                </div>
+                <p class="text-slate-500 text-[10px] uppercase tracking-widest font-black italic">{{ activeTab }}</p>
             </div>
-            <button @click="signOut" class="w-12 h-12 rounded-2xl glass flex items-center justify-center">
+            <button @click="signOut" class="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center border border-slate-800">
                 <i data-lucide="log-out" class="w-5 h-5 text-slate-400"></i>
             </button>
         </header>
 
-        <main class="flex-1 px-6 overflow-y-auto space-y-10">
+        <main class="flex-1 px-6 overflow-y-auto space-y-10 pt-6">
             
             <div v-if="activeTab === 'today'" class="space-y-10">
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="glass rounded-[2rem] p-6">
-                        <span class="block text-[10px] text-slate-500 uppercase font-black mb-2 tracking-widest">Calories</span>
-                        <div class="flex items-baseline gap-1">
-                            <span class="text-2xl font-black">{{ dailyCals }}</span>
-                            <span class="text-[10px] text-slate-600">kcal</span>
-                        </div>
+                    <div class="glass rounded-[2rem] p-6 text-center">
+                        <span class="block text-[10px] text-slate-500 uppercase font-black mb-1">Calories</span>
+                        <span class="text-3xl font-black text-white">{{ dailyCals }}</span>
                         <div class="w-full bg-slate-950 h-1.5 rounded-full mt-4 overflow-hidden">
-                            <div class="bg-green-500 h-full transition-all duration-1000" :style="{ width: Math.min(dailyCals/2500*100, 100) + '%' }"></div>
+                            <div class="bg-green-500 h-full" :style="{ width: Math.min(dailyCals/2500*100, 100) + '%' }"></div>
                         </div>
                     </div>
-                    <div class="glass rounded-[2rem] p-6">
-                        <span class="block text-[10px] text-slate-500 uppercase font-black mb-2 tracking-widest">Protein</span>
-                        <div class="flex items-baseline gap-1">
-                            <span class="text-2xl font-black">{{ dailyProtein }}</span>
-                            <span class="text-[10px] text-slate-600">grams</span>
-                        </div>
+                    <div class="glass rounded-[2rem] p-6 text-center">
+                        <span class="block text-[10px] text-slate-500 uppercase font-black mb-1">Protein</span>
+                        <span class="text-3xl font-black text-white">{{ dailyProtein }}<span class="text-xs text-slate-600 font-bold ml-1">g</span></span>
                         <div class="w-full bg-slate-950 h-1.5 rounded-full mt-4 overflow-hidden">
-                            <div class="bg-blue-500 h-full transition-all duration-1000" :style="{ width: Math.min(dailyProtein/200*100, 100) + '%' }"></div>
+                            <div class="bg-blue-500 h-full" :style="{ width: Math.min(dailyProtein/200*100, 100) + '%' }"></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="glass rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-8 opacity-5">
-                        <i data-lucide="zap" class="w-32 h-32"></i>
-                    </div>
+                <div class="glass rounded-[2.5rem] p-8 shadow-2xl">
                     <h3 class="text-white text-lg font-black italic uppercase mb-8 flex items-center gap-3">
-                        <i data-lucide="activity" class="text-blue-500 w-5 h-5"></i>
-                        Morning Readiness
+                        <i data-lucide="zap" class="text-blue-500 w-5 h-5"></i>
+                        Morning Metrics
                     </h3>
                     <div class="grid grid-cols-2 gap-6">
-                        <div v-for="label in ['Weight', 'Sleep', 'Energy', 'HR']" :key="label" class="glass-dark p-5 rounded-3xl border border-white/5">
-                            <span class="block text-[10px] text-slate-600 uppercase font-black mb-1 tracking-widest italic">{{ label }}</span>
-                            <input type="number" step="0.1" v-model="metrics[label]" class="bg-transparent border-none text-4xl font-black w-full text-white p-0 outline-none" placeholder="0">
+                        <div v-for="label in ['Weight', 'Sleep', 'Energy', 'HR']" :key="label" class="bg-slate-950/50 p-5 rounded-[1.5rem] border border-white/5">
+                            <span class="block text-[10px] text-slate-600 uppercase font-black mb-1 tracking-widest">{{ label }}</span>
+                            <input type="number" step="0.1" v-model="metrics[label]" class="bg-transparent border-none text-4xl font-black w-full text-white p-0" placeholder="0">
                         </div>
                     </div>
-                    <button @click="saveMetrics" :disabled="loading" class="btn-primary w-full mt-10 py-6 rounded-[2rem] font-black text-xl tracking-tighter shadow-xl">
-                        {{ loading ? 'SYNCING DATA...' : 'COMMIT LOG' }}
-                    </button>
+                    <button @click="saveMetrics" class="w-full mt-10 bg-blue-600 py-6 rounded-[2rem] font-black text-xl active:scale-95 transition-all shadow-xl">COMMIT DATA</button>
+                </div>
+
+                <div v-if="readinessHistory.length" class="space-y-4">
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 italic">Readiness History</h4>
+                    <div v-for="log in readinessHistory.slice(0, 5)" :key="log.id" class="glass rounded-3xl p-6 flex justify-between items-center">
+                        <div>
+                            <span class="block text-xs font-black text-slate-400 uppercase tracking-tight">{{ formatDate(log.created_at) }}</span>
+                            <span class="text-2xl font-black text-blue-500">{{ log.weight }} <span class="text-[10px] text-slate-600">lbs</span></span>
+                        </div>
+                        <div class="text-right flex gap-6">
+                            <div class="text-center"><span class="block text-[8px] text-slate-600 uppercase font-bold">Sleep</span><span class="font-black text-purple-400">{{ log.sleep_quality }}/10</span></div>
+                            <div class="text-center"><span class="block text-[8px] text-slate-600 uppercase font-bold">HR</span><span class="font-black text-red-500">{{ log.resting_hr }}</span></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div v-if="activeTab === 'gym'" class="space-y-8">
-                <div v-if="!activeWorkout" class="glass rounded-[2.5rem] p-10 text-center shadow-2xl border-b-4 border-blue-600">
-                    <div class="w-20 h-20 bg-slate-900 rounded-[2rem] mx-auto mb-8 flex items-center justify-center">
-                        <i data-lucide="dumbbell" class="w-10 h-10 text-blue-500"></i>
-                    </div>
-                    <h2 class="text-2xl font-black uppercase italic mb-8">Initiate Session</h2>
-                    <select v-model="selectedExercise" class="w-full bg-slate-950 border border-slate-800 rounded-2xl py-5 px-6 mb-8 text-white outline-none appearance-none font-bold">
-                        <option :value="null">Select Movement Pattern</option>
+                <div v-if="!activeWorkout" class="glass rounded-[2.5rem] p-10 text-center shadow-2xl">
+                    <i data-lucide="dumbbell" class="w-16 h-16 text-blue-500 mx-auto mb-6"></i>
+                    <h2 class="text-2xl font-black uppercase italic mb-8">Initiate Vertical Session</h2>
+                    <select v-model="selectedExercise" class="w-full bg-slate-950 border border-slate-800 rounded-3xl py-6 px-8 mb-8 text-white outline-none font-bold text-lg">
+                        <option :value="null">Select Movement</option>
                         <option v-for="ex in exercises" :key="ex.id" :value="ex.name">{{ ex.name }}</option>
                     </select>
-                    <button @click="startWorkout" :disabled="!selectedExercise" class="w-full bg-white text-black py-6 rounded-[2rem] font-black text-xl disabled:opacity-20 transition-all">START VERTICAL</button>
+                    <button @click="startWorkout" :disabled="!selectedExercise" class="w-full bg-white text-black py-6 rounded-[2rem] font-black text-xl active:scale-95 disabled:opacity-30">START LIFTING</button>
                 </div>
 
-                <div v-else class="glass rounded-[2.5rem] p-8 shadow-2xl">
-                    <div class="flex justify-between items-center mb-10">
-                        <h3 class="text-3xl font-black uppercase italic text-blue-500 leading-none">{{ activeWorkout.name }}</h3>
-                        <button @click="activeWorkout = null" class="w-12 h-12 glass-dark rounded-full flex items-center justify-center"><i data-lucide="x" class="w-6 h-6 text-slate-500"></i></button>
+                <div v-else class="glass rounded-[2.5rem] p-8 shadow-2xl border-t-4 border-blue-600">
+                    <div class="flex justify-between items-center mb-8">
+                        <h3 class="text-3xl font-black uppercase italic text-blue-500">{{ activeWorkout.name }}</h3>
+                        <button @click="activeWorkout = null" class="w-12 h-12 bg-slate-900 rounded-full flex items-center justify-center"><i data-lucide="x" class="w-6 h-6 text-slate-500"></i></button>
                     </div>
 
-                    <transition-group name="fade" tag="div">
-                        <div v-for="(set, index) in activeWorkout.sets" :key="index" class="flex items-center gap-4 mb-6">
-                            <div class="w-12 h-12 flex items-center justify-center bg-slate-950 rounded-2xl font-black text-slate-700">{{ index + 1 }}</div>
-                            <input type="number" v-model="set.weight" placeholder="lbs" class="w-full bg-slate-950/50 border-none rounded-2xl py-5 text-center font-black text-2xl text-white focus:ring-2 focus:ring-blue-500">
-                            <input type="number" v-model="set.reps" placeholder="reps" class="w-full bg-slate-950/50 border-none rounded-2xl py-5 text-center font-black text-2xl text-white focus:ring-2 focus:ring-blue-500">
-                            <button @click="set.done = !set.done" :class="set.done ? 'bg-green-600 shadow-[0_0_20px_rgba(22,163,74,0.4)]' : 'bg-slate-800'" class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all">
-                                <i data-lucide="check" class="w-8 h-8 text-white"></i>
-                            </button>
-                        </div>
-                    </transition-group>
+                    <div v-for="(set, index) in activeWorkout.sets" :key="index" class="flex items-center gap-4 mb-6">
+                        <div class="w-14 h-14 flex items-center justify-center bg-slate-950 rounded-2xl font-black text-slate-700 text-lg">{{ index + 1 }}</div>
+                        <input type="number" v-model="set.weight" placeholder="lbs" class="w-full bg-slate-950 border-none rounded-2xl py-5 text-center font-black text-2xl text-white">
+                        <input type="number" v-model="set.reps" placeholder="reps" class="w-full bg-slate-950 border-none rounded-2xl py-5 text-center font-black text-2xl text-white">
+                        <button @click="set.done = !set.done" :class="set.done ? 'bg-green-600' : 'bg-slate-800'" class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all"><i data-lucide="check" class="w-8 h-8 text-white"></i></button>
+                    </div>
 
-                    <button @click="activeWorkout.sets.push({weight:null, reps:null, done:false})" class="w-full py-5 mb-10 border-2 border-dashed border-slate-800 rounded-3xl text-slate-600 font-black text-[10px] uppercase tracking-[0.3em] hover:text-blue-500 transition-colors">+ Add New Set</button>
+                    <button @click="activeWorkout.sets.push({weight:null, reps:null, done:false})" class="w-full py-5 mb-10 border-2 border-dashed border-slate-800 rounded-3xl text-slate-600 font-black text-xs uppercase tracking-[0.3em]">+ Add Set</button>
                     
-                    <button @click="finishWorkout" :disabled="loading" class="btn-primary w-full py-7 rounded-[2.5rem] font-black text-2xl shadow-[0_20px_50px_rgba(37,99,235,0.3)]">
-                        {{ loading ? 'SYNCING SESSION...' : 'COMPLETE LIFT' }}
-                    </button>
+                    <button @click="finishWorkout" class="w-full bg-blue-600 py-7 rounded-[2.5rem] font-black text-2xl shadow-xl shadow-blue-900/40">FINISH WORKOUT</button>
+                </div>
+
+                <div v-if="workoutHistory.length && !activeWorkout" class="space-y-4 px-2">
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 italic">Recent Training</h4>
+                    <div v-for="log in workoutHistory.slice(0, 5)" :key="log.id" class="glass rounded-3xl p-6 border-l-4 border-blue-500/50">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-black text-lg text-blue-500 uppercase italic">{{ log.exercise_name }}</span>
+                            <span class="text-[10px] text-slate-500 font-bold">{{ formatDate(log.created_at) }}</span>
+                        </div>
+                        <div class="flex gap-2 flex-wrap">
+                            <div v-for="(set, i) in log.sets_data" :key="i" class="bg-slate-900 px-4 py-2 rounded-xl text-xs font-black text-slate-300">
+                                {{ set.weight }}<span class="text-[8px] text-slate-600 mx-1">x</span>{{ set.reps }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div v-if="activeTab === 'kitchen'" class="space-y-8">
                 <div class="glass rounded-[2.5rem] p-8 shadow-2xl">
-                    <h3 class="text-white text-lg font-black italic uppercase mb-8 flex items-center gap-3">
+                    <div class="flex items-center gap-3 mb-8">
                         <i data-lucide="utensils" class="text-green-500 w-5 h-5"></i>
-                        Fuel Intake
-                    </h3>
+                        <h3 class="text-white text-lg font-black italic uppercase tracking-tight">Fuel Diary</h3>
+                    </div>
 
-                    <div class="relative mb-8">
-                        <input type="text" v-model="foodSearch" @input="filterMemory" placeholder="Search Neural Memory..." class="w-full bg-slate-950 border border-slate-800 rounded-3xl py-6 px-8 outline-none focus:ring-2 focus:ring-blue-500 font-bold text-lg">
+                    <div class="relative mb-6">
+                        <input type="text" v-model="foodSearch" @input="filterMemory" placeholder="Search Memory..." class="w-full bg-slate-950 border border-slate-800 rounded-3xl py-6 px-8 outline-none focus:ring-2 focus:ring-blue-500 font-bold text-lg">
                         
-                        <div v-if="showMemory && filteredMemory.length" class="absolute left-0 right-0 mt-3 glass rounded-3xl overflow-hidden z-[50] shadow-2xl border border-white/10">
+                        <div v-if="showMemory && filteredMemory.length" class="absolute left-0 right-0 mt-3 glass rounded-3xl overflow-hidden z-[50] shadow-2xl">
                             <button v-for="item in filteredMemory" :key="item.id" @click="selectFood(item)" class="w-full px-8 py-5 text-left border-b border-white/5 hover:bg-blue-500/10 flex justify-between items-center transition-all">
                                 <div>
                                     <span class="block font-black text-sm uppercase italic">{{ item.food_name }}</span>
-                                    <span class="text-[10px] text-slate-500 uppercase font-black tracking-widest">{{ item.calories }} kcal | {{ item.protein }}g protein</span>
+                                    <span class="text-[10px] text-slate-500 uppercase font-black">{{ item.calories }} cal | {{ item.protein }}g prot</span>
                                 </div>
                                 <i data-lucide="zap" class="w-4 h-4 text-blue-500"></i>
                             </button>
@@ -185,29 +193,30 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-6 mb-8">
-                        <div class="glass-dark p-6 rounded-3xl border border-white/5 text-center">
-                            <span class="block text-[10px] text-slate-600 uppercase font-black mb-1 italic tracking-widest">Cals</span>
-                            <input type="number" v-model="foodEntry.cals" class="bg-transparent border-none text-3xl font-black w-full text-white text-center p-0 outline-none">
+                        <div class="bg-slate-950/50 p-6 rounded-3xl border border-white/5">
+                            <span class="block text-[10px] text-slate-600 uppercase font-black mb-1 italic">Calories</span>
+                            <input type="number" v-model="foodEntry.cals" class="bg-transparent border-none text-3xl font-black w-full text-white p-0">
                         </div>
-                        <div class="glass-dark p-6 rounded-3xl border border-white/5 text-center">
-                            <span class="block text-[10px] text-slate-600 uppercase font-black mb-1 italic tracking-widest">Protein</span>
-                            <input type="number" v-model="foodEntry.protein" class="bg-transparent border-none text-3xl font-black w-full text-white text-center p-0 outline-none">
+                        <div class="bg-slate-950/50 p-6 rounded-3xl border border-white/5">
+                            <span class="block text-[10px] text-slate-600 uppercase font-black mb-1 italic">Prot (g)</span>
+                            <input type="number" v-model="foodEntry.protein" class="bg-transparent border-none text-3xl font-black w-full text-white p-0">
                         </div>
                     </div>
 
-                    <button @click="saveFood" :disabled="loading || !foodSearch" class="w-full bg-green-600 py-6 rounded-[2rem] font-black text-xl shadow-xl shadow-green-900/20 active:scale-95 transition-all">
-                        LOG FUEL ENTRY
-                    </button>
+                    <button @click="saveFood" class="w-full bg-green-600 py-6 rounded-[2rem] font-black text-xl active:scale-95 transition-all shadow-xl">LOG FUEL</button>
                 </div>
 
                 <div v-if="dailyLogs.length" class="space-y-4 px-2">
-                    <h4 class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Daily History</h4>
-                    <div class="glass rounded-[2rem] p-6 space-y-2">
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 italic">Today's Intake</h4>
+                    <div class="glass rounded-[2rem] p-8 space-y-4">
                         <div v-for="log in dailyLogs" :key="log.id" class="flex justify-between items-center py-4 border-b border-white/5 last:border-0">
-                            <span class="font-black text-sm uppercase italic text-slate-200">{{ log.food_name }}</span>
+                            <div>
+                                <span class="font-black text-sm uppercase italic">{{ log.food_name }}</span>
+                                <span class="block text-[10px] text-slate-600 font-bold uppercase tracking-tight">{{ formatDate(log.created_at) }}</span>
+                            </div>
                             <div class="text-right">
-                                <span class="block text-[10px] font-mono text-slate-500">{{ log.calories }}c</span>
-                                <span class="block text-[10px] font-black text-green-500">{{ log.protein }}p</span>
+                                <span class="block text-xs font-black text-slate-200">{{ log.calories }} cal</span>
+                                <span class="block text-[9px] font-black text-green-500 uppercase">{{ log.protein }}g protein</span>
                             </div>
                         </div>
                     </div>
@@ -219,36 +228,40 @@
                     <div class="flex justify-between items-center mb-10">
                         <div class="flex items-center gap-3">
                             <i data-lucide="package" class="text-orange-500 w-6 h-6"></i>
-                            <h3 class="text-white text-xl font-black italic uppercase">Inventory</h3>
+                            <h3 class="text-white text-xl font-black italic uppercase">Supply Chain</h3>
                         </div>
-                        <button @click="addInventoryItem" class="bg-slate-900 px-6 py-3 rounded-2xl text-blue-500 text-[10px] font-black uppercase tracking-widest border border-slate-800">+ New Supply</button>
+                        <button @click="addInventoryItem" class="bg-slate-900 px-6 py-3 rounded-2xl text-blue-500 text-[10px] font-black uppercase border border-slate-800 tracking-widest">+ Add</button>
                     </div>
 
-                    <div v-for="item in inventory" :key="item.id" class="glass-dark p-8 rounded-[2rem] border border-white/5 mb-6 shadow-inner">
+                    <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-8 rounded-3xl border border-white/5 mb-6">
                         <div class="flex justify-between items-center mb-6">
                             <div>
-                                <span class="font-black text-slate-200 uppercase text-xs italic tracking-widest block mb-1">{{ item.item_name }}</span>
-                                <span class="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Strategic Reserve</span>
+                                <span class="font-black text-slate-200 uppercase text-xs italic tracking-widest">{{ item.item_name }}</span>
                             </div>
                             <div class="text-right">
                                 <span :class="item.servings_left < 5 ? 'text-red-500' : 'text-blue-400'" class="font-black text-4xl block leading-none">
                                     {{ Math.floor(item.servings_left) }}
                                 </span>
-                                <span class="text-[8px] text-slate-500 uppercase font-black italic tracking-widest">Doses Remaining</span>
+                                <span class="text-[8px] text-slate-600 uppercase font-black">Doses Left</span>
                             </div>
                         </div>
-                        <div class="w-full bg-slate-950 h-3 rounded-full overflow-hidden shadow-inner">
-                            <div class="bg-blue-600 h-full transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(37,99,235,0.4)]" :style="{ width: (item.servings_left / item.total_servings * 100) + '%' }"></div>
+                        <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden">
+                            <div class="bg-blue-600 h-full transition-all duration-1000" :style="{ width: (item.servings_left / item.total_servings * 100) + '%' }"></div>
                         </div>
                     </div>
+                </div>
+                
+                <div class="glass rounded-[2.5rem] p-10 text-center opacity-30 border-2 border-dashed border-slate-800">
+                    <i data-lucide="ruler" class="w-10 h-10 mx-auto mb-4 text-slate-700"></i>
+                    <p class="text-[10px] font-black uppercase tracking-widest">Anthropometrics Module Pending</p>
                 </div>
             </div>
         </main>
 
-        <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 flex justify-around p-4 safe-area-bottom z-[100]">
-            <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" :class="{'tab-active': activeTab === tab.id}" class="flex flex-col items-center px-6 py-2 transition-all duration-300">
-                <i :data-lucide="tab.icon" class="w-6 h-6 mb-2 text-slate-500 transition-colors"></i>
-                <span class="text-[9px] font-black uppercase tracking-[0.2em] italic">{{ tab.id }}</span>
+        <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around p-4 safe-area-bottom z-[100]">
+            <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" :class="{'tab-active': activeTab === tab.id}" class="flex flex-col items-center px-6 py-2 transition-all">
+                <i :data-lucide="tab.icon" class="w-6 h-6 mb-2 text-slate-600 transition-colors"></i>
+                <span class="text-[8px] font-black uppercase tracking-[0.2em] italic">{{ tab.id }}</span>
             </button>
         </nav>
     </div>
@@ -263,10 +276,17 @@
             return {
                 session: null, authMode: 'login', loading: false, activeTab: 'today',
                 auth: { email: '', password: '' }, toast: { show: false, message: '', icon: 'check-circle' },
-                metrics: { Weight: null, Sleep: null, Energy: null, HR: null }, readinessHistory: [],
+                
+                metrics: { Weight: null, Sleep: null, Energy: null, HR: null },
+                readinessHistory: [],
+                
                 exercises: [], selectedExercise: null, activeWorkout: null, workoutHistory: [],
-                foodSearch: '', foodEntry: { cals: null, protein: null }, foodMemory: [], filteredMemory: [], showMemory: false, dailyLogs: [],
+                
+                foodSearch: '', foodEntry: { cals: null, protein: null },
+                foodMemory: [], filteredMemory: [], showMemory: false, dailyLogs: [],
+                
                 inventory: [],
+                
                 tabs: [
                     { id: 'today', icon: 'zap' },
                     { id: 'gym', icon: 'dumbbell' },
@@ -283,60 +303,120 @@
             const { data: { session } } = await _client.auth.getSession();
             this.session = session;
             if (this.session) this.initApp();
-            _client.auth.onAuthStateChange((_event, session) => { this.session = session; if (session) this.initApp(); });
+            
+            _client.auth.onAuthStateChange((_event, session) => {
+                this.session = session;
+                if (session) this.initApp();
+            });
             lucide.createIcons();
         },
         updated() { lucide.createIcons(); },
         methods: {
-            showToast(msg, icon = 'check-circle') { 
-                this.toast = { show: true, message: msg, icon: icon }; 
-                setTimeout(() => this.toast.show = false, 4000); 
+            showToast(msg, icon = 'check-circle') {
+                this.toast = { show: true, message: msg, icon: icon };
+                setTimeout(() => this.toast.show = false, 4000);
             },
+            formatDate(dt) {
+                return new Date(dt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            },
+
             async handleAuth() {
                 this.loading = true;
-                const { error } = this.authMode === 'login' ? await _client.auth.signInWithPassword(this.auth) : await _client.auth.signUp(this.auth);
-                if (error) this.showToast(error.message, 'alert-circle'); 
-                else if (this.authMode === 'signup') this.showToast("Deployment Sequence Initiated. Check Email.", "mail");
+                const { error } = this.authMode === 'login' 
+                    ? await _client.auth.signInWithPassword(this.auth)
+                    : await _client.auth.signUp(this.auth);
+                if (error) this.showToast(error.message, 'alert-circle');
+                else if (this.authMode === 'signup') this.showToast("Email sent! Check inbox.", "mail");
                 this.loading = false;
             },
             async signOut() { await _client.auth.signOut(); this.session = null; },
+
             async initApp() {
                 this.loading = true;
-                await Promise.all([this.fetchInventory(), this.fetchExercises(), this.fetchFoodMemory(), this.fetchDailyLogs(), this.fetchReadiness(), this.fetchWorkouts()]);
+                await Promise.all([
+                    this.fetchInventory(),
+                    this.fetchExercises(),
+                    this.fetchFoodMemory(),
+                    this.fetchDailyLogs(),
+                    this.fetchReadiness(),
+                    this.fetchWorkouts()
+                ]);
                 this.loading = false;
             },
+
             async fetchInventory() { const { data } = await _client.from('inventory').select('*'); this.inventory = data || []; },
+            async addInventoryItem() {
+                const name = prompt("Item Name:");
+                const servings = prompt("Total Servings:");
+                if (name && servings) {
+                    await _client.from('inventory').insert([{
+                        item_name: name, total_servings: parseInt(servings), servings_left: parseInt(servings), user_id: this.session.user.id
+                    }]);
+                    this.fetchInventory();
+                }
+            },
+
             async fetchExercises() { const { data } = await _client.from('exercise_library').select('*'); this.exercises = data || []; },
-            async fetchFoodMemory() { const { data } = await _client.from('food_memory').select('*').order('use_count', { ascending: false }); this.foodMemory = data || []; },
-            async fetchDailyLogs() { const today = new Date().toISOString().split('T')[0]; const { data } = await _client.from('food_logs').select('*').gte('created_at', today); this.dailyLogs = data || []; },
-            async fetchReadiness() { const { data } = await _client.from('daily_metrics').select('*').order('created_at', { ascending: false }); this.readinessHistory = data || []; },
             async fetchWorkouts() { const { data } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false }); this.workoutHistory = data || []; },
-            
             startWorkout() { this.activeWorkout = { name: this.selectedExercise, sets: [{ weight: null, reps: null, done: false }] }; },
             async finishWorkout() {
                 this.loading = true;
                 const completedSets = this.activeWorkout.sets.filter(s => s.done);
-                const { error } = await _client.from('workout_logs').insert([{ exercise_name: this.activeWorkout.name, sets_data: completedSets, user_id: this.session.user.id }]);
-                if (!error) { this.showToast("Performance Logged.", "dumbbell"); this.activeWorkout = null; this.fetchWorkouts(); this.fetchInventory(); }
+                const { error } = await _client.from('workout_logs').insert([{
+                    exercise_name: this.activeWorkout.name, sets_data: completedSets, user_id: this.session.user.id
+                }]);
+                if (!error) {
+                    this.showToast("Syncing Performance.", "dumbbell");
+                    this.activeWorkout = null;
+                    await this.fetchWorkouts();
+                    await this.fetchInventory();
+                }
                 this.loading = false;
             },
-            filterMemory() { this.showMemory = this.foodSearch.length > 1; this.filteredMemory = this.foodMemory.filter(f => f.food_name.toLowerCase().includes(this.foodSearch.toLowerCase())).slice(0, 5); },
-            selectFood(item) { this.foodSearch = item.food_name; this.foodEntry.cals = item.calories; this.foodEntry.protein = item.protein; this.showMemory = false; },
+
+            async fetchFoodMemory() { const { data } = await _client.from('food_memory').select('*').order('use_count', { ascending: false }); this.foodMemory = data || []; },
+            async fetchDailyLogs() {
+                const today = new Date().toISOString().split('T')[0];
+                const { data } = await _client.from('food_logs').select('*').gte('created_at', today);
+                this.dailyLogs = data || [];
+            },
+            filterMemory() {
+                this.showMemory = this.foodSearch.length > 1;
+                this.filteredMemory = this.foodMemory.filter(f => f.food_name.toLowerCase().includes(this.foodSearch.toLowerCase())).slice(0, 5);
+            },
+            selectFood(item) {
+                this.foodSearch = item.food_name;
+                this.foodEntry.cals = item.calories;
+                this.foodEntry.protein = item.protein;
+                this.showMemory = false;
+            },
             async saveFood() {
                 this.loading = true;
-                const { error } = await _client.from('food_logs').insert([{ food_name: this.foodSearch, calories: this.foodEntry.cals, protein: this.foodEntry.protein, user_id: this.session.user.id }]);
-                if (!error) { this.showToast("Fuel Logged.", "check"); this.foodSearch = ''; this.foodEntry = { cals: null, protein: null }; this.fetchFoodMemory(); this.fetchDailyLogs(); }
+                const { error } = await _client.from('food_logs').insert([{
+                    food_name: this.foodSearch, calories: this.foodEntry.cals, protein: this.foodEntry.protein, user_id: this.session.user.id
+                }]);
+                if (!error) {
+                    this.showToast("Fuel Logged.", "check");
+                    this.foodSearch = '';
+                    this.foodEntry = { cals: null, protein: null };
+                    await this.fetchFoodMemory();
+                    await this.fetchDailyLogs();
+                }
                 this.loading = false;
             },
+
+            async fetchReadiness() { const { data } = await _client.from('daily_metrics').select('*').order('created_at', { ascending: false }); this.readinessHistory = data || []; },
             async saveMetrics() {
                 this.loading = true;
-                const { error } = await _client.from('daily_metrics').insert([{ weight: this.metrics.Weight, sleep_quality: this.metrics.Sleep, energy_level: this.metrics.Energy, resting_hr: this.metrics.HR, user_id: this.session.user.id }]);
-                if (!error) { this.showToast("Readiness Synced.", "zap"); this.metrics = { Weight: null, Sleep: null, Energy: null, HR: null }; this.fetchReadiness(); }
+                const { error } = await _client.from('daily_metrics').insert([{
+                    weight: this.metrics.Weight, sleep_quality: this.metrics.Sleep, energy_level: this.metrics.Energy, resting_hr: this.metrics.HR, user_id: this.session.user.id
+                }]);
+                if (!error) {
+                    this.showToast("Readiness Synced.", "zap");
+                    this.metrics = { Weight: null, Sleep: null, Energy: null, HR: null };
+                    await this.fetchReadiness();
+                }
                 this.loading = false;
-            },
-            async addInventoryItem() {
-                const name = prompt("Supply Name:"); const servings = prompt("Total Servings:");
-                if (name && servings) { await _client.from('inventory').insert([{ item_name: name, total_servings: parseInt(servings), servings_left: parseInt(servings), user_id: this.session.user.id }]); this.fetchInventory(); }
             }
         }
     }).mount('#app');
