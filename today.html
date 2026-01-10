@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Today | Constellation</title>
+    <title>Today | Constellation Fitness</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -13,17 +13,19 @@
         body { background-color: #020617; color: white; overscroll-behavior-y: contain; }
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
         .macro-card { @apply flex flex-col items-center justify-center p-4 rounded-2xl border border-white/5 bg-slate-900/40; }
+        .tab-active { color: #3b82f6; }
+        .tab-active i { stroke-width: 3px; color: #3b82f6; }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body class="font-sans antialiased">
-<div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-24">
+<div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32">
     <header class="flex justify-between items-center mb-10">
         <div>
             <h1 class="text-3xl font-black italic text-blue-500 uppercase">Today</h1>
-            <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Performance Readiness</p>
+            <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Morning Pulse</p>
         </div>
-        <a href="index.html" class="w-10 h-10 glass rounded-xl flex items-center justify-center"><i data-lucide="home" class="w-4 h-4 text-slate-400"></i></a>
+        <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg"><i data-lucide="layout-grid" class="w-5 h-5 text-slate-400"></i></a>
     </header>
 
     <main class="space-y-8">
@@ -35,59 +37,34 @@
         </div>
 
         <div class="glass rounded-[2.5rem] p-8 shadow-2xl">
-            <h3 class="text-white text-lg font-black italic uppercase mb-8 flex items-center gap-2"><i data-lucide="zap" class="text-blue-500 w-5 h-5"></i> Morning Metrics</h3>
+            <h3 class="text-white text-lg font-black italic uppercase mb-8 flex items-center gap-2"><i data-lucide="zap" class="text-blue-500 w-5 h-5"></i> Readiness</h3>
             <div class="grid grid-cols-2 gap-4">
                 <div v-for="l in ['Weight', 'Sleep', 'Energy', 'HR']" :key="l" class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
                     <span class="text-[8px] text-slate-600 uppercase font-black mb-1 tracking-widest">{{ l }}</span>
                     <input type="number" step="0.1" v-model="metrics[l]" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 outline-none">
                 </div>
             </div>
-            <button @click="saveMetrics" class="w-full mt-8 bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl shadow-blue-600/20">COMMIT READINESS</button>
-        </div>
-
-        <div v-if="history.length" class="space-y-4">
-            <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">Recent Trends</h4>
-            <div v-for="log in history.slice(0, 3)" :key="log.id" class="glass rounded-2xl p-4 flex justify-between items-center text-xs">
-                <span class="font-black text-slate-500">{{ formatDate(log.created_at) }}</span>
-                <span class="font-black text-blue-400">{{ log.weight }} lbs</span>
-            </div>
+            <button @click="saveMetrics" class="w-full mt-8 bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl">COMMIT DATA</button>
         </div>
     </main>
-</div>
 
+    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around p-4 safe-area-bottom z-[100]">
+        <a href="today.html" class="flex flex-col items-center px-4 tab-active"><i data-lucide="zap" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Today</span></a>
+        <a href="gym.html" class="flex flex-col items-center px-4 text-slate-600"><i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Gym</span></a>
+        <a href="kitchen.html" class="flex flex-col items-center px-4 text-slate-600"><i data-lucide="utensils" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Kitchen</span></a>
+        <a href="tracker.html" class="flex flex-col items-center px-4 text-slate-600"><i data-lucide="line-chart" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Tracker</span></a>
+    </nav>
+</div>
 <script>
     const { createApp } = Vue;
     const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
-
     createApp({
-        data() { return { session: null, metrics: { Weight: null, Sleep: null, Energy: null, HR: null }, dailyLogs: [], history: [] } },
-        computed: {
-            dailyTotals() {
-                return this.dailyLogs.reduce((acc, log) => ({
-                    cals: acc.cals + (log.calories || 0), protein: acc.protein + (log.protein || 0),
-                    carbs: acc.carbs + (log.carbs || 0), fat: acc.fat + (log.fat || 0)
-                }), { cals: 0, protein: 0, carbs: 0, fat: 0 });
-            }
-        },
-        async mounted() {
-            const { data: { session } } = await _client.auth.getSession();
-            this.session = session;
-            if (this.session) this.init();
-            lucide.createIcons();
-        },
+        data() { return { session: null, metrics: { Weight: null, Sleep: null, Energy: null, HR: null }, dailyLogs: [] } },
+        computed: { dailyTotals() { return this.dailyLogs.reduce((acc, log) => ({ cals: acc.cals + (log.calories || 0), protein: acc.protein + (log.protein || 0), carbs: acc.carbs + (log.carbs || 0), fat: acc.fat + (log.fat || 0) }), { cals: 0, protein: 0, carbs: 0, fat: 0 }); } },
+        async mounted() { const { data: { session } } = await _client.auth.getSession(); this.session = session; if (this.session) this.init(); lucide.createIcons(); },
         methods: {
-            formatDate(dt) { return new Date(dt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); },
-            async init() {
-                const today = new Date().toISOString().split('T')[0];
-                const { data: logs } = await _client.from('food_logs').select('*').gte('created_at', today);
-                this.dailyLogs = logs || [];
-                const { data: metrics } = await _client.from('daily_metrics').select('*').order('created_at', { ascending: false });
-                this.history = metrics || [];
-            },
-            async saveMetrics() {
-                await _client.from('daily_metrics').insert([{ weight: this.metrics.Weight, sleep_quality: this.metrics.Sleep, energy_level: this.metrics.Energy, resting_hr: this.metrics.HR, user_id: this.session.user.id }]);
-                alert("Metrics Synced."); this.init();
-            }
+            async init() { const today = new Date().toISOString().split('T')[0]; const { data: logs } = await _client.from('food_logs').select('*').gte('created_at', today); this.dailyLogs = logs || []; },
+            async saveMetrics() { await _client.from('daily_metrics').insert([{ weight: this.metrics.Weight, sleep_quality: this.metrics.Sleep, energy_level: this.metrics.Energy, resting_hr: this.metrics.HR, user_id: this.session.user.id }]); alert("Readiness Synced."); }
         }
     }).mount('#app');
 </script>
