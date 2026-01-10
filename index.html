@@ -4,18 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Constellation Fitness</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     
     <style>
-        [v-cloak] { display: none; }
-        body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
+        [v-cloak] { display: none !important; }
+        body { 
+            background-color: #020617; 
+            color: white; 
+            -webkit-tap-highlight-color: transparent; 
+            overscroll-behavior-y: contain;
+        }
         
         .font-orbitron { font-family: 'Orbitron', sans-serif; }
         
+        /* Command Center Grid */
         .nav-card { 
             background: rgba(15, 23, 42, 0.7); 
             backdrop-filter: blur(20px); 
@@ -23,120 +31,128 @@
             aspect-ratio: 1 / 1;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .nav-card:active { transform: scale(0.96); background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); }
+        .nav-card:active { 
+            transform: scale(0.96); 
+            background: rgba(59, 130, 246, 0.1); 
+            border-color: rgba(37, 99, 235, 0.4); 
+        }
         
         .status-pill {
             background: rgba(15, 23, 42, 0.8);
             border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.02);
         }
 
-        /* Branding Glow */
-        .logo-glow { filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5)); }
+        .logo-glow { filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.6)); }
+        
+        /* Fade transition for auth/main switch */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
 </head>
 <body class="font-sans antialiased">
 
 <div id="app" v-cloak class="min-h-screen flex flex-col">
     
-    <div v-if="!session" class="flex-1 flex flex-col items-center justify-center p-8">
-        <div class="mb-16 text-center">
-            <div class="mb-6 logo-glow">
-                <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="mx-auto">
-                    <path d="M80 20C70 10 55 5 40 10C20 15 5 35 5 55C5 75 20 95 45 95C65 95 85 80 90 60" stroke="#3b82f6" stroke-width="8" stroke-linecap="round"/>
-                    <circle cx="80" cy="20" r="4" fill="white" />
-                    <circle cx="90" cy="60" r="3" fill="white" />
-                    <circle cx="45" cy="95" r="3" fill="white" />
-                    <path d="M40 30L45 45L60 40L50 55L65 70" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4 4" />
-                </svg>
-            </div>
-            <h1 class="text-4xl font-black tracking-tighter uppercase italic text-blue-500 leading-none">
-                CONSTELLATION <br>
-                <span class="text-white font-orbitron not-italic text-3xl tracking-normal">FITNESS</span>
-            </h1>
-            <p class="text-slate-500 text-[10px] uppercase tracking-[0.4em] mt-4 font-black">Performance Lifestyle</p>
-        </div>
-        <div class="w-full max-w-sm space-y-4">
-            <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-            <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-            <button @click="handleAuth" class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all font-orbitron tracking-tighter">LOG IN</button>
-        </div>
-    </div>
-
-    <div v-else class="flex-1 flex flex-col p-8">
-        <header class="flex justify-between items-start mb-8">
-            <div class="flex items-center gap-4">
-                <svg width="40" height="40" viewBox="0 0 100 100" fill="none" class="logo-glow">
-                    <path d="M80 20C70 10 55 5 40 10C20 15 5 35 5 55C5 75 20 95 45 95C65 95 85 80 90 60" stroke="#3b82f6" stroke-width="10" stroke-linecap="round"/>
-                    <circle cx="80" cy="20" r="5" fill="white" />
-                </svg>
-                <div>
-                    <h1 class="text-xl font-black tracking-tighter italic text-blue-500 uppercase leading-none">
-                        CONSTELLATION <span class="text-white font-orbitron not-italic block text-lg tracking-tight mt-1">FITNESS</span>
-                    </h1>
+    <transition name="fade">
+        <div v-if="!session" class="flex-1 flex flex-col items-center justify-center p-10">
+            <div class="mb-16 text-center">
+                <div class="mb-8 logo-glow">
+                    <svg width="100" height="100" viewBox="0 0 2048 1390" fill="none" xmlns="http://www.w3.org/2000/svg" class="mx-auto">
+                        <path d="m719 89h51l41 3 37 5 32 6 30 7 36 10 35 12 32 13 24 11 22 12 16 9 24 15 17 12 16 12 14 11 13 11 12 11 10 9 27 27 7 8 10 11 10 13 2 4v8l-4 6-9 8-11 8-19 14-13 10-16 12-15 12-13 10-42 33-16 13-14 11-10 8-14 11-13 10-10 5-6-1-6-4-5-4-7-8-5-5-6-5-16-16-11-9-15-12-20-14-20-12-23-12-27-11-22-7-26-6-29-4-15-1h-33l-23 2-32 5-26 6-36 12-24 11-22 12-15 10-12 9-11 9-14 12-11 11-7 8-11 13-13 18-11 17-11 19-8 16-11 19-10 23-9 27-6 24-4 24-2 16-1 16v29l2 25 5 30 7 28 9 26 11 25 10 19 10 16 11 16 9 11 11 13 23 23 11 9 17 13 20 13 16 9 24 12 26 10 24 7 22 5 37 5 12 1h27l38-4 26-5 26-7 25-9 20-9 20-10 21-13 14-10 14-11 10-9 8-7 15-15 9-11 12-13 3-2h9l10 6 16 13 17 13 18 14 38 29 16 12 13 10 21 16 20 15 16 13 13 10 14 11 5 6v8l-7 12-14 17-9 10-7 8-33 33-11 9-9 8-17 13-18 14-11 8-4 5-4 13-2 19-4 12-9 14-7 7-14 8-15 4h-13l-13-3-16-7-14-3-12 1-20 6-30 10-30 8-37 8-40 6-33 3-17 1h-55l-43-3-39-5-34-6-38-9-30-9-31-11-31-13-29-14-23-13-17-10-24-16-18-13-14-11-11-9-15-13-10-9-15-15-5-4v-2h-2l-7-8-12-12-9-11-9-10-11-14-12-16-12-17-12-19-15-26-13-25-13-29-11-29-11-34-7-26-8-37-5-31-4-37-1-16v-55l3-35 5-36 7-34 6-24 9-29 8-24 15-37 13-28 8-14 4-13 1-6v-9l-3-14-5-18v-13l3-11 7-14 9-10 7-6 14-7 12-3 10-1 9 1h11l7-3 8-6 10-10 7-8 11-11 8-7 15-14 11-9 16-13 19-14 24-16 21-13 26-14 16-8 24-11 31-12 33-11 38-10 38-8 41-6 34-3z" fill="#3b82f6" />
+                    </svg>
                 </div>
+                <h1 class="text-4xl font-black tracking-tighter uppercase italic text-blue-500 leading-none">
+                    CONSTELLATION <br>
+                    <span class="text-white font-orbitron not-italic text-3xl tracking-normal">FITNESS</span>
+                </h1>
+                <p class="text-slate-500 text-[10px] uppercase tracking-[0.4em] mt-4 font-black">Performance Lifestyle</p>
             </div>
-            <button @click="signOut" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-slate-500 border border-white/5">
-                <i data-lucide="log-out" class="w-5 h-5"></i>
-            </button>
-        </header>
-
-        <div class="grid grid-cols-4 gap-2 mb-10">
-            <div class="status-pill rounded-2xl p-3 text-center">
-                <span class="block text-[7px] text-slate-500 font-black uppercase tracking-widest mb-1 font-orbitron">CAL</span>
-                <span class="text-sm font-black text-white">{{ dailyTotals.cals }}</span>
-            </div>
-            <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-blue-500/50">
-                <span class="block text-[7px] text-blue-500 font-black uppercase tracking-widest mb-1 font-orbitron">PRO</span>
-                <span class="text-sm font-black text-white">{{ dailyTotals.protein }}g</span>
-            </div>
-            <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-yellow-500/50">
-                <span class="block text-[7px] text-yellow-500 font-black uppercase tracking-widest mb-1 font-orbitron">CHO</span>
-                <span class="text-sm font-black text-white">{{ dailyTotals.carbs }}g</span>
-            </div>
-            <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-red-500/50">
-                <span class="block text-[7px] text-red-500 font-black uppercase tracking-widest mb-1 font-orbitron">FAT</span>
-                <span class="text-sm font-black text-white">{{ dailyTotals.fat }}g</span>
+            <div class="w-full max-w-sm space-y-4">
+                <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:border-blue-500 transition-all">
+                <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:border-blue-500 transition-all">
+                <button @click="handleAuth" class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all font-orbitron tracking-tighter">LOG IN</button>
             </div>
         </div>
+    </transition>
 
-        <nav class="grid grid-cols-2 gap-4">
-            <a href="today.html" class="nav-card rounded-[2rem] flex flex-col items-center justify-center gap-4 shadow-xl">
-                <div class="p-4 bg-yellow-500/10 rounded-2xl text-yellow-500"><i data-lucide="zap"></i></div>
-                <div class="text-center">
-                    <span class="block text-sm font-black uppercase italic tracking-tighter">Readiness</span>
-                    <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Morning Pulse</span>
+    <transition name="fade">
+        <div v-if="session" class="flex-1 flex flex-col p-8">
+            <header class="flex justify-between items-start mb-8">
+                <div class="flex items-center gap-4">
+                    <svg width="40" height="40" viewBox="0 0 2048 1390" fill="none" class="logo-glow">
+                        <path d="m719 89h51l41 3 37 5 32 6 30 7 36 10 35 12 32 13 24 11 22 12 16 9 24 15 17 12 16 12 14 11 13 11 12 11 10 9 27 27 7 8 10 11 10 13 2 4v8l-4 6-9 8-11 8-19 14-13 10-16 12-15 12-13 10-42 33-16 13-14 11-10 8-14 11-13 10-10 5-6-1-6-4-5-4-7-8-5-5-6-5-16-16-11-9-15-12-20-14-20-12-23-12-27-11-22-7-26-6-29-4-15-1h-33l-23 2-32 5-26 6-36 12-24 11-22 12-15 10-12 9-11 9-14 12-11 11-7 8-11 13-13 18-11 17-11 19-8 16-11 19-10 23-9 27-6 24-4 24-2 16-1 16v29l2 25 5 30 7 28 9 26 11 25 10 19 10 16 11 16 9 11 11 13 23 23 11 9 17 13 20 13 16 9 24 12 26 10 24 7 22 5 37 5 12 1h27l38-4 26-5 26-7 25-9 20-9 20-10 21-13 14-10 14-11 10-9 8-7 15-15 9-11 12-13 3-2h9l10 6 16 13 17 13 18 14 38 29 16 12 13 10 21 16 20 15 16 13 13 10 14 11 5 6v8l-7 12-14 17-9 10-7 8-33 33-11 9-9 8-17 13-18 14-11 8-4 5-4 13-2 19-4 12-9 14-7 7-14 8-15 4h-13l-13-3-16-7-14-3-12 1-20 6-30 10-30 8-37 8-40 6-33 3-17 1h-55l-43-3-39-5-34-6-38-9-30-9-31-11-31-13-29-14-23-13-17-10-24-16-18-13-14-11-11-9-15-13-10-9-15-15-5-4v-2h-2l-7-8-12-12-9-11-9-10-11-14-12-16-12-17-12-19-15-26-13-25-13-29-11-29-11-34-7-26-8-37-5-31-4-37-1-16v-55l3-35 5-36 7-34 6-24 9-29 8-24 15-37 13-28 8-14 4-13 1-6v-9l-3-14-5-18v-13l3-11 7-14 9-10 7-6 14-7 12-3 10-1 9 1h11l7-3 8-6 10-10 7-8 11-11 8-7 15-14 11-9 16-13 19-14 24-16 21-13 26-14 16-8 24-11 31-12 33-11 38-10 38-8 41-6 34-3z" fill="#3b82f6" />
+                    </svg>
+                    <div>
+                        <h1 class="text-xl font-black tracking-tighter italic text-blue-500 uppercase leading-none">
+                            CONSTELLATION <span class="text-white font-orbitron not-italic block text-lg tracking-tight mt-1">FITNESS</span>
+                        </h1>
+                        <p class="text-slate-600 text-[8px] font-black uppercase tracking-[0.3em] mt-2 italic">Performance Lifestyle</p>
+                    </div>
                 </div>
-            </a>
+                <button @click="signOut" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-slate-500 border border-white/5">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>
+            </header>
 
-            <a href="gym.html" class="nav-card rounded-[2rem] flex flex-col items-center justify-center gap-4 shadow-xl">
-                <div class="p-4 bg-blue-500/10 rounded-2xl text-blue-500"><i data-lucide="dumbbell"></i></div>
-                <div class="text-center">
-                    <span class="block text-sm font-black uppercase italic tracking-tighter">Performance</span>
-                    <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Vertical Lifts</span>
+            <div class="grid grid-cols-4 gap-2 mb-10">
+                <div class="status-pill rounded-2xl p-3 text-center">
+                    <span class="block text-[7px] text-slate-500 font-black uppercase tracking-widest mb-1 font-orbitron">CAL</span>
+                    <span class="text-sm font-black text-white">{{ dailyTotals.cals }}</span>
                 </div>
-            </a>
-
-            <a href="kitchen.html" class="nav-card rounded-[2rem] flex flex-col items-center justify-center gap-4 shadow-xl">
-                <div class="p-4 bg-green-500/10 rounded-2xl text-green-500"><i data-lucide="utensils"></i></div>
-                <div class="text-center">
-                    <span class="block text-sm font-black uppercase italic tracking-tighter">Kitchen</span>
-                    <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Neural Fuel</span>
+                <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-blue-500">
+                    <span class="block text-[7px] text-blue-500 font-black uppercase tracking-widest mb-1 font-orbitron">PRO</span>
+                    <span class="text-sm font-black text-white">{{ dailyTotals.protein }}g</span>
                 </div>
-            </a>
-
-            <a href="tracker.html" class="nav-card rounded-[2rem] flex flex-col items-center justify-center gap-4 shadow-xl">
-                <div class="p-4 bg-orange-500/10 rounded-2xl text-orange-500"><i data-lucide="line-chart"></i></div>
-                <div class="text-center">
-                    <span class="block text-sm font-black uppercase italic tracking-tighter">Tracker</span>
-                    <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Supply & Stats</span>
+                <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-yellow-500">
+                    <span class="block text-[7px] text-yellow-500 font-black uppercase tracking-widest mb-1 font-orbitron">CHO</span>
+                    <span class="text-sm font-black text-white">{{ dailyTotals.carbs }}g</span>
                 </div>
-            </a>
-        </nav>
+                <div class="status-pill rounded-2xl p-3 text-center border-l-2 border-l-red-500">
+                    <span class="block text-[7px] text-red-500 font-black uppercase tracking-widest mb-1 font-orbitron">FAT</span>
+                    <span class="text-sm font-black text-white">{{ dailyTotals.fat }}g</span>
+                </div>
+            </div>
 
-        <footer class="mt-auto pb-4 text-center">
-            <p class="text-[7px] text-slate-800 font-black uppercase tracking-[0.6em]">STRATEGIC PERFORMANCE v2.3</p>
-        </footer>
-    </div>
+            <nav class="grid grid-cols-2 gap-4">
+                <a href="today.html" class="nav-card rounded-[2.5rem] flex flex-col items-center justify-center gap-4 shadow-2xl">
+                    <div class="p-5 bg-yellow-500/10 rounded-[1.5rem] text-yellow-500"><i data-lucide="zap" class="w-8 h-8"></i></div>
+                    <div class="text-center">
+                        <span class="block text-sm font-black uppercase italic tracking-tighter">Readiness</span>
+                        <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Morning Pulse</span>
+                    </div>
+                </a>
+
+                <a href="gym.html" class="nav-card rounded-[2.5rem] flex flex-col items-center justify-center gap-4 shadow-2xl">
+                    <div class="p-5 bg-blue-500/10 rounded-[1.5rem] text-blue-500"><i data-lucide="dumbbell" class="w-8 h-8"></i></div>
+                    <div class="text-center">
+                        <span class="block text-sm font-black uppercase italic tracking-tighter">Performance</span>
+                        <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Vertical Lifts</span>
+                    </div>
+                </a>
+
+                <a href="kitchen.html" class="nav-card rounded-[2.5rem] flex flex-col items-center justify-center gap-4 shadow-2xl">
+                    <div class="p-5 bg-green-500/10 rounded-[1.5rem] text-green-500"><i data-lucide="utensils" class="w-8 h-8"></i></div>
+                    <div class="text-center">
+                        <span class="block text-sm font-black uppercase italic tracking-tighter">Kitchen</span>
+                        <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Neural Fuel</span>
+                    </div>
+                </a>
+
+                <a href="tracker.html" class="nav-card rounded-[2.5rem] flex flex-col items-center justify-center gap-4 shadow-2xl">
+                    <div class="p-5 bg-orange-500/10 rounded-[1.5rem] text-orange-500"><i data-lucide="line-chart" class="w-8 h-8"></i></div>
+                    <div class="text-center">
+                        <span class="block text-sm font-black uppercase italic tracking-tighter">Tracker</span>
+                        <span class="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Supply & Stats</span>
+                    </div>
+                </a>
+            </nav>
+
+            <footer class="mt-auto pb-4 text-center">
+                <p class="text-[7px] text-slate-800 font-black uppercase tracking-[0.6em] font-orbitron">STRATEGIC PERFORMANCE v2.4</p>
+            </footer>
+        </div>
+    </transition>
 </div>
 
 <script>
