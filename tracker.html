@@ -179,8 +179,11 @@
 
 <script>
     const { createApp } = Vue;
-    // --- INSERT SUPABASE URL & KEY ---
-    const _client = supabase.createClient('YOUR_SUPABASE_URL', 'YOUR_SUPABASE_ANON_KEY');
+    // --- UPDATED SUPABASE URL & KEY ---
+    const _client = supabase.createClient(
+        'https://mvoyrchefjcpjkdtezmz.supabase.co', 
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
+    );
 
     createApp({
         data() {
