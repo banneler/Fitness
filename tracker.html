@@ -26,6 +26,14 @@
             align-items: center;
             justify-content: center;
         }
+
+        /* Chart Animations */
+        .chart-line {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: dash 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes dash { to { stroke-dashoffset: 0; } }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -33,30 +41,90 @@
     
     <div v-if="initialLoading" class="loading-mask">
         <div class="animate-pulse flex flex-col items-center gap-4">
-            <div class="w-10 h-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
-            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Synchronizing</p>
+            <div class="w-10 h-10 rounded-full border-2 border-orange-500 border-t-transparent animate-spin"></div>
+            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Analyzing</p>
         </div>
     </div>
 
-    <header class="flex justify-between items-center mb-10">
-        <h1 class="text-3xl font-black italic text-orange-500 uppercase">Tracker</h1>
-        <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5"><i data-lucide="layout-grid" class="w-5 h-5 text-slate-400"></i></a>
+    <header class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-black italic text-orange-500 uppercase">Tracker</h1>
+            <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Supply & Intelligence</p>
+        </div>
+        <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg"><i data-lucide="layout-grid" class="w-5 h-5 text-slate-400"></i></a>
     </header>
 
-    <div class="glass rounded-[2.5rem] p-8 shadow-xl">
-        <div class="flex justify-between items-center mb-10">
+    <div class="flex p-1 glass rounded-2xl mb-8">
+        <button @click="currentView = 'supply'" :class="currentView === 'supply' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'" class="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Supply</button>
+        <button @click="currentView = 'intel'" :class="currentView === 'intel' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'" class="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Intelligence</button>
+    </div>
+
+    <div v-if="currentView === 'supply'" class="glass rounded-[2.5rem] p-8 shadow-xl animate-fade-in">
+        <div class="flex justify-between items-center mb-8">
             <h3 class="text-white text-lg font-black italic uppercase">Inventory</h3>
-            <button @click="addItem" class="text-blue-500 text-[10px] font-black uppercase tracking-widest">+ Add</button>
+            <button @click="addItem" class="text-blue-500 text-[10px] font-black uppercase tracking-widest bg-blue-500/10 px-3 py-2 rounded-lg hover:bg-blue-500/20 transition-colors">+ Add Item</button>
         </div>
-        <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-6 rounded-3xl border border-white/5 mb-4 shadow-inner">
-            <div class="flex justify-between items-center mb-4 font-black italic uppercase">
+        
+        <div v-if="inventory.length === 0" class="text-center py-10 opacity-50">
+            <i data-lucide="package-open" class="w-12 h-12 mx-auto mb-2 stroke-1"></i>
+            <p class="text-[10px] uppercase font-black tracking-widest">No Items Tracked</p>
+        </div>
+
+        <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-6 rounded-3xl border border-white/5 mb-4 shadow-inner relative overflow-hidden group">
+            <div class="flex justify-between items-center mb-4 font-black italic uppercase relative z-10">
                 <span class="text-xs">{{item.item_name}}</span>
-                <span :class="item.servings_left < 5 ? 'text-red-500' : 'text-blue-400'">{{Math.floor(item.servings_left)}} left</span>
+                <span :class="item.servings_left < 5 ? 'text-red-500' : 'text-blue-400'">{{Math.floor(item.servings_left)}} servings</span>
             </div>
-            <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+            <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden relative z-10">
                 <div class="bg-blue-600 h-full transition-all duration-1000 ease-out shadow-[0_0_10px_#2563eb]" :style="{ width: (item.servings_left/item.total_servings*100) + '%' }"></div>
             </div>
+            <button @click="decrementItem(item)" class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-black/50 to-transparent opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20">
+                <i data-lucide="minus" class="w-4 h-4 text-white"></i>
+            </button>
         </div>
+    </div>
+
+    <div v-if="currentView === 'intel'" class="space-y-6 animate-fade-in">
+        
+        <div class="glass rounded-[2.5rem] p-6 shadow-xl relative overflow-hidden">
+            <div class="flex justify-between items-end mb-6 relative z-10">
+                <div>
+                    <h3 class="text-white text-sm font-black italic uppercase">Body Composition</h3>
+                    <p class="text-[8px] text-slate-500 font-bold uppercase tracking-widest">30 Day Trend</p>
+                </div>
+                <div class="text-right">
+                    <span class="block text-2xl font-black italic text-orange-500">{{ currentWeight || '--' }}</span>
+                    <span class="text-[8px] text-slate-500 font-bold uppercase">LBS Current</span>
+                </div>
+            </div>
+            
+            <div class="h-32 w-full relative">
+                <svg class="w-full h-full overflow-visible" preserveAspectRatio="none">
+                    <line x1="0" y1="0" x2="100%" y2="0" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
+                    <line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
+                    <line x1="0" y1="100%" x2="100%" y2="100%" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
+                    
+                    <polyline v-if="weightPath" :points="weightPath" fill="none" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="chart-line drop-shadow-[0_0_6px_rgba(249,115,22,0.5)]" />
+                </svg>
+                <div v-if="!weightHistory.length" class="absolute inset-0 flex items-center justify-center">
+                    <span class="text-[8px] uppercase tracking-widest text-slate-600 font-black">Insufficient Data</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass rounded-[2.5rem] p-6 shadow-xl">
+            <h3 class="text-white text-sm font-black italic uppercase mb-6">Fuel Adherence <span class="text-slate-500 text-[8px] not-italic ml-2 tracking-wide">(Last 7 Days)</span></h3>
+            <div class="flex justify-between items-end h-32 px-2 gap-2">
+                <div v-for="(day, i) in macroHistory" :key="i" class="flex-1 flex flex-col items-center gap-2 group">
+                    <div class="w-full bg-slate-900 rounded-t-lg relative flex items-end overflow-hidden h-full">
+                        <div class="w-full bg-slate-800 absolute bottom-0 left-0 right-0 h-full opacity-30"></div>
+                        <div class="w-full bg-blue-600 rounded-t-sm transition-all duration-500" :style="{ height: Math.min((day.cals / 3000) * 100, 100) + '%' }"></div>
+                    </div>
+                    <span class="text-[8px] font-black uppercase text-slate-600">{{ day.label }}</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around p-4 safe-area-bottom z-[100]">
@@ -69,18 +137,106 @@
 <script>
     const { createApp } = Vue;
     const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
+    
     createApp({
-        data() { return { session: null, inventory: [], initialLoading: true } },
+        data() { 
+            return { 
+                session: null, 
+                currentView: 'supply', // supply | intel
+                inventory: [],
+                weightHistory: [],
+                macroHistory: [],
+                initialLoading: true 
+            } 
+        },
+        computed: {
+            currentWeight() {
+                if (!this.weightHistory.length) return null;
+                return this.weightHistory[this.weightHistory.length - 1].val;
+            },
+            weightPath() {
+                if (this.weightHistory.length < 2) return null;
+                const data = this.weightHistory.map(d => d.val);
+                const min = Math.min(...data) * 0.99;
+                const max = Math.max(...data) * 1.01;
+                const range = max - min;
+                if (range === 0) return "0,50 100,50"; // Flat line fallback
+
+                // Generate SVG Points: X (0-100%), Y (100% - normalized value)
+                return data.map((val, i) => {
+                    const x = (i / (data.length - 1)) * 100 + '%'; // Percentage based X
+                    const y = (100 - ((val - min) / range) * 100); // Inverse Y for SVG
+                    return `${x},${y}`;
+                }).join(' ');
+            }
+        },
         async mounted() { 
             const { data: { session } } = await _client.auth.getSession(); 
             this.session = session; 
-            if (this.session) await this.init(); 
+            
+            if (this.session) {
+                await Promise.all([this.fetchInventory(), this.fetchIntel()]);
+            }
+            
             this.initialLoading = false;
             this.$nextTick(() => lucide.createIcons());
         },
         methods: {
-            async init() { const { data: items } = await _client.from('inventory').select('*'); this.inventory = items || []; },
-            async addItem() { const n = prompt("Name:"); const s = prompt("Servings:"); if (n && s) { await _client.from('inventory').insert([{ item_name: n, total_servings: parseInt(s), servings_left: parseInt(s), user_id: this.session.user.id }]); this.init(); } }
+            async fetchInventory() { 
+                const { data } = await _client.from('inventory').select('*').order('item_name'); 
+                this.inventory = data || []; 
+            },
+            async fetchIntel() {
+                // 1. Fetch Weight History (Last 30 entries)
+                const { data: weights } = await _client.from('daily_metrics')
+                    .select('created_at, weight')
+                    .not('weight', 'is', null)
+                    .order('created_at', { ascending: true })
+                    .limit(30);
+                
+                if (weights) {
+                    this.weightHistory = weights.map(w => ({ date: w.created_at, val: w.weight }));
+                }
+
+                // 2. Fetch Macro History (Last 7 Days) - Aggregated manually for simplicity
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                const { data: food } = await _client.from('food_logs')
+                    .select('created_at, calories')
+                    .gte('created_at', sevenDaysAgo.toISOString());
+
+                if (food) {
+                    // Group by Date (YYYY-MM-DD)
+                    const daily = {};
+                    food.forEach(f => {
+                        const d = f.created_at.split('T')[0];
+                        daily[d] = (daily[d] || 0) + f.calories;
+                    });
+                    
+                    // Create Array for Chart (Last 7 days strictly)
+                    this.macroHistory = Array.from({length: 7}, (_, i) => {
+                        const d = new Date();
+                        d.setDate(d.getDate() - (6 - i));
+                        const dateStr = d.toISOString().split('T')[0];
+                        const dayLabel = d.toLocaleDateString('en-US', { weekday: 'narrow' });
+                        return { label: dayLabel, cals: daily[dateStr] || 0 };
+                    });
+                }
+            },
+            async addItem() { 
+                const n = prompt("Item Name:"); 
+                const s = prompt("Total Servings:"); 
+                if (n && s) { 
+                    await _client.from('inventory').insert([{ item_name: n, total_servings: parseInt(s), servings_left: parseInt(s), user_id: this.session.user.id }]); 
+                    this.fetchInventory(); 
+                } 
+            },
+            async decrementItem(item) {
+                if(item.servings_left > 0) {
+                    item.servings_left--; // Optimistic UI update
+                    await _client.from('inventory').update({ servings_left: item.servings_left }).eq('id', item.id);
+                }
+            }
         },
         updated() { lucide.createIcons(); }
     }).mount('#app');
