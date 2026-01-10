@@ -9,17 +9,36 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        [v-cloak] { display: none; }
+        [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; overscroll-behavior-y: contain; }
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
         .macro-card { @apply flex flex-col items-center justify-center p-4 rounded-2xl border border-white/5 bg-slate-900/40; }
         .tab-active { color: #3b82f6; }
         .tab-active i { stroke-width: 3px; color: #3b82f6; }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        
+        /* Loading Overlay Mask */
+        .loading-mask {
+            position: fixed;
+            inset: 0;
+            background: #020617;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body class="font-sans antialiased">
 <div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32">
+    
+    <div v-if="initialLoading" class="loading-mask">
+        <div class="animate-pulse flex flex-col items-center gap-4">
+            <div class="w-10 h-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
+            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Synchronizing</p>
+        </div>
+    </div>
+
     <header class="flex justify-between items-center mb-10">
         <div>
             <h1 class="text-3xl font-black italic text-blue-500 uppercase">Today</h1>
@@ -59,13 +78,20 @@
     const { createApp } = Vue;
     const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
     createApp({
-        data() { return { session: null, metrics: { Weight: null, Sleep: null, Energy: null, HR: null }, dailyLogs: [] } },
+        data() { return { session: null, metrics: { Weight: null, Sleep: null, Energy: null, HR: null }, dailyLogs: [], initialLoading: true } },
         computed: { dailyTotals() { return this.dailyLogs.reduce((acc, log) => ({ cals: acc.cals + (log.calories || 0), protein: acc.protein + (log.protein || 0), carbs: acc.carbs + (log.carbs || 0), fat: acc.fat + (log.fat || 0) }), { cals: 0, protein: 0, carbs: 0, fat: 0 }); } },
-        async mounted() { const { data: { session } } = await _client.auth.getSession(); this.session = session; if (this.session) this.init(); lucide.createIcons(); },
+        async mounted() { 
+            const { data: { session } } = await _client.auth.getSession(); 
+            this.session = session; 
+            if (this.session) await this.init(); 
+            this.initialLoading = false;
+            this.$nextTick(() => lucide.createIcons());
+        },
         methods: {
             async init() { const today = new Date().toISOString().split('T')[0]; const { data: logs } = await _client.from('food_logs').select('*').gte('created_at', today); this.dailyLogs = logs || []; },
             async saveMetrics() { await _client.from('daily_metrics').insert([{ weight: this.metrics.Weight, sleep_quality: this.metrics.Sleep, energy_level: this.metrics.Energy, resting_hr: this.metrics.HR, user_id: this.session.user.id }]); alert("Readiness Synced."); }
-        }
+        },
+        updated() { lucide.createIcons(); }
     }).mount('#app');
 </script>
 </body>
