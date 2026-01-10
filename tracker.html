@@ -3,22 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Tracker | Constellation</title>
+    <title>Tracker | Constellation Fitness</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         [v-cloak] { display: none; }
-        body { background-color: #020617; color: white; }
+        body { background-color: #020617; color: white; overscroll-behavior-y: contain; }
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .tab-active { color: #3b82f6; }
+        .tab-active i { stroke-width: 3px; color: #3b82f6; }
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body class="font-sans antialiased">
-<div id="app" v-cloak class="min-h-screen p-6">
+<div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32">
     <header class="flex justify-between items-center mb-10">
         <h1 class="text-3xl font-black italic text-orange-500 uppercase">Tracker</h1>
-        <a href="index.html" class="w-10 h-10 glass rounded-xl flex items-center justify-center"><i data-lucide="home"></i></a>
+        <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5"><i data-lucide="layout-grid" class="w-5 h-5 text-slate-400"></i></a>
     </header>
 
     <div class="glass rounded-[2.5rem] p-8 shadow-xl">
@@ -26,39 +29,33 @@
             <h3 class="text-white text-lg font-black italic uppercase">Inventory</h3>
             <button @click="addItem" class="text-blue-500 text-[10px] font-black uppercase tracking-widest">+ Add</button>
         </div>
-        <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-6 rounded-3xl border border-white/5 mb-4">
+        <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-6 rounded-3xl border border-white/5 mb-4 shadow-inner">
             <div class="flex justify-between items-center mb-4 font-black italic uppercase">
                 <span class="text-xs">{{item.item_name}}</span>
                 <span :class="item.servings_left < 5 ? 'text-red-500' : 'text-blue-400'">{{Math.floor(item.servings_left)}} left</span>
             </div>
             <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
-                <div class="bg-blue-600 h-full" :style="{ width: (item.servings_left/item.total_servings*100) + '%' }"></div>
+                <div class="bg-blue-600 h-full transition-all duration-1000 ease-out shadow-[0_0_10px_#2563eb]" :style="{ width: (item.servings_left/item.total_servings*100) + '%' }"></div>
             </div>
         </div>
     </div>
-</div>
 
+    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around p-4 safe-area-bottom z-[100]">
+        <a href="today.html" class="flex flex-col items-center px-4 text-slate-600"><i data-lucide="zap" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Today</span></a>
+        <a href="gym.html" class="flex flex-col items-center px-4 text-slate-600"><i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Gym</span></a>
+        <a href="kitchen.html" class="flex flex-col items-center px-4 text-slate-600"><i data-lucide="utensils" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Kitchen</span></a>
+        <a href="tracker.html" class="flex flex-col items-center px-4 tab-active"><i data-lucide="line-chart" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Tracker</span></a>
+    </nav>
+</div>
 <script>
     const { createApp } = Vue;
     const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
-
     createApp({
         data() { return { session: null, inventory: [] } },
-        async mounted() {
-            const { data: { session } } = await _client.auth.getSession();
-            this.session = session;
-            if (this.session) this.init();
-            lucide.createIcons();
-        },
+        async mounted() { const { data: { session } } = await _client.auth.getSession(); this.session = session; if (this.session) this.init(); lucide.createIcons(); },
         methods: {
-            async init() {
-                const { data: items } = await _client.from('inventory').select('*');
-                this.inventory = items || [];
-            },
-            async addItem() {
-                const n = prompt("Name:"); const s = prompt("Servings:");
-                if (n && s) { await _client.from('inventory').insert([{ item_name: n, total_servings: parseInt(s), servings_left: parseInt(s), user_id: this.session.user.id }]); this.init(); }
-            }
+            async init() { const { data: items } = await _client.from('inventory').select('*'); this.inventory = items || []; },
+            async addItem() { const n = prompt("Name:"); const s = prompt("Servings:"); if (n && s) { await _client.from('inventory').insert([{ item_name: n, total_servings: parseInt(s), servings_left: parseInt(s), user_id: this.session.user.id }]); this.init(); } }
         }
     }).mount('#app');
 </script>
