@@ -45,18 +45,26 @@
             box-shadow: inset 0 1px 1px rgba(255,255,255,0.02);
         }
 
-        /* --- LOGO INTEGRATION (Centered & Large) --- */
+        /* --- LOGO INTEGRATION (FIXED) --- */
         .auth-logo, .nav-logo {
-            height: auto;
-            filter: drop-shadow(0 0 7px var(--primary-blue));
+            filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.6)); /* Enhanced Glow */
             transition: filter 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         
         .auth-logo { 
-            width: 320px; /* Increased Size */
-            max-width: 80vw; /* Responsive constraint */
+            width: 320px; 
+            max-width: 80vw;
+            margin: 0 auto;
+        }
+
+        /* FORCE SVG TO FILL CONTAINER */
+        .auth-logo svg {
+            width: 100% !important;
+            height: auto !important;
             display: block;
-            margin: 0 auto; /* Explicit centering */
         }
 
         .nav-logo { 
@@ -104,7 +112,7 @@
                 <h1 class="text-3xl font-black tracking-tighter uppercase italic text-white leading-none">
                     <span class="text-blue-500">CONSTELLATION</span> FITNESS
                 </h1>
-                <p class="text-slate-500 text-[10px] uppercase tracking-[0.4em] mt-4 font-black italic">Performance Lifestyle</p>
+                <p class="text-slate-500 text-[9px] uppercase tracking-[0.4em] mt-4 font-black italic">Performance Lifestyle</p>
             </div>
             <div class="w-full max-w-sm space-y-4">
                 <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
