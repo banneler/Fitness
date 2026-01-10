@@ -12,105 +12,108 @@
         body { -webkit-tap-highlight-color: transparent; background-color: #020617; }
         .tab-active { color: #3b82f6; }
         .tab-active i { color: #3b82f6; stroke-width: 3px; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body class="bg-slate-950 text-white font-sans antialiased">
+<body class="bg-slate-950 text-white font-sans antialiased selection:bg-blue-500/30">
 
-<div id="app" class="min-h-screen">
+<div id="app" class="min-h-screen flex flex-col">
     
-    <div v-if="!session" class="flex flex-col items-center justify-center min-h-screen px-8">
-        <div class="mb-10 text-center">
-            <h1 class="text-4xl font-black tracking-tighter text-blue-500 uppercase">Constellation</h1>
-            <p class="text-slate-400 text-sm tracking-widest uppercase">Performance Tracking</p>
+    <div v-if="!session" class="flex-1 flex flex-col items-center justify-center px-8">
+        <div class="mb-12 text-center">
+            <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl shadow-blue-600/20">
+                <i data-lucide="sparkles" class="w-10 h-10 text-white"></i>
+            </div>
+            <h1 class="text-4xl font-black tracking-tighter uppercase italic">Constellation</h1>
+            <p class="text-slate-500 text-xs tracking-[0.3em] uppercase mt-2">Personal Performance</p>
         </div>
         
-        <div class="w-full space-y-4">
-            <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none">
-            <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none">
-            <button @click="handleAuth" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg shadow-blue-900/20">
+        <div class="w-full max-w-sm space-y-4">
+            <div class="space-y-2">
+                <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            </div>
+            <button @click="handleAuth" :disabled="loading" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-lg active:scale-[0.98] transition-all shadow-xl shadow-blue-900/20 disabled:opacity-50">
                 {{ authMode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT' }}
             </button>
-            <p @click="authMode = authMode === 'login' ? 'signup' : 'login'" class="text-center text-slate-500 text-sm mt-4 underline">
-                {{ authMode === 'login' ? "Don't have an account? Sign Up" : "Already have an account? Login" }}
-            </p>
+            <button @click="authMode = authMode === 'login' ? 'signup' : 'login'" class="w-full text-slate-500 text-sm font-bold uppercase tracking-widest py-2">
+                Switch to {{ authMode === 'login' ? 'Sign Up' : 'Login' }}
+            </button>
         </div>
     </div>
 
-    <div v-else class="pb-24">
+    <div v-else class="flex-1 flex flex-col pb-24">
         <header class="p-6 flex justify-between items-center">
             <div>
-                <h1 class="text-xl font-black tracking-tighter text-blue-500 uppercase">Constellation</h1>
+                <h1 class="text-xl font-black tracking-tighter text-blue-500 uppercase italic">Constellation</h1>
                 <p class="text-slate-500 text-[10px] uppercase tracking-widest font-bold">{{ activeTab }}</p>
             </div>
-            <button @click="signOut" class="text-slate-600 hover:text-red-400 transition">
-                <i data-lucide="log-out" class="w-5 h-5"></i>
+            <button @click="signOut" class="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center border border-slate-800">
+                <i data-lucide="log-out" class="w-4 h-4 text-slate-400"></i>
             </button>
         </header>
 
-        <main class="px-4">
-            <div v-if="activeTab === 'today'" class="space-y-6">
-                <div class="glass rounded-3xl p-6 shadow-2xl">
-                    <div class="flex items-center gap-2 mb-6">
-                        <i data-lucide="activity" class="text-blue-500 w-5 h-5"></i>
-                        <h3 class="text-slate-400 text-sm font-bold uppercase tracking-tight">Morning Readiness</h3>
+        <main class="flex-1 px-4 overflow-y-auto">
+            <div v-if="activeTab === 'today'" class="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div class="glass rounded-[2rem] p-8 shadow-2xl">
+                    <div class="flex items-center gap-3 mb-8">
+                        <div class="p-2 bg-blue-500/10 rounded-lg">
+                            <i data-lucide="zap" class="text-blue-500 w-5 h-5"></i>
+                        </div>
+                        <h3 class="text-white text-lg font-black italic uppercase tracking-tight">Morning Check-In</h3>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">
-                        <div v-for="(val, key) in metricsList" :key="key" class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="block text-[10px] text-slate-500 uppercase font-bold mb-1">{{ key }}</span>
-                            <input type="number" v-model="metrics[key]" class="bg-transparent border-none text-2xl font-black w-full focus:ring-0 text-white" placeholder="0">
+                        <div v-for="(val, label) in metrics" :key="label" class="bg-slate-950/40 p-5 rounded-[1.5rem] border border-white/5">
+                            <span class="block text-[10px] text-slate-500 uppercase font-black mb-1 tracking-widest">{{ label }}</span>
+                            <input type="number" v-model="metrics[label]" step="0.1" class="bg-transparent border-none text-3xl font-black w-full focus:ring-0 text-white p-0" placeholder="0">
                         </div>
                     </div>
 
-                    <button @click="saveMetrics" class="w-full mt-6 bg-blue-600 py-4 rounded-2xl font-black text-lg active:scale-95 transition-all">
-                        LOG SESSION
+                    <button @click="saveMetrics" :disabled="loading" class="w-full mt-8 bg-blue-600 py-5 rounded-[1.5rem] font-black text-xl active:scale-[0.98] transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50">
+                        {{ loading ? 'SYNCING...' : 'FINISH LOG' }}
                     </button>
                 </div>
             </div>
 
-            <div v-if="activeTab === 'gym'" class="text-center py-20">
-                <i data-lucide="dumbbell" class="w-12 h-12 text-slate-700 mx-auto mb-4"></i>
-                <h2 class="text-xl font-bold">Lifting Module</h2>
-                <p class="text-slate-500 text-sm">Waiting for Vertical Architecture update...</p>
-            </div>
+            <div v-if="activeTab === 'vault'" class="space-y-6">
+                <div class="glass rounded-[2rem] p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="package" class="text-orange-500 w-5 h-5"></i>
+                            <h3 class="text-white text-lg font-black italic uppercase">Inventory</h3>
+                        </div>
+                        <button @click="addInventoryItem" class="text-blue-500 text-xs font-bold">+ ADD</button>
+                    </div>
 
-            <div v-if="activeTab === 'kitchen'" class="space-y-4">
-                <div class="glass rounded-3xl p-6 shadow-xl">
-                    <div class="flex items-center gap-2 mb-4">
-                        <i data-lucide="utensils" class="text-green-500 w-5 h-5"></i>
-                        <h3 class="text-slate-400 text-sm font-bold uppercase tracking-tight">Fuel Intake</h3>
+                    <div v-if="inventory.length === 0" class="text-center py-10 text-slate-600 text-sm italic">
+                        No supplements tracked yet.
                     </div>
-                    <input type="text" v-model="foodEntry.name" placeholder="Quick Search..." class="w-full bg-slate-950/50 border border-white/5 rounded-xl py-4 px-4 mb-4 outline-none">
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="number" v-model="foodEntry.cals" placeholder="Cals" class="bg-slate-950/50 border border-white/5 rounded-xl py-3 text-center font-bold">
-                        <input type="number" v-model="foodEntry.protein" placeholder="Prot (g)" class="bg-slate-950/50 border border-white/5 rounded-xl py-3 text-center font-bold">
-                    </div>
-                    <button @click="saveFood" class="w-full mt-4 bg-white text-black py-4 rounded-2xl font-black active:scale-95 transition-all">ADD ENTRY</button>
-                </div>
-            </div>
 
-            <div v-if="activeTab === 'vault'" class="space-y-4">
-                <div class="glass rounded-3xl p-6">
-                    <div class="flex items-center gap-2 mb-4">
-                        <i data-lucide="package" class="text-orange-500 w-5 h-5"></i>
-                        <h3 class="text-slate-400 text-sm font-bold uppercase tracking-tight">Inventory</h3>
-                    </div>
-                    <div v-for="item in inventory" class="bg-slate-950/50 p-4 rounded-2xl border border-white/5 mb-2">
-                        <div class="flex justify-between items-center">
-                            <span class="font-bold text-slate-300">{{ item.item_name }}</span>
-                            <span class="text-blue-400 font-black">{{ item.servings_left }}</span>
+                    <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-5 rounded-2xl border border-white/5 mb-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-slate-200">{{ item.item_name }}</span>
+                            <span class="text-blue-400 font-black text-xl">{{ Math.floor(item.servings_left) }}</span>
+                        </div>
+                        <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-blue-600 h-full transition-all duration-1000" :style="{ width: (item.servings_left / item.total_servings * 100) + '%' }"></div>
                         </div>
                     </div>
                 </div>
             </div>
+            
+            <div v-if="['gym', 'kitchen'].includes(activeTab)" class="flex flex-col items-center justify-center py-20 opacity-20">
+                <i :data-lucide="activeTab === 'gym' ? 'dumbbell' : 'utensils'" class="w-16 h-16 mb-4"></i>
+                <p class="font-black italic uppercase tracking-widest">Locked for Next Module</p>
+            </div>
         </main>
 
-        <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around p-3 pb-8">
-            <button v-for="tab in tabs" @click="activeTab = tab.id" :class="{'tab-active': activeTab === tab.id}" class="flex flex-col items-center px-4 transition-all">
-                <i :data-lucide="tab.icon" class="w-6 h-6 mb-1 text-slate-600"></i>
-                <span class="text-[9px] font-black uppercase tracking-widest">{{ tab.id }}</span>
+        <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around p-3 safe-area-bottom">
+            <button v-for="tab in tabs" @click="activeTab = tab.id" :class="{'tab-active': activeTab === tab.id}" class="flex flex-col items-center px-6 py-2 transition-all">
+                <i :data-lucide="tab.icon" class="w-6 h-6 mb-1 text-slate-600 transition-colors"></i>
+                <span class="text-[8px] font-black uppercase tracking-[0.2em]">{{ tab.id }}</span>
             </button>
         </nav>
     </div>
@@ -127,11 +130,10 @@
             return {
                 session: null,
                 authMode: 'login',
+                loading: false,
                 auth: { email: '', password: '' },
                 activeTab: 'today',
                 metrics: { Weight: null, Sleep: null, Energy: null, HR: null },
-                metricsList: { Weight: 0, Sleep: 0, Energy: 0, HR: 0 },
-                foodEntry: { name: '', cals: null, protein: null },
                 inventory: [],
                 tabs: [
                     { id: 'today', icon: 'zap' },
@@ -150,31 +152,50 @@
                 this.session = session;
                 if (session) this.initApp();
             });
-            // Init Lucide icons
             lucide.createIcons();
         },
         updated() { lucide.createIcons(); },
         methods: {
             async handleAuth() {
+                this.loading = true;
                 const { error } = this.authMode === 'login' 
                     ? await supabase.auth.signInWithPassword(this.auth)
                     : await supabase.auth.signUp(this.auth);
                 if (error) alert(error.message);
+                this.loading = false;
             },
-            async signOut() { await supabase.auth.signOut(); },
+            async signOut() { await supabase.auth.signOut(); this.session = null; },
             initApp() { this.fetchInventory(); },
             async fetchInventory() {
                 const { data } = await supabase.from('inventory').select('*');
                 this.inventory = data || [];
             },
             async saveMetrics() {
+                this.loading = true;
                 const { error } = await supabase.from('daily_metrics').insert([{
                     weight: this.metrics.Weight,
                     sleep_quality: this.metrics.Sleep,
                     energy_level: this.metrics.Energy,
                     resting_hr: this.metrics.HR
                 }]);
-                if (!error) alert("Metrics Synced.");
+                if (error) alert(error.message);
+                else {
+                    this.metrics = { Weight: null, Sleep: null, Energy: null, HR: null };
+                    alert("Sync Complete.");
+                }
+                this.loading = false;
+            },
+            async addInventoryItem() {
+                const name = prompt("Supplement Name:");
+                const servings = prompt("Total Servings:");
+                if (name && servings) {
+                    await supabase.from('inventory').insert([{
+                        item_name: name,
+                        total_servings: parseInt(servings),
+                        servings_left: parseInt(servings)
+                    }]);
+                    this.fetchInventory();
+                }
             }
         }
     }).mount('#app')
