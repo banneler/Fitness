@@ -45,7 +45,7 @@
             box-shadow: inset 0 1px 1px rgba(255,255,255,0.02);
         }
 
-        /* --- LOGO SCALE & ALIGNMENT --- */
+        /* --- LOGO INTEGRATION (Centered & Large) --- */
         .auth-logo, .nav-logo {
             height: auto;
             filter: drop-shadow(0 0 7px var(--primary-blue));
@@ -53,10 +53,8 @@
         }
         
         .auth-logo { 
-            width: 250px; /* Forced large size */
+            width: 250px; /* Forced 250px size */
             display: block;
-            margin-left: auto;
-            margin-right: auto;
         }
 
         .nav-logo { 
@@ -68,16 +66,34 @@
         .svg-inject path[fill="#FEFEFE"] { fill: var(--logo-primary-color) !important; transition: fill 0.3s; }
         .svg-inject path[fill="#010101"] { fill: #FFFFFF !important; transition: fill 0.3s; }
         
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+        /* Loading Overlay Mask */
+        .loading-mask {
+            position: fixed;
+            inset: 0;
+            background: #020617;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body class="font-sans antialiased">
 
 <div id="app" v-cloak class="min-h-screen flex flex-col">
     
+    <div v-if="initialLoading" class="loading-mask">
+        <div class="animate-pulse flex flex-col items-center gap-4">
+            <div class="w-10 h-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
+            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Synchronizing</p>
+        </div>
+    </div>
+
     <transition name="fade">
-        <div v-if="!session" class="flex-1 flex flex-col items-center justify-center p-10">
+        <div v-if="!session && !initialLoading" class="flex-1 flex flex-col items-center justify-center p-10">
             <div class="mb-12 text-center w-full">
                 <div class="flex justify-center w-full mb-8">
                     <div class="svg-inject auth-logo" v-html="logoSvg"></div>
@@ -97,7 +113,7 @@
     </transition>
 
     <transition name="fade">
-        <div v-if="session" class="flex-1 flex flex-col p-8">
+        <div v-if="session && !initialLoading" class="flex-1 flex flex-col p-8">
             <header class="flex justify-between items-start mb-8">
                 <div class="flex items-center gap-4">
                     <div class="svg-inject nav-logo" v-html="logoSvg"></div>
@@ -164,7 +180,7 @@
             </nav>
 
             <footer class="mt-auto pb-4 text-center">
-                <p class="text-[7px] text-slate-800 font-black uppercase tracking-[0.6em]">STRATEGIC PERFORMANCE v2.9</p>
+                <p class="text-[7px] text-slate-800 font-black uppercase tracking-[0.6em]">STRATEGIC PERFORMANCE v3.1</p>
             </footer>
         </div>
     </transition>
@@ -180,7 +196,8 @@
                 session: null, 
                 auth: { email: '', password: '' }, 
                 dailyLogs: [],
-                logoSvg: ''
+                logoSvg: '',
+                initialLoading: true
             } 
         },
         computed: {
@@ -192,25 +209,33 @@
             }
         },
         async mounted() {
-            // Load SVG for path manipulation
-            fetch('c-logo.svg')
-                .then(res => res.text())
-                .then(data => {
-                    this.logoSvg = data;
-                    this.$nextTick(() => lucide.createIcons());
-                });
+            // Task 1: Fetch External Logo Data
+            const logoFetch = fetch('c-logo.svg').then(res => res.text()).then(data => {
+                this.logoSvg = data;
+            });
 
+            // Task 2: Validate Session Status
             const { data: { session } } = await _client.auth.getSession();
             this.session = session;
-            if (this.session) this.fetchDailyData();
             
+            // Task 3: Load Data for Auth Users
+            if (this.session) {
+                await this.fetchDailyData();
+            }
+
+            // Finish: Synchronize reveal
+            await logoFetch; // Ensure logo is ready before mask fades
+            this.initialLoading = false;
+            
+            this.$nextTick(() => {
+                lucide.createIcons();
+            });
+
             _client.auth.onAuthStateChange((_e, session) => { 
                 this.session = session; 
                 if(session) this.fetchDailyData(); 
                 this.$nextTick(() => lucide.createIcons());
             });
-
-            lucide.createIcons();
         },
         updated() { lucide.createIcons(); },
         methods: {
