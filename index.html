@@ -4,28 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Constellation Fit Powerhouse</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
         [v-cloak] { display: none !important; }
-        body { -webkit-tap-highlight-color: transparent; background-color: #020617; color: white; overscroll-behavior-y: contain; }
-        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        body { 
+            -webkit-tap-highlight-color: transparent; 
+            background-color: #020617; 
+            color: white; 
+            overscroll-behavior-y: contain;
+        }
+        
+        /* Glassmorphism System */
+        .glass { 
+            background: rgba(15, 23, 42, 0.7); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255,255,255,0.08); 
+        }
+        
         .tab-active { color: #3b82f6; }
-        .tab-active i { stroke-width: 3px; color: #3b82f6; }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .tab-active i { stroke-width: 3px; filter: drop-shadow(0 0 10px #3b82f6); }
+        
+        input::-webkit-outer-spin-button, 
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
-        .macro-dot { @apply w-2 h-2 rounded-full mr-2; }
+        
+        /* Animations */
+        .fade-enter-active, .fade-leave-active { transition: all 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(10px); }
+
+        .macro-card { @apply flex flex-col items-center justify-center p-3 rounded-2xl border border-white/5 bg-slate-950/40; }
     </style>
 </head>
 <body class="font-sans antialiased">
 
 <div id="app" v-cloak class="min-h-screen flex flex-col">
     
-    <transition name="toast">
+    <transition name="fade">
         <div v-if="toast.show" class="fixed top-14 left-6 right-6 z-[100] flex justify-center pointer-events-none">
-            <div class="glass px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-4 border-l-4 border-blue-500 pointer-events-auto">
+            <div class="glass px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border-l-4 border-blue-500 pointer-events-auto">
                 <i :data-lucide="toast.icon" class="w-5 h-5 text-blue-500"></i>
                 <p class="text-sm font-black uppercase tracking-tight">{{ toast.message }}</p>
             </div>
@@ -33,120 +54,176 @@
     </transition>
 
     <div v-if="!session" class="flex-1 flex flex-col items-center justify-center px-10">
-        <h1 class="text-5xl font-black tracking-tighter uppercase italic text-blue-500">Constellation</h1>
-        <p class="text-slate-500 text-[10px] tracking-[0.5em] uppercase mt-2 font-black mb-12">AI Performance Engine</p>
-        <div class="w-full max-sm space-y-4">
-            <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-8 outline-none focus:ring-2 focus:ring-blue-500">
-            <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 px-8 outline-none focus:ring-2 focus:ring-blue-500">
-            <button @click="handleAuth" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-xl shadow-xl shadow-blue-900/20">INITIALIZE</button>
+        <div class="mb-12 text-center">
+            <h1 class="text-5xl font-black tracking-tighter uppercase italic text-blue-500">Constellation</h1>
+            <p class="text-slate-500 text-[10px] tracking-[0.4em] uppercase mt-2 font-black">Powerhouse Edition</p>
+        </div>
+        <div class="w-full max-w-sm space-y-4">
+            <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="password" v-model="auth.password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500">
+            <button @click="handleAuth" :disabled="loading" class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl shadow-blue-900/20 active:scale-95 transition-all">
+                {{ authMode === 'login' ? 'SIGN IN' : 'INITIALIZE' }}
+            </button>
+            <button @click="authMode = authMode === 'login' ? 'signup' : 'login'" class="w-full text-slate-500 text-xs font-black uppercase tracking-widest py-2 italic text-center underline">
+                Switch to {{ authMode === 'login' ? 'Sign Up' : 'Login' }}
+            </button>
         </div>
     </div>
 
     <div v-else class="flex-1 flex flex-col pb-28">
         <header class="p-8 flex justify-between items-center">
-            <h1 class="text-2xl font-black tracking-tighter text-blue-500 uppercase italic">Constellation</h1>
-            <button @click="signOut" class="w-10 h-10 rounded-xl glass flex items-center justify-center border border-slate-800"><i data-lucide="log-out" class="w-4 h-4 text-slate-400"></i></button>
+            <div>
+                <h1 class="text-2xl font-black tracking-tighter text-blue-500 uppercase italic">Constellation</h1>
+                <p class="text-slate-500 text-[10px] uppercase tracking-widest font-black italic">{{ activeTab }} Mode</p>
+            </div>
+            <button @click="signOut" class="w-12 h-12 rounded-2xl glass flex items-center justify-center border border-slate-800"><i data-lucide="log-out" class="w-5 h-5 text-slate-400"></i></button>
         </header>
 
         <main class="flex-1 px-6 overflow-y-auto space-y-10">
+            
             <div v-if="activeTab === 'today'" class="space-y-8">
                 <div class="grid grid-cols-4 gap-2">
-                    <div v-for="(v, k) in {'CAL':dailyTotals.cals, 'PRO':dailyTotals.protein, 'CHO':dailyTotals.carbs, 'FAT':dailyTotals.fat}" class="bg-slate-900 p-3 rounded-xl border border-white/5 text-center">
-                        <span class="text-[8px] text-slate-500 font-black uppercase tracking-widest">{{k}}</span>
-                        <div class="text-sm font-black">{{v}}</div>
-                    </div>
+                    <div class="macro-card"><span class="text-[8px] text-slate-500 font-black uppercase">Cals</span><span class="text-sm font-black">{{ dailyTotals.cals }}</span></div>
+                    <div class="macro-card border-blue-500/20"><span class="text-[8px] text-blue-400 font-black uppercase">Prot</span><span class="text-sm font-black">{{ dailyTotals.protein }}</span></div>
+                    <div class="macro-card border-yellow-500/20"><span class="text-[8px] text-yellow-400 font-black uppercase">Carb</span><span class="text-sm font-black">{{ dailyTotals.carbs }}</span></div>
+                    <div class="macro-card border-red-500/20"><span class="text-[8px] text-red-400 font-black uppercase">Fat</span><span class="text-sm font-black">{{ dailyTotals.fat }}</span></div>
                 </div>
+
                 <div class="glass rounded-[2.5rem] p-8 shadow-2xl">
-                    <h3 class="text-white text-lg font-black italic uppercase mb-8 flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4 text-blue-500"></i> Readiness</h3>
+                    <h3 class="text-white text-lg font-black italic uppercase mb-8 flex items-center gap-2"><i data-lucide="zap" class="text-blue-500 w-5 h-5"></i> Readiness</h3>
                     <div class="grid grid-cols-2 gap-4">
                         <div v-for="l in ['Weight', 'Sleep', 'Energy', 'HR']" :key="l" class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-600 uppercase font-black mb-1">{{l}}</span>
-                            <input type="number" step="0.1" v-model="metrics[l]" class="bg-transparent border-none text-2xl font-black w-full text-white p-0">
+                            <span class="text-[8px] text-slate-600 uppercase font-black mb-1 tracking-widest">{{ l }}</span>
+                            <input type="number" step="0.1" v-model="metrics[l]" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 outline-none">
                         </div>
                     </div>
-                    <button @click="saveMetrics" class="w-full mt-8 bg-blue-600 py-5 rounded-2xl font-black text-xl">COMMIT DATA</button>
+                    <button @click="saveMetrics" :disabled="loading" class="w-full mt-8 bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl shadow-blue-600/20">COMMIT READINESS</button>
                 </div>
+
                 <div v-if="readinessHistory.length" class="space-y-4 px-2">
-                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">Recent Trends</h4>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">Trends</h4>
                     <div v-for="log in readinessHistory.slice(0, 3)" :key="log.id" class="glass rounded-2xl p-4 flex justify-between items-center text-xs">
-                        <span class="font-black opacity-50">{{formatDate(log.created_at)}}</span>
-                        <span class="font-black text-blue-400">{{log.weight}} lbs</span>
+                        <span class="font-black opacity-50">{{ formatDate(log.created_at) }}</span>
+                        <span class="font-black text-blue-400">{{ log.weight }} lbs</span>
                     </div>
                 </div>
             </div>
 
             <div v-if="activeTab === 'gym'" class="space-y-6">
-                <div v-if="!activeWorkout" class="glass rounded-[2.5rem] p-10 text-center shadow-2xl">
-                    <i data-lucide="dumbbell" class="w-12 h-12 text-blue-500 mx-auto mb-4"></i>
-                    <h2 class="text-xl font-black uppercase italic mb-8">Performance Session</h2>
-                    <div class="space-y-4">
-                        <button v-for="r in routines" :key="r.id" @click="startRoutine(r)" class="w-full py-5 px-6 bg-slate-900 rounded-3xl border border-white/5 flex justify-between font-black italic">
-                            {{r.name}} <i data-lucide="play" class="w-4 h-4 text-blue-400"></i>
-                        </button>
-                        <button @click="triggerAIWorkout" class="w-full py-4 border border-blue-500/30 text-blue-500 rounded-2xl text-[10px] font-black uppercase tracking-widest italic flex items-center justify-center gap-2">
-                            <i data-lucide="sparkles" class="w-3 h-3"></i> AI Architect New Routine
-                        </button>
-                    </div>
-                </div>
-                <div v-else class="glass rounded-[2.5rem] p-6 shadow-2xl border-t-4 border-blue-600">
-                    <div class="flex justify-between items-center mb-10">
-                        <h3 class="text-xl font-black uppercase italic text-blue-500">{{activeWorkout.name}}</h3>
-                        <button @click="activeWorkout = null"><i data-lucide="x" class="w-5 h-5"></i></button>
-                    </div>
-                    <div v-for="(ex, exI) in activeWorkout.exercises" :key="exI" class="mb-10">
-                        <h4 class="text-[10px] font-black uppercase mb-3 opacity-50 tracking-widest">{{ex.name}}</h4>
-                        <div v-for="(s, sI) in ex.sets" :key="sI" class="flex gap-2 mb-2">
-                            <input type="number" v-model="s.weight" placeholder="lbs" class="w-full bg-slate-950 rounded-xl py-4 text-center font-black">
-                            <input type="number" v-model="s.reps" placeholder="reps" class="w-full bg-slate-950 rounded-xl py-4 text-center font-black">
-                            <button @click="s.done = !s.done" :class="s.done ? 'bg-green-600' : 'bg-slate-800'" class="w-14 rounded-xl flex items-center justify-center"><i data-lucide="check" class="w-5 h-5"></i></button>
+                <div v-if="!activeWorkout" class="space-y-6">
+                    <div class="glass rounded-[2.5rem] p-10 text-center shadow-2xl">
+                        <i data-lucide="award" class="w-12 h-12 text-blue-500 mx-auto mb-4"></i>
+                        <h2 class="text-xl font-black uppercase italic mb-8">Start Routine</h2>
+                        <div class="space-y-4">
+                            <button v-for="r in routines" :key="r.id" @click="startRoutine(r)" class="w-full py-5 px-6 bg-slate-900 rounded-3xl border border-white/5 flex justify-between font-black italic">
+                                <span>{{ r.name }}</span>
+                                <i data-lucide="play" class="w-4 h-4 text-blue-500"></i>
+                            </button>
+                            <button @click="triggerAIWorkout" class="w-full py-4 border border-blue-500/30 text-blue-500 rounded-2xl text-[10px] font-black uppercase tracking-widest italic flex items-center justify-center gap-2">
+                                <i data-lucide="sparkles" class="w-3 h-3"></i> AI Architect New Routine
+                            </button>
                         </div>
                     </div>
-                    <button @click="finishWorkout" class="w-full bg-blue-600 py-6 rounded-[2rem] font-black text-xl">FINISH WORKOUT</button>
+
+                    <div v-if="workoutHistory.length" class="space-y-4 px-2">
+                        <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">Recent Sessions</h4>
+                        <div v-for="log in workoutHistory.slice(0, 5)" :key="log.id" class="glass rounded-2xl p-4 flex justify-between items-center text-xs">
+                            <span class="font-black uppercase italic">{{ log.exercise_name }}</span>
+                            <span class="opacity-50 text-[10px]">{{ formatDate(log.created_at) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-else class="glass rounded-[2.5rem] p-6 shadow-2xl border-t-4 border-blue-600">
+                    <div class="flex justify-between items-center mb-8 px-2">
+                        <h3 class="text-2xl font-black uppercase italic text-blue-500">{{ activeWorkout.name }}</h3>
+                        <button @click="activeWorkout = null" class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-slate-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    </div>
+                    
+                    <div v-for="(ex, exI) in activeWorkout.exercises" :key="exI" class="mb-10 space-y-4">
+                        <div class="flex justify-between items-end border-b border-white/5 pb-2">
+                            <h4 class="font-black uppercase italic text-sm text-slate-300">{{ ex.name }}</h4>
+                        </div>
+                        <div v-for="(s, sI) in ex.sets" :key="sI" class="flex gap-2">
+                            <input type="number" v-model="s.weight" placeholder="lbs" class="w-full bg-slate-950 rounded-xl py-4 text-center font-black">
+                            <input type="number" v-model="s.reps" placeholder="reps" class="w-full bg-slate-950 rounded-xl py-4 text-center font-black">
+                            <button @click="s.done = !s.done" :class="s.done ? 'bg-green-600' : 'bg-slate-800'" class="w-14 rounded-xl flex items-center justify-center transition-all shadow-lg">
+                                <i data-lucide="check" class="w-5 h-5 text-white"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button @click="finishWorkout" :disabled="loading" class="w-full bg-blue-600 py-6 rounded-[2rem] font-black text-xl shadow-xl shadow-blue-900/40">COMMIT SESSION</button>
                 </div>
             </div>
 
             <div v-if="activeTab === 'kitchen'" class="space-y-8">
                 <div class="glass rounded-[2.5rem] p-8 shadow-2xl">
                     <div class="flex justify-between items-center mb-8">
-                        <h3 class="text-white text-lg font-black italic uppercase">Kitchen Engine</h3>
+                        <h3 class="text-white text-lg font-black italic uppercase">Fuel Diary</h3>
                         <label class="bg-blue-600/20 px-4 py-2 rounded-xl border border-blue-500/30 flex items-center gap-2 text-blue-500 text-[10px] font-black uppercase cursor-pointer">
-                            <i data-lucide="camera" class="w-3 h-3"></i> AI Scan Label
+                            <i data-lucide="camera" class="w-3 h-3"></i> AI Scan
                             <input type="file" accept="image/*" @change="handleImageScan" class="hidden">
                         </label>
                     </div>
+
                     <div class="relative mb-6">
                         <input type="text" v-model="foodSearch" @input="filterMemory" placeholder="Search Memory..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl py-5 px-6 outline-none font-black text-lg">
-                    </div>
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div v-for="m in ['cals','protein','carbs','fat']" :key="m" class="bg-slate-950/50 p-4 rounded-2xl">
-                            <span class="text-[8px] text-slate-600 font-black uppercase italic">{{m}}</span>
-                            <input type="number" v-model="foodEntry[m]" class="bg-transparent border-none text-2xl font-black w-full text-white p-0">
+                        <div v-if="showMemory && filteredMemory.length" class="absolute left-0 right-0 mt-2 glass rounded-2xl overflow-hidden z-[50] shadow-2xl">
+                            <button v-for="item in filteredMemory" :key="item.id" @click="selectFood(item)" class="w-full px-6 py-4 text-left border-b border-white/5 hover:bg-blue-500/10 flex justify-between font-black italic text-xs">
+                                <div><span class="block uppercase">{{ item.food_name }}</span><span class="text-[8px] opacity-50">{{ item.calories }}c | {{ item.protein }}p | {{ item.carbs }}c | {{ item.fat }}f</span></div>
+                                <i data-lucide="zap" class="w-4 h-4 text-blue-500"></i>
+                            </button>
                         </div>
                     </div>
-                    <button @click="saveFood" class="w-full bg-green-600 py-5 rounded-[2rem] font-black text-xl">LOG FUEL</button>
+
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div v-for="m in ['cals','protein','carbs','fat']" :key="m" class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-600 uppercase font-black mb-1 italic">{{ m }}</span>
+                            <input type="number" v-model="foodEntry[m]" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 outline-none">
+                        </div>
+                    </div>
+
+                    <button @click="saveFood" :disabled="loading" class="w-full bg-green-600 py-5 rounded-[2rem] font-black text-xl shadow-xl shadow-green-900/20">LOG FUEL</button>
+                </div>
+
+                <div v-if="dailyLogs.length" class="space-y-4 px-2">
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">Today's Diary</h4>
+                    <div class="glass rounded-[2rem] p-6 space-y-4">
+                        <div v-for="log in dailyLogs" :key="log.id" class="flex justify-between items-center py-4 border-b border-white/5 last:border-0">
+                            <div><span class="font-black text-xs uppercase italic">{{ log.food_name }}</span></div>
+                            <div class="text-right">
+                                <span class="text-xs font-black text-green-500">{{ log.calories }}c</span>
+                                <span class="text-[8px] block font-black text-blue-500 uppercase">{{ log.protein }}g p</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div v-if="activeTab === 'tracker'" class="space-y-6">
                 <div class="glass rounded-[2.5rem] p-8 shadow-xl">
-                    <h3 class="text-white text-lg font-black italic uppercase mb-8 flex items-center gap-2"><i data-lucide="package" class="text-orange-500 w-4 h-4"></i> Strategic Inventory</h3>
-                    <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-6 rounded-3xl border border-white/5 mb-4 font-black italic">
-                        <div class="flex justify-between mb-4 uppercase text-xs">
-                            <span>{{item.item_name}}</span>
-                            <span :class="item.servings_left < 5 ? 'text-red-500' : 'text-blue-400'">{{Math.floor(item.servings_left)}} left</span>
+                    <div class="flex justify-between items-center mb-10">
+                        <div class="flex items-center gap-3"><i data-lucide="package" class="text-orange-500 w-5 h-5"></i><h3 class="text-white text-lg font-black italic uppercase">Inventory</h3></div>
+                        <button @click="addInventoryItem" class="bg-slate-900 px-4 py-2 rounded-xl text-blue-500 text-[10px] font-black uppercase tracking-widest border border-slate-800">+ Add Item</button>
+                    </div>
+                    <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-6 rounded-3xl border border-white/5 mb-4 shadow-inner">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="font-black text-slate-200 uppercase text-xs italic">{{ item.item_name }}</span>
+                            <div class="text-right">
+                                <span :class="item.servings_left < 5 ? 'text-red-500' : 'text-blue-400'" class="font-black text-2xl block leading-none">{{ Math.floor(item.servings_left) }}</span>
+                                <span class="text-[8px] text-slate-600 uppercase font-black italic">Left</span>
+                            </div>
                         </div>
-                        <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
-                            <div class="bg-blue-600 h-full transition-all duration-1000" :style="{ width: (item.servings_left/item.total_servings*100) + '%' }"></div>
-                        </div>
+                        <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden"><div class="bg-blue-600 h-full transition-all duration-1000" :style="{ width: (item.servings_left/item.total_servings*100) + '%' }"></div></div>
                     </div>
                 </div>
             </div>
         </main>
 
         <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around p-4 safe-area-bottom z-[100]">
-            <button v-for="t in tabs" :key="t.id" @click="activeTab=t.id" :class="{'tab-active': activeTab===t.id}" class="flex flex-col items-center px-4 transition-all">
+            <button v-for="t in tabs" :key="t.id" @click="activeTab = t.id" :class="{'tab-active': activeTab === t.id}" class="flex flex-col items-center px-6 py-2 transition-all">
                 <i :data-lucide="t.icon" class="w-6 h-6 mb-1 text-slate-600"></i>
-                <span class="text-[8px] font-black uppercase italic tracking-widest">{{t.id}}</span>
+                <span class="text-[8px] font-black uppercase tracking-[0.2em] italic">{{ t.id }}</span>
             </button>
         </nav>
     </div>
@@ -154,7 +231,8 @@
 
 <script>
     const { createApp } = Vue;
-    const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
+    // Client Re-declaration fix
+    const _powerhouse = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
 
     createApp({
         data() {
@@ -162,7 +240,8 @@
                 session: null, authMode: 'login', loading: false, activeTab: 'today',
                 auth: { email: '', password: '' }, toast: { show: false, message: '', icon: 'check-circle' },
                 metrics: { Weight: null, Sleep: null, Energy: null, HR: null }, readinessHistory: [],
-                routines: [], activeWorkout: null, foodSearch: '', foodEntry: { cals: 0, protein: 0, carbs: 0, fat: 0 },
+                routines: [], activeWorkout: null, workoutHistory: [],
+                foodSearch: '', foodEntry: { cals: 0, protein: 0, carbs: 0, fat: 0 },
                 foodMemory: [], filteredMemory: [], showMemory: false, dailyLogs: [], inventory: [],
                 tabs: [{id:'today', icon:'zap'}, {id:'gym', icon:'dumbbell'}, {id:'kitchen', icon:'utensils'}, {id:'tracker', icon:'line-chart'}]
             }
@@ -176,33 +255,57 @@
             }
         },
         async mounted() {
-            const { data: { session } } = await _client.auth.getSession();
+            const { data: { session } } = await _powerhouse.auth.getSession();
             this.session = session;
             if (this.session) this.initApp();
-            _client.auth.onAuthStateChange((_e, session) => { this.session = session; if (session) this.initApp(); });
+            _powerhouse.auth.onAuthStateChange((_e, session) => { 
+                this.session = session; 
+                if (session) this.initApp(); 
+            });
             lucide.createIcons();
         },
         updated() { lucide.createIcons(); },
         methods: {
             showToast(msg, icon = 'check-circle') { this.toast = { show: true, message: msg, icon: icon }; setTimeout(() => this.toast.show = false, 4000); },
             formatDate(dt) { return new Date(dt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); },
+            
             async initApp() {
                 this.loading = true;
-                await Promise.all([this.fetchInventory(), this.fetchRoutines(), this.fetchFoodMemory(), this.fetchDailyLogs(), this.fetchReadiness(), this.fetchWorkouts()]);
+                // Fetch ALL data on init
+                await Promise.all([
+                    this.fetchInventory(),
+                    this.fetchRoutines(),
+                    this.fetchFoodMemory(),
+                    this.fetchDailyLogs(),
+                    this.fetchReadiness(),
+                    this.fetchWorkouts()
+                ]);
                 this.loading = false;
             },
-            async handleImageScan(event) {
-                const file = event.target.files[0];
-                this.showToast("Analyzing Label...", "sparkles");
-                // Here we call the Edge Function: ai-nutrition-parser
-                // Result auto-fills foodEntry.cals, protein, carbs, fat
+
+            // --- DATA FETCHERS ---
+            async fetchInventory() { const { data } = await _powerhouse.from('inventory').select('*'); this.inventory = data || []; },
+            async fetchRoutines() { const { data } = await _powerhouse.from('workout_templates').select('*, workout_template_exercises(*)'); this.routines = data || []; },
+            async fetchFoodMemory() { const { data } = await _powerhouse.from('food_memory').select('*').order('use_count', { ascending: false }); this.foodMemory = data || []; },
+            async fetchDailyLogs() { const today = new Date().toISOString().split('T')[0]; const { data } = await _powerhouse.from('food_logs').select('*').gte('created_at', today); this.dailyLogs = data || []; },
+            async fetchReadiness() { const { data } = await _powerhouse.from('daily_metrics').select('*').order('created_at', { ascending: false }); this.readinessHistory = data || []; },
+            async fetchWorkouts() { const { data } = await _powerhouse.from('workout_logs').select('*').order('created_at', { ascending: false }); this.workoutHistory = data || []; },
+
+            // --- ACTIONS ---
+            async handleAuth() {
+                this.loading = true;
+                const { error } = this.authMode === 'login' ? await _powerhouse.auth.signInWithPassword(this.auth) : await _powerhouse.auth.signUp(this.auth);
+                if (error) this.showToast(error.message, 'alert-circle');
+                else if (this.authMode === 'signup') this.showToast("Deployment Sequence Active. Check Email.", "mail");
+                this.loading = false;
             },
-            triggerAIWorkout() { this.showToast("Analyzing Progress...", "sparkles"); /* Call ai-workout-generator */ },
-            async fetchInventory() { const { data } = await _client.from('inventory').select('*'); this.inventory = data || []; },
-            async fetchRoutines() { const { data } = await _client.from('workout_templates').select('*, workout_template_exercises(*)'); this.routines = data || []; },
-            async fetchDailyLogs() { const { data } = await _client.from('food_logs').select('*').gte('created_at', new Date().toISOString().split('T')[0]); this.dailyLogs = data || []; },
-            async fetchReadiness() { const { data } = await _client.from('daily_metrics').select('*').order('created_at', { ascending: false }); this.readinessHistory = data || []; },
-            async fetchWorkouts() { const { data } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false }); this.workoutHistory = data || []; },
+            async signOut() { await _powerhouse.auth.signOut(); this.session = null; },
+            
+            async saveMetrics() {
+                const { error } = await _powerhouse.from('daily_metrics').insert([{ weight: this.metrics.Weight, sleep_quality: this.metrics.Sleep, energy_level: this.metrics.Energy, resting_hr: this.metrics.HR, user_id: this.session.user.id }]);
+                if (!error) { this.showToast("Metrics Synced.", "zap"); this.metrics = { Weight: null, Sleep: null, Energy: null, HR: null }; this.fetchReadiness(); }
+            },
+            
             startRoutine(r) {
                 this.activeWorkout = {
                     name: r.name,
@@ -213,29 +316,33 @@
                 };
             },
             async finishWorkout() {
+                this.loading = true;
                 const logs = this.activeWorkout.exercises.flatMap(ex => ({
                     exercise_name: ex.name, sets_data: ex.sets.filter(s => s.done), user_id: this.session.user.id
                 }));
-                await _client.from('workout_logs').insert(logs);
-                this.showToast("Performance Synced.", "dumbbell");
-                this.activeWorkout = null;
-                this.initApp();
+                const { error } = await _powerhouse.from('workout_logs').insert(logs);
+                if (!error) { this.showToast("Performance Synced.", "dumbbell"); this.activeWorkout = null; this.initApp(); }
+                this.loading = false;
             },
+            
+            filterMemory() { this.showMemory = this.foodSearch.length > 1; this.filteredMemory = this.foodMemory.filter(f => f.food_name.toLowerCase().includes(this.foodSearch.toLowerCase())).slice(0, 5); },
+            selectFood(i) { this.foodSearch = i.food_name; this.foodEntry = { cals: i.calories, protein: i.protein, carbs: i.carbs, fat: i.fat }; this.showMemory = false; },
             async saveFood() {
-                await _client.from('food_logs').insert([{ food_name: this.foodSearch, calories: this.foodEntry.cals, protein: this.foodEntry.protein, carbs: this.foodEntry.carbs, fat: this.foodEntry.fat, user_id: this.session.user.id }]);
-                this.showToast("Fuel Logged.", "check");
-                this.initApp();
+                const { error } = await _powerhouse.from('food_logs').insert([{ 
+                    food_name: this.foodSearch, calories: this.foodEntry.cals, 
+                    protein: this.foodEntry.protein, carbs: this.foodEntry.carbs, 
+                    fat: this.foodEntry.fat, user_id: this.session.user.id 
+                }]);
+                if (!error) { this.showToast("Fuel Logged.", "check"); this.foodSearch = ''; this.foodEntry = { cals: 0, protein: 0, carbs: 0, fat: 0 }; this.initApp(); }
             },
-            async saveMetrics() {
-                await _client.from('daily_metrics').insert([{ weight: this.metrics.Weight, sleep_quality: this.metrics.Sleep, energy_level: this.metrics.Energy, resting_hr: this.metrics.HR, user_id: this.session.user.id }]);
-                this.showToast("Readiness Synced.", "zap");
-                this.initApp();
+            
+            async addInventoryItem() {
+                const name = prompt("Name:"); const servings = prompt("Total Servings:");
+                if (name && servings) { await _powerhouse.from('inventory').insert([{ item_name: name, total_servings: parseInt(servings), servings_left: parseInt(servings), user_id: this.session.user.id }]); this.fetchInventory(); }
             },
-            async handleAuth() {
-                const { error } = this.authMode === 'login' ? await _client.auth.signInWithPassword(this.auth) : await _client.auth.signUp(this.auth);
-                if (error) this.showToast(error.message, 'alert-circle');
-            },
-            async signOut() { await _client.auth.signOut(); this.session = null; }
+
+            async handleImageScan(event) { this.showToast("Vision Engine Active...", "sparkles"); },
+            triggerAIWorkout() { this.showToast("Architecting Routine...", "sparkles"); }
         }
     }).mount('#app');
 </script>
