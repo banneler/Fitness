@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Gym | Constellation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        [v-cloak] { display: none; }
+        body { background-color: #020617; color: white; overscroll-behavior-y: contain; }
+        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+    </style>
+</head>
+<body class="font-sans antialiased">
+<div id="app" v-cloak class="min-h-screen flex flex-col p-6">
+    <header class="flex justify-between items-center mb-10">
+        <h1 class="text-3xl font-black italic text-blue-500 uppercase">GYM</h1>
+        <a href="index.html" class="w-10 h-10 glass rounded-xl flex items-center justify-center"><i data-lucide="home"></i></a>
+    </header>
+
+    <div v-if="!activeWorkout" class="space-y-6">
+        <div class="glass rounded-[2.5rem] p-8 text-center">
+            <h2 class="text-xl font-black uppercase italic mb-6">Start Routine</h2>
+            <div class="space-y-3">
+                <button v-for="r in routines" :key="r.id" @click="startRoutine(r)" class="w-full py-5 px-6 bg-slate-900 rounded-2xl border border-white/5 flex justify-between font-black italic">
+                    {{r.name}} <i data-lucide="play" class="text-blue-500"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div v-else class="glass rounded-[2.5rem] p-6 shadow-2xl border-t-4 border-blue-600">
+        <div class="flex justify-between items-center mb-8 px-2">
+            <h3 class="text-2xl font-black uppercase italic text-blue-500">{{ activeWorkout.name }}</h3>
+            <button @click="activeWorkout = null"><i data-lucide="x"></i></button>
+        </div>
+        <div v-for="(ex, exI) in activeWorkout.exercises" :key="exI" class="mb-10">
+            <h4 class="text-xs font-black uppercase mb-3 opacity-50">{{ex.name}}</h4>
+            <div v-for="(s, sI) in ex.sets" :key="sI" class="flex gap-2 mb-2">
+                <input type="number" v-model="s.weight" placeholder="lbs" class="w-full bg-slate-950 rounded-xl py-4 text-center font-black">
+                <input type="number" v-model="s.reps" placeholder="reps" class="w-full bg-slate-950 rounded-xl py-4 text-center font-black">
+                <button @click="s.done = !s.done" :class="s.done ? 'bg-green-600' : 'bg-slate-800'" class="w-14 rounded-xl flex items-center justify-center transition-all shadow-lg"><i data-lucide="check"></i></button>
+            </div>
+        </div>
+        <button @click="finishWorkout" class="w-full bg-blue-600 py-6 rounded-[2rem] font-black text-xl">FINISH SESSION</button>
+    </div>
+</div>
+
+<script>
+    const { createApp } = Vue;
+    const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
+
+    createApp({
+        data() { return { session: null, routines: [], activeWorkout: null } },
+        async mounted() {
+            const { data: { session } } = await _client.auth.getSession();
+            this.session = session;
+            if (this.session) this.init();
+            lucide.createIcons();
+        },
+        methods: {
+            async init() {
+                const { data: routines } = await _client.from('workout_templates').select('*, workout_template_exercises(*)');
+                this.routines = routines || [];
+            },
+            startRoutine(r) {
+                this.activeWorkout = {
+                    name: r.name,
+                    exercises: r.workout_template_exercises.map(ex => ({
+                        name: ex.exercise_name, target_sets: ex.target_sets,
+                        sets: Array.from({ length: ex.target_sets }, () => ({ weight: null, reps: null, done: false }))
+                    }))
+                };
+            },
+            async finishWorkout() {
+                const logs = this.activeWorkout.exercises.flatMap(ex => ({
+                    exercise_name: ex.name, sets_data: ex.sets.filter(s => s.done), user_id: this.session.user.id
+                }));
+                await _client.from('workout_logs').insert(logs);
+                alert("Session Logged."); this.activeWorkout = null;
+            }
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
