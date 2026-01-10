@@ -48,7 +48,7 @@
             <button @click="triggerCamera" :disabled="scanning" class="bg-blue-600/20 px-4 py-2 rounded-xl border border-blue-500/30 text-blue-500 text-[10px] font-black uppercase italic flex items-center gap-2 active:scale-95 transition-all">
                 <i v-if="scanning" data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>
                 <i v-else data-lucide="camera" class="w-3 h-3"></i> 
-                {{ scanning ? 'ANALYZING...' : 'AI SCAN' }}
+                {{ scanning ? 'UPLOADING...' : 'AI SCAN' }}
             </button>
         </div>
 
@@ -138,7 +138,7 @@
                 memory: [], 
                 filteredMemory: [], 
                 showMemory: false,
-                dailyLogs: [] // New: Stores today's logs
+                dailyLogs: [] 
             } 
         },
         async mounted() {
@@ -182,18 +182,19 @@
                     user_id: this.session.user.id 
                 }]);
                 
-                // Clear inputs and refresh list
+                // Update Memory Logic (Client-side optimistic update or rely on trigger)
+                // We'll just clear inputs and refresh daily log
                 this.foodSearch = '';
                 this.foodEntry = { cals: 0, protein: 0, carbs: 0, fat: 0 };
-                this.fetchDailyLogs(); // Update the list immediately
+                this.fetchDailyLogs(); 
             },
             async deleteLog(id) {
                 if(confirm("Delete this entry?")) {
                     await _client.from('food_logs').delete().eq('id', id);
-                    this.fetchDailyLogs(); // Refresh list
+                    this.fetchDailyLogs(); 
                 }
             },
-            // --- AI SCAN LOGIC ---
+            // --- AI SCAN LOGIC (Server-Side) ---
             triggerCamera() {
                 this.$refs.cameraInput.click();
             },
@@ -209,14 +210,14 @@
                     reader.onload = async (e) => {
                         const base64Image = e.target.result;
                         
-                        // 2. Call Edge Function
+                        // 2. Invoke Supabase Edge Function
                         const { data, error } = await _client.functions.invoke('ai-nutrition-parser', {
                             body: { image: base64Image }
                         });
 
                         if (error) throw error;
 
-                        // 3. Populate Fields
+                        // 3. Populate
                         if (data) {
                             this.foodSearch = data.food_name || "Scanned Item";
                             this.foodEntry = {
@@ -225,17 +226,17 @@
                                 carbs: data.carbs || 0,
                                 fat: data.fat || 0
                             };
-                            alert("Scan Complete. Verify and Log.");
+                            alert("Scan Complete.");
                         }
+                        this.scanning = false;
                     };
                     reader.readAsDataURL(file);
                 } catch (e) {
                     console.error(e);
-                    alert("AI Scan Failed: " + e.message);
-                } finally {
+                    alert("AI Error: " + e.message);
                     this.scanning = false;
-                    // Reset input so same file can be selected again if needed
-                    event.target.value = '';
+                } finally {
+                    event.target.value = ''; // Reset input
                 }
             }
         },
