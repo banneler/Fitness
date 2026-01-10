@@ -210,7 +210,7 @@
                         const base64Image = e.target.result;
                         
                         // 2. Call Edge Function
-                        const { data, error } = await _client.functions.invoke('ai-scan', {
+                        const { data, error } = await _client.functions.invoke('ai-nutrition-parser', {
                             body: { image: base64Image }
                         });
 
