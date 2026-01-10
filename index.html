@@ -14,9 +14,10 @@
         body { -webkit-tap-highlight-color: transparent; background-color: #020617; color: white; }
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
         .tab-active { color: #3b82f6; }
+        .tab-active i { stroke-width: 3px; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
         
-        /* Toast Animation */
         .toast-enter-active, .toast-leave-active { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .toast-enter-from { transform: translateY(-20px); opacity: 0; }
         .toast-leave-to { transform: translateY(-20px); opacity: 0; }
@@ -41,7 +42,7 @@
                 <i data-lucide="sparkles" class="w-10 h-10 text-white"></i>
             </div>
             <h1 class="text-4xl font-black tracking-tighter uppercase italic">Constellation</h1>
-            <p class="text-slate-500 text-xs tracking-[0.3em] uppercase mt-2">Personal Performance</p>
+            <p class="text-slate-500 text-xs tracking-[0.3em] uppercase mt-2 font-bold">Performance Tracking</p>
         </div>
         
         <div class="w-full max-w-sm space-y-4">
@@ -68,8 +69,63 @@
             </button>
         </header>
 
-        <main class="flex-1 px-4">
-            <div v-if="activeTab === 'kitchen'" class="space-y-4">
+        <main class="flex-1 px-4 overflow-y-auto">
+            
+            <div v-if="activeTab === 'today'" class="space-y-6">
+                <div class="glass rounded-[2rem] p-8 shadow-2xl">
+                    <div class="flex items-center gap-3 mb-8">
+                        <i data-lucide="zap" class="text-blue-500 w-5 h-5"></i>
+                        <h3 class="text-white text-lg font-black italic uppercase">Readiness</h3>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div v-for="label in ['Weight', 'Sleep', 'Energy', 'HR']" :key="label" class="bg-slate-950/40 p-5 rounded-[1.5rem] border border-white/5">
+                            <span class="block text-[10px] text-slate-500 uppercase font-black mb-1 tracking-widest">{{ label }}</span>
+                            <input type="number" step="0.1" v-model="metrics[label]" class="bg-transparent border-none text-3xl font-black w-full focus:ring-0 text-white p-0" placeholder="0">
+                        </div>
+                    </div>
+                    <button @click="saveMetrics" :disabled="loading" class="w-full mt-8 bg-blue-600 py-5 rounded-[1.5rem] font-black text-xl active:scale-95 transition-all">
+                        {{ loading ? 'SYNCING...' : 'SAVE DATA' }}
+                    </button>
+                </div>
+            </div>
+
+            <div v-if="activeTab === 'gym'" class="space-y-4">
+                <div v-if="!activeWorkout" class="glass rounded-[2rem] p-8 text-center">
+                    <i data-lucide="dumbbell" class="w-12 h-12 text-blue-500 mx-auto mb-4"></i>
+                    <h2 class="text-xl font-black uppercase italic mb-6">Vertical Session</h2>
+                    <select v-model="selectedExercise" class="w-full bg-slate-900 border border-slate-800 rounded-xl py-4 px-4 mb-4 text-white outline-none">
+                        <option :value="null">Select Exercise</option>
+                        <option v-for="ex in exercises" :key="ex.id" :value="ex.name">{{ ex.name }}</option>
+                    </select>
+                    <button @click="startWorkout" :disabled="!selectedExercise" class="w-full bg-white text-black py-4 rounded-2xl font-black text-lg active:scale-95 disabled:opacity-30 transition-all">
+                        START LIFTING
+                    </button>
+                </div>
+
+                <div v-else class="glass rounded-[2rem] p-6 shadow-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-black uppercase italic text-blue-500">{{ activeWorkout.name }}</h3>
+                        <button @click="activeWorkout = null" class="text-slate-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    </div>
+
+                    <div v-for="(set, index) in activeWorkout.sets" :key="index" class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 flex items-center justify-center bg-slate-900 rounded-xl font-black text-slate-500">{{ index + 1 }}</div>
+                        <input type="number" v-model="set.weight" placeholder="lbs" class="w-full bg-slate-900 border-none rounded-xl py-3 text-center font-bold">
+                        <input type="number" v-model="set.reps" placeholder="reps" class="w-full bg-slate-900 border-none rounded-xl py-3 text-center font-bold">
+                        <button @click="set.done = !set.done" :class="set.done ? 'bg-green-600' : 'bg-slate-700'" class="w-12 h-12 rounded-xl flex items-center justify-center transition-all">
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+
+                    <button @click="activeWorkout.sets.push({weight:null, reps:null, done:false})" class="w-full py-3 mb-6 border-2 border-dashed border-slate-800 rounded-xl text-slate-500 font-bold text-xs uppercase tracking-widest">+ Add Set</button>
+                    
+                    <button @click="finishWorkout" class="w-full bg-blue-600 py-5 rounded-[1.5rem] font-black text-xl active:scale-95 shadow-xl shadow-blue-900/40">
+                        FINISH WORKOUT
+                    </button>
+                </div>
+            </div>
+
+            <div v-if="activeTab === 'kitchen'" class="space-y-6">
                 <div class="glass rounded-[2rem] p-8 shadow-2xl">
                     <div class="flex items-center gap-3 mb-6">
                         <i data-lucide="utensils" class="text-green-500 w-5 h-5"></i>
@@ -105,10 +161,38 @@
                         LOG FUEL
                     </button>
                 </div>
+
+                <div v-if="dailyLogs.length" class="glass rounded-[2rem] p-6">
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Today's Log</h4>
+                    <div v-for="log in dailyLogs" :key="log.id" class="flex justify-between items-center py-3 border-b border-white/5 last:border-0">
+                        <span class="font-bold text-sm">{{ log.food_name }}</span>
+                        <span class="text-xs text-slate-400 font-mono">{{ log.calories }} cal / {{ log.protein }}g p</span>
+                    </div>
+                </div>
             </div>
 
-            <div v-if="activeTab === 'today'" class="text-center py-20 opacity-50">
-                <p class="font-black italic uppercase">Daily Readiness Ready</p>
+            <div v-if="activeTab === 'vault'" class="space-y-6">
+                <div class="glass rounded-[2rem] p-8 shadow-xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="package" class="text-orange-500 w-5 h-5"></i>
+                            <h3 class="text-white text-lg font-black italic uppercase">Inventory</h3>
+                        </div>
+                        <button @click="addInventoryItem" class="text-blue-500 text-xs font-bold uppercase tracking-widest">+ Add</button>
+                    </div>
+
+                    <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-5 rounded-2xl border border-white/5 mb-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-slate-200 uppercase text-xs tracking-tight">{{ item.item_name }}</span>
+                            <span :class="item.servings_left < 5 ? 'text-red-500' : 'text-blue-400'" class="font-black text-xl">
+                                {{ Math.floor(item.servings_left) }} <span class="text-[8px] text-slate-600">DAYS</span>
+                            </span>
+                        </div>
+                        <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-blue-600 h-full transition-all duration-1000" :style="{ width: (item.servings_left / item.total_servings * 100) + '%' }"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
 
@@ -133,12 +217,18 @@
                 loading: false,
                 activeTab: 'today',
                 auth: { email: '', password: '' },
-                toast: { show: false, message: '', icon: 'info' },
+                toast: { show: false, message: '', icon: 'check-circle' },
+                metrics: { Weight: null, Sleep: null, Energy: null, HR: null },
+                exercises: [],
+                selectedExercise: null,
+                activeWorkout: null,
                 foodSearch: '',
                 foodEntry: { cals: null, protein: null },
                 foodMemory: [],
                 filteredMemory: [],
                 showMemory: false,
+                dailyLogs: [],
+                inventory: [],
                 tabs: [
                     { id: 'today', icon: 'zap' },
                     { id: 'gym', icon: 'dumbbell' },
@@ -169,18 +259,63 @@
                 const { error } = this.authMode === 'login' 
                     ? await _client.auth.signInWithPassword(this.auth)
                     : await _client.auth.signUp(this.auth);
-                
-                if (error) {
-                    this.showToast(error.message, 'alert-circle');
-                } else if (this.authMode === 'signup') {
-                    this.showToast("Verification email sent! Check your inbox.", "mail");
-                }
+                if (error) this.showToast(error.message, 'alert-circle');
+                else if (this.authMode === 'signup') this.showToast("Verification email sent!", "mail");
                 this.loading = false;
             },
             async signOut() { await _client.auth.signOut(); this.session = null; },
             async initApp() {
+                this.fetchInventory();
+                this.fetchExercises();
+                this.fetchFoodMemory();
+                this.fetchDailyLogs();
+            },
+            async fetchInventory() {
+                const { data } = await _client.from('inventory').select('*');
+                this.inventory = data || [];
+            },
+            async addInventoryItem() {
+                const name = prompt("Item Name:");
+                const servings = prompt("Total Servings:");
+                if (name && servings) {
+                    await _client.from('inventory').insert([{
+                        item_name: name,
+                        total_servings: parseInt(servings),
+                        servings_left: parseInt(servings),
+                        user_id: this.session.user.id
+                    }]);
+                    this.fetchInventory();
+                }
+            },
+            async fetchExercises() {
+                const { data } = await _client.from('exercise_library').select('*');
+                this.exercises = data || [];
+            },
+            async fetchFoodMemory() {
                 const { data } = await _client.from('food_memory').select('*').order('use_count', { ascending: false });
                 this.foodMemory = data || [];
+            },
+            async fetchDailyLogs() {
+                const today = new Date().toISOString().split('T')[0];
+                const { data } = await _client.from('food_logs').select('*').gte('created_at', today);
+                this.dailyLogs = data || [];
+            },
+            startWorkout() {
+                this.activeWorkout = { name: this.selectedExercise, sets: [{ weight: null, reps: null, done: false }] };
+            },
+            async finishWorkout() {
+                this.loading = true;
+                const completedSets = this.activeWorkout.sets.filter(s => s.done);
+                const { error } = await _client.from('workout_logs').insert([{
+                    exercise_name: this.activeWorkout.name,
+                    sets_data: completedSets,
+                    user_id: this.session.user.id
+                }]);
+                if (!error) {
+                    this.showToast("Lift Synced.", "dumbbell");
+                    this.activeWorkout = null;
+                }
+                this.loading = false;
             },
             filterMemory() {
                 this.showMemory = this.foodSearch.length > 1;
@@ -204,7 +339,23 @@
                     this.showToast("Fuel Logged.", "check");
                     this.foodSearch = '';
                     this.foodEntry = { cals: null, protein: null };
-                    this.initApp();
+                    this.fetchFoodMemory();
+                    this.fetchDailyLogs();
+                }
+                this.loading = false;
+            },
+            async saveMetrics() {
+                this.loading = true;
+                const { error } = await _client.from('daily_metrics').insert([{
+                    weight: this.metrics.Weight,
+                    sleep_quality: this.metrics.Sleep,
+                    energy_level: this.metrics.Energy,
+                    resting_hr: this.metrics.HR,
+                    user_id: this.session.user.id
+                }]);
+                if (!error) {
+                    this.showToast("Readiness Synced.", "zap");
+                    this.metrics = { Weight: null, Sleep: null, Energy: null, HR: null };
                 }
                 this.loading = false;
             }
