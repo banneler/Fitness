@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Constellation Fitness</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="bg-slate-900 text-white antialiased">
+
+    <div id="app" class="max-w-md mx-auto p-4 pb-24">
+        <header class="mb-8 pt-4">
+            <h1 class="text-3xl font-black text-blue-500 tracking-tight">CONSTELLATION <span class="text-white">FIT</span></h1>
+            <p class="text-slate-400 text-sm">Welcome back, Bryan</p>
+        </header>
+
+        <div class="bg-slate-800 rounded-3xl p-6 shadow-2xl border border-slate-700">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 class="text-xl font-bold">Bench Press</h2>
+                    <p class="text-blue-400 text-xs font-bold uppercase tracking-widest">Chest & Triceps</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] text-slate-500 block uppercase">Last Time</span>
+                    <span class="text-sm font-mono italic text-slate-300">185 lbs x 8</span>
+                </div>
+            </div>
+
+            <div v-for="(set, index) in sets" :key="index" class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 flex items-center justify-center bg-slate-700 rounded-xl font-bold text-slate-400">
+                    {{ index + 1 }}
+                </div>
+                <input type="number" v-model="set.weight" placeholder="lbs" 
+                    class="w-full bg-slate-900 border-none rounded-xl py-3 text-center font-bold focus:ring-2 focus:ring-blue-500">
+                <input type="number" v-model="set.reps" placeholder="reps" 
+                    class="w-full bg-slate-900 border-none rounded-xl py-3 text-center font-bold focus:ring-2 focus:ring-blue-500">
+                <button @click="set.completed = !set.completed" 
+                    :class="set.completed ? 'bg-green-500' : 'bg-slate-600'"
+                    class="w-16 py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center">
+                    <span v-if="set.completed">✓</span>
+                    <span v-else class="opacity-30">...</span>
+                </button>
+            </div>
+
+            <button @click="addSet" class="w-full py-3 mt-2 border-2 border-dashed border-slate-700 rounded-xl text-slate-500 font-bold text-sm active:bg-slate-700 transition">
+                + ADD SET
+            </button>
+        </div>
+
+        <div class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent">
+            <button class="w-full max-w-md mx-auto block bg-blue-600 hover:bg-blue-500 py-4 rounded-2xl font-black text-lg shadow-xl transition-all active:scale-95">
+                FINISH WORKOUT
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue
+        createApp({
+            data() {
+                return {
+                    sets: [
+                        { weight: null, reps: null, completed: false }
+                    ]
+                }
+            },
+            methods: {
+                addSet() {
+                    this.sets.push({ weight: null, reps: null, completed: false });
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
