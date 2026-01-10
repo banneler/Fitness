@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Kitchen | Constellation</title>
+    <title>Kitchen | Constellation Fitness</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,13 +12,16 @@
         [v-cloak] { display: none; }
         body { background-color: #020617; color: white; overscroll-behavior-y: contain; }
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .tab-active { color: #3b82f6; }
+        .tab-active i { stroke-width: 3px; color: #3b82f6; }
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body class="font-sans antialiased">
-<div id="app" v-cloak class="min-h-screen flex flex-col p-6">
+<div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32">
     <header class="flex justify-between items-center mb-10">
         <h1 class="text-3xl font-black italic text-green-500 uppercase">Kitchen</h1>
-        <a href="index.html" class="w-10 h-10 glass rounded-xl flex items-center justify-center"><i data-lucide="home"></i></a>
+        <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg"><i data-lucide="layout-grid" class="w-5 h-5 text-slate-400"></i></a>
     </header>
 
     <div class="glass rounded-[2.5rem] p-8 shadow-2xl mb-8">
@@ -42,44 +45,28 @@
                 <input type="number" v-model="foodEntry[m]" class="bg-transparent border-none text-2xl font-black w-full text-white p-0">
             </div>
         </div>
-        <button @click="saveFood" class="w-full bg-green-600 py-5 rounded-2xl font-black text-xl">LOG FUEL</button>
+        <button @click="saveFood" class="w-full bg-green-600 py-5 rounded-2xl font-black text-xl shadow-xl">LOG FUEL</button>
     </div>
 
-    <div v-if="logs.length" class="glass rounded-[2rem] p-6 space-y-4">
-        <h4 class="text-[10px] font-black uppercase text-slate-500 italic">Today's Diary</h4>
-        <div v-for="log in logs" :key="log.id" class="flex justify-between font-black italic text-xs border-b border-white/5 pb-2">
-            <span>{{ log.food_name }}</span>
-            <span class="text-green-500">{{ log.calories }}c</span>
-        </div>
-    </div>
+    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around p-4 safe-area-bottom z-[100]">
+        <a href="today.html" class="flex flex-col items-center px-4 text-slate-600"><i data-lucide="zap" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Today</span></a>
+        <a href="gym.html" class="flex flex-col items-center px-4 text-slate-600"><i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Gym</span></a>
+        <a href="kitchen.html" class="flex flex-col items-center px-4 tab-active"><i data-lucide="utensils" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Kitchen</span></a>
+        <a href="tracker.html" class="flex flex-col items-center px-4 text-slate-600"><i data-lucide="line-chart" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Tracker</span></a>
+    </nav>
 </div>
-
 <script>
     const { createApp } = Vue;
     const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
-
     createApp({
-        data() { return { session: null, foodSearch: '', foodEntry: { cals: 0, protein: 0, carbs: 0, fat: 0 }, memory: [], filteredMemory: [], showMemory: false, logs: [] } },
-        async mounted() {
-            const { data: { session } } = await _client.auth.getSession();
-            this.session = session;
-            if (this.session) this.init();
-            lucide.createIcons();
-        },
+        data() { return { session: null, foodSearch: '', foodEntry: { cals: 0, protein: 0, carbs: 0, fat: 0 }, memory: [], filteredMemory: [], showMemory: false } },
+        async mounted() { const { data: { session } } = await _client.auth.getSession(); this.session = session; if (this.session) this.init(); lucide.createIcons(); },
         methods: {
-            async init() {
-                const { data: memory } = await _client.from('food_memory').select('*').order('use_count', { ascending: false });
-                this.memory = memory || [];
-                const { data: logs } = await _client.from('food_logs').select('*').gte('created_at', new Date().toISOString().split('T')[0]);
-                this.logs = logs || [];
-            },
+            async init() { const { data: memory } = await _client.from('food_memory').select('*').order('use_count', { ascending: false }); this.memory = memory || []; },
             filterMemory() { this.showMemory = this.foodSearch.length > 1; this.filteredMemory = this.memory.filter(f => f.food_name.toLowerCase().includes(this.foodSearch.toLowerCase())).slice(0, 5); },
             selectFood(i) { this.foodSearch = i.food_name; this.foodEntry = { cals: i.calories, protein: i.protein, carbs: i.carbs, fat: i.fat }; this.showMemory = false; },
-            async saveFood() {
-                await _client.from('food_logs').insert([{ food_name: this.foodSearch, calories: this.foodEntry.cals, protein: this.foodEntry.protein, carbs: this.foodEntry.carbs, fat: this.foodEntry.fat, user_id: this.session.user.id }]);
-                alert("Fuel Logged."); this.init();
-            },
-            aiScan() { alert("Vision Engine Triggered."); }
+            async saveFood() { await _client.from('food_logs').insert([{ food_name: this.foodSearch, calories: this.foodEntry.cals, protein: this.foodEntry.protein, carbs: this.foodEntry.carbs, fat: this.foodEntry.fat, user_id: this.session.user.id }]); alert("Fuel Logged."); },
+            aiScan() { alert("Vision Engine Initializing..."); }
         }
     }).mount('#app');
 </script>
