@@ -47,7 +47,7 @@
 
         /* --- LOGO INTEGRATION (FIXED) --- */
         .auth-logo, .nav-logo {
-            filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.6)); /* Enhanced Glow */
+            filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.6));
             transition: filter 0.3s;
             display: flex;
             justify-content: center;
@@ -60,7 +60,6 @@
             margin: 0 auto;
         }
 
-        /* FORCE SVG TO FILL CONTAINER */
         .auth-logo svg {
             width: 100% !important;
             height: auto !important;
@@ -112,7 +111,7 @@
                 <h1 class="text-3xl font-black tracking-tighter uppercase italic text-white leading-none">
                     <span class="text-blue-500">CONSTELLATION</span> FITNESS
                 </h1>
-                <p class="text-slate-500 text-[9px] uppercase tracking-[0.4em] mt-4 font-black italic">Performance Lifestyle</p>
+                <p class="text-slate-500 text-[10px] uppercase tracking-[0.4em] mt-4 font-black italic">Performance Lifestyle</p>
             </div>
             <div class="w-full max-w-sm space-y-4">
                 <input type="email" v-model="auth.email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
@@ -124,14 +123,14 @@
 
     <transition name="fade">
         <div v-if="session && !initialLoading" class="flex-1 flex flex-col p-8">
-            <header class="flex justify-between items-start mb-8">
-                <div class="flex items-center gap-4">
+            <header class="flex justify-between items-center mb-8">
+                <div class="flex items-center gap-3">
                     <div class="svg-inject nav-logo" v-html="logoSvg"></div>
                     <div>
-                        <h1 class="text-xl font-black tracking-tighter italic uppercase leading-none">
+                        <h1 class="text-lg font-black tracking-tighter italic uppercase leading-none whitespace-nowrap">
                             <span class="text-blue-500">CONSTELLATION</span> <span class="text-white">FITNESS</span>
                         </h1>
-                        <p class="text-slate-600 text-[8px] font-black uppercase tracking-[0.3em] mt-2 italic">Performance Lifestyle</p>
+                        <p class="text-slate-600 text-[8px] font-black uppercase tracking-[0.3em] mt-1 italic">Performance Lifestyle</p>
                     </div>
                 </div>
                 <button @click="signOut" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-slate-500 border border-white/5 shadow-lg">
@@ -219,22 +218,18 @@
             }
         },
         async mounted() {
-            // Task 1: Fetch External Logo Data
             const logoFetch = fetch('c-logo.svg').then(res => res.text()).then(data => {
                 this.logoSvg = data;
             });
 
-            // Task 2: Validate Session Status
             const { data: { session } } = await _client.auth.getSession();
             this.session = session;
             
-            // Task 3: Load Data for Auth Users
             if (this.session) {
                 await this.fetchDailyData();
             }
 
-            // Finish: Synchronize reveal
-            await logoFetch; // Ensure logo is ready before mask fades
+            await logoFetch;
             this.initialLoading = false;
             
             this.$nextTick(() => {
