@@ -40,32 +40,32 @@
             color: #eab308 !important;
         }
 
-        /* HEATMAP STYLES */
-        .muscle-base { 
-            fill: rgba(30, 41, 59, 0.1); 
-            stroke: rgba(255, 255, 255, 0.2); 
-            stroke-width: 1px;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
-        }
+/* HEATMAP STYLES */
+.muscle-base { 
+    fill: rgba(30, 41, 59, 0.1); 
+    stroke: rgba(255, 255, 255, 0.2); 
+    stroke-width: 1px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
+}
 
-        /* Dynamic States with "Ink" Glow */
-        .fill-red-500 { 
-            fill: rgba(239, 68, 68, 0.4) !important; 
-            stroke: #ef4444 !important; 
-            stroke-width: 1.5px;
-            filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.6)); 
-        }
-        .fill-orange-500 { 
-            fill: rgba(249, 115, 22, 0.3) !important;
-            stroke: #f97316 !important;
-            stroke-width: 1.2px;
-        }
-        .fill-blue-500 { 
-            fill: rgba(59, 130, 246, 0.05) !important;
-            stroke: rgba(255, 255, 255, 0.1) !important;
-        }
+/* Dynamic States with "Ink" Glow */
+.fill-red-500 { 
+    fill: rgba(239, 68, 68, 0.4) !important; 
+    stroke: #ef4444 !important; 
+    stroke-width: 1.5px;
+    filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.6)); 
+}
+.fill-orange-500 { 
+    fill: rgba(249, 115, 22, 0.3) !important;
+    stroke: #f97316 !important;
+    stroke-width: 1.2px;
+}
+.fill-blue-500 { 
+    fill: rgba(59, 130, 246, 0.05) !important;
+    stroke: rgba(255, 255, 255, 0.1) !important;
+}
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -139,20 +139,47 @@
                 </div>
             </div>
             
-            <div class="flex justify-around relative z-10 px-2">
-                <svg version="1.0" class="h-64 w-auto" viewBox="0 0 260 280" xmlns="http://www.w3.org/2000/svg">
-                    <g transform="translate(0.000000,280.000000) scale(0.100000,-0.100000)">
-                        <path :class="['muscle-base', getMuscleClass('chest')]" d="M792,2563c-39-19-56-46-47-74c4-11,2-26-4-32c-7-9-6-26,5-57c22-65,16-88-33-116c-23-13-57-27-74-32c-56-14-71-47-76-159c-2-54-6-118-9-143s-7-124-10-220c-6-191-2-210,50-251c15-11,33-19,40-16c10,4,15-9,20-46c4-29,19-86,32-127c18-52,24-86,19-110c-3-19-8-66-11-105c-5-64-2-79,35-178c50-131,52-165,11-204c-50-47-43-52,90-52c71,0,122,4,126,10c3,6-9,23-27,39c-45,37-43,74,10,213c45,117,50,164,27,241c-14,45-13,53,9,121c13,40,30,102,36,138c8,42,16,64,24,61c16-6,62,32,79,65c16,31,21,327,6,366c-5,12-11,80-14,151c-4,71-9,138-12,149c-9,28-34,55-52,55c-8,0-41,12-73,26c-54,25-59,29-59,59c0,18,7,51,14,73c9,25,11,44,5,47c-5,4-9,21-9,39C920,2555,852,2592,792,2563z M887,2545c19-13,21-23,19-90c-1-63-5-78-26-100c-13-14-33-25-44-25c-29,0-76,46-76,73c0,13-6,29-12,36c-10,11-10,13,0,7c12-7,16,6,12,55C757,2551,838,2579,887,2545z M833,2320c14,0,33,7,41,16c21,21,21,2,1-56c-19-53-19-60,0-36c8,11,15,28,15,38s1,18,3,18s30-13,62-30c32-16,66-30,75-30c35,0,55-39,57-109c6-154,11-220,18-232c13-20,8-313-5-356c-15-45-70-91-70-58c0,6,6,10,12,10c20,0,41,52,29,72c-8,16-11,15-21-11c-6-16-12-27-14-25c-3,2-6,33-9,69c-2,36-10,88-17,115c-6,28-16,66-21,85c-4,19-6,44-4,55s7,43,11,70c6,43,8,46,15,25c4-14,7-57,8-97c1-48,8-90,22-125c11-29,18-62,16-73c-3-11-8-31-12-45c-5-17-1-14,14,12l20,37l-25,73c-16,48-24,92-23,128c1,30-4,86-10,124c-8,47-8,73-1,80c13,13,13,57-1,76c-8,11-9,7-4-17c4-22,1-40-11-58c-14-22-23-25-60-24c-24,2-46,0-49-3c-8-7,85-19,96-12c13,8,11-15-7-75c-8-28-13-60-9-70c3-11-3-25-14-36c-21-18-58-102-49-110c2-3,15,21,28,52c22,53,24,55,33,32c8-22,16-64,33-169c15-90,6-197-28-323c-17-64-23-75-34-66c-17,14-17,9-4-25c7-18,6-25-2-23c-6,1-14-10-19-25c-9-34-2-37,11-5c8,17,9,14,5-18c-3-22,0-47,6-55c8-12,9-10,4,8c-3,12-2,22,3,22c14,0,25-85,16-123c-3-18-24-76-45-130c-22-53-39-109-39-123c0-35,26-81,50-89c26-8,16-25-16-25c-15,0-24,6-24,15c0,8-4,15-10,15c-5,0-7-7-3-16c4-12,1-15-13-12c-16,3-19,11-18,48c1,25,2,88,2,140c-1,52,0,120,1,150c1,49,1,110-1,250c-1,25,0,61,2,80c1,19-1,81-5,138c-7,89-6,104,9,115s41,77,30,77c-3,0-12-16-20-35s-20-35-27-35c-18,0-37,21-37,41c0,10-5,21-10,24c-16,10,0-47,19-69c16-18,19-57,12-211c-5-122-5-294-1-365c2-25,1-88-2-140c-2-52-1-107,3-121c3-14,3-33-2-42c-6-10-5-18,2-23c8-4,7-9-2-15c-21-13-32-11-25,6c3,8,1,15-4,15c-6,0-10-7-10-15c0-10-10-15-30-15c-37,0-37,5,0,36c49,42,48,75-4,208c-46,118-53,163-36,231l8,30l1-30c1-22,4-26,10-15c6,8,7,28,5,45c-4,22-3,26,5,15c18-26,20-6,2,31c-14,27-15,41-8,55c9,17,9,17-6,6c-14-12-18-8-31,40c-37,127-56,292-37,326c8,15,8,22,1,22c-6,0-4,14,5,36c8,20,15,49,15,65c0,15,4,39,10,53c5,15,6,26,0,26c-5,0-14-26-20-57c-6-32-15-71-20-88c-5-16-10-58-11-92s-6-60-10-57c-5,3-9-1-9-8c0-9-3-9-10,2c-5,8-10,20-10,25c0,6,5,3,10-5s10-10,10-4c0,5-6,18-13,28c-11,15-13,14-15-13c-3-35,27-89,38-71c5,8,10,9,14,2c3-5-1-12-8-15c-22-9-66,31-66,59c0,13-4,24-9,24c-11,0-11,296,1,335c5,17,11,84,14,150c6,157,14,182,64,195c21,6,58,21,83,35l45,25l15-37c8-21,13-40,12-41c-2-2-20,1-39,8c-20,6-44,10-53,8c-10-2,3-9,29-17c59-17,82-10,72,21c-34,106-35,112-16,95C798,2327,818,2320,833,2320z M1061,1533c-12-20-14-14-5,12c4,9,9,14,11,11C1070,1554,1067,1543,1061,1533z" />
-                    </g>
-                </svg>
+<div class="flex justify-around relative z-10 px-2">
+    <svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+        <g fill="none">
+            <path d="M100,25 C112,25 118,35 118,50 C118,60 112,70 100,70 C88,70 82,60 82,50 C82,35 88,25 100,25" class="muscle-base" />
+            
+            <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" 
+                  d="M62,75 C50,80 42,95 42,115 C52,125 68,125 78,110 L62,75 Z M138,75 C150,80 158,95 158,115 C148,125 132,125 122,110 L138,75 Z" />
 
-                <svg version="1.0" class="h-64 w-auto" viewBox="0 0 260 280" xmlns="http://www.w3.org/2000/svg">
-                    <g transform="translate(0.000000,280.000000) scale(0.100000,-0.100000)">
-                        <path :class="['muscle-base', getMuscleClass('back')]" d="M1740,2573c-29-11-60-47-60-70c0-14-4-33-10-43c-7-13-6-19,5-24c11-4,15,2,16,22c1,15,2,34,3,43c3,55,101,82,130,37c26-43,27-84,3-114c-18-23-18-27-4-21c19,7,21-9,7-53c-8-24-8-24-9-2c-1,12-5,22-11,22c-12,0-2-29,18-53c9-10,33-28,54-39c39-22,49-38,23-38c-8,0-15-4-15-10c0-14,11-12,34,5c21,16,47,20,45,8c-3-20,2-33,12-33c8,0,8,5-1,15c-7,8-8,15-2,15c30,0,49-90,57-272c2-37,6-71,9-76c7-12,0-309-9-344c-4-15-13-29-22-32c-8-3-11-11-7-18c5-8,2-9-9-5c-9,3-16,3-16-1c3-19-2-33-10-28c-5,4-8,14-7,24c2,9-2,20-8,24c-8,5-7,8,2,8c10,0,10,5,1,21c-6,12-8,36-4,56c6,32,2,59-26,183c-13,54-14,122-3,170c7,34,8,34,15,10c4-14,7-56,8-95c0-45,9-93,23-133c19-53,20-68,10-94c-16-44-8-46,13-2c16,35,16,38-5,87c-16,37-24,80-28,147c-8,138-6,168,12,195c19,29,21,61,4,71c-6,4-8,3-5-3c8-12-31-125-70-204c-22-43-25-55-11-42c17,15,18,15,17-3c-1-10-4-30-8-44c-5-16-3-31,5-40c15-18,21-112,10-150l-7-25l15,25c15,24,16,19,14-77c-2-55,0-99,5-96c4,2,7-1,7-6c0-6-4-11-9-11s-12-21-16-47c-4-27-18-83-32-126c-13-44-21-87-18-100c5-17,4-19-4-7c-6,8-11,25-11,38c0,12-5,22-10,22c-13,0-3-47,16-77c34-55,35-163,1-228c-10-19-10-19-18,0c-5,14-8,15-8,4c-1-8,3-19,9-25s-1-36-17-82c-25-71-26-74-9-109c11-23,22-33,31-29c31,12,23-14-9-29c-40-19-81-12-72,12c3,8,6,29,7,46c0,28,2,29,10,12c7-15,7-12,2,10c-14,54-9,357,7,390c16,35,22,97,8,89c-6-4-8-17-5-30c4-22-7-53-17-44c-7,8-16,350-10,376c5,19,11,21,43,17c30-4,43,0,69,22c18,15,32,31,32,37s-16-4-35-21c-39-34-52-37-89-20c-22,10-26,19-29,68l-3,56l-2-58c-2-52-5-58-28-67c-40-16-54-12-85,21c-16,17-29,27-29,22c0-6,12-23,26-38c22-24,31-27,71-22l45,5l-4-93c-1-51,0-91,5-88c4,2,7-6,7-19c0-19-2-20-11-8c-7,11-8,4-3-23c8-48-5-169-17-161c-6,3-9,13-8,22c3,36-2,47-12,23c-7-18-4-34,12-68c17-35,21-60,19-131c-1-48-1-93,0-99c8-83-2-161-22-180c-17-15-18-15-12,15c4,19-2,54-15,95c-21,62-20,93,3,109c7,5,4,8-6,8c-9,0-18-8-21-17c-3-14-7-11-17,12c-15,34-18,132-7,219c6,43,4,71-8,105c-28,85-46,185-52,294c-6,105-1,129,17,85l9-23v22c1,12-3,24-8,27c-11,7-2,94,12,121c6,11,11,22,10,25c-15,85-15,84,1,71c17-14,22-2,7,15c-14,15-81,188-81,209c0,14-3,16-11,8s-5-24,10-56c20-44,29-136,14-150c-4-4-6-31-4-60c1-32-6-75-19-111c-24-70-25-96-5-122c8-10,15-30,16-44c1-20,2-21,6-5c3,10-3,34-12,51c-17,31-17,35,4,95c12,35,21,90,22,123c0,34,3,79,8,101l7,40l9-30c12-41,14-123,4-160c-17-63-29-142-30-202c-1-35-6-63-11-63c-4,0-8,6-8,13c0,8-4,7-10-3s-8-2-4,28c3,25,1,42-6,42c-5,0-10-19-10-41c0-40,19-68,45-69c6,0,3,5-5,10c-9,6-10,10-3,10c21,0,24-19,4-29c-25-14-32-14-28,0c1,6-5,14-13,16c-13,4-13,3,0-7c12-9,12-11,1-8c-8,2-16,15-18,28s-8,28-13,35c-7,9-11,122-11,379c0,22,6,64,12,95c7,31,11,70,10,87c-3,44,16,111,34,117c10,4,12,1,8-10s-2-14,5-9c7,4,12,14,12,22c0,19,19,18,42-3c14-13,21-14,30-5s7,12-11,12c-20,0-21,2-11,15c7,8,17,12,23,8c5-3,7-1,4,4c-4,6,6,16,23,23c34,14,63,54,57,78c-3,11-5,9-6-7c-1-30-9-24-21,19c-8,28-7,31,8,25c14-5,14-4,5,6c-20,20-46,20-38,1c4-9,9-35,12-58c5-40,4-42-42-68c-26-14-56-26-66-26s-30-10-45-23c-24-21-28-34-36-113c-5-49-12-127-17-174c-11-111-5-368,9-417c23-77,80-116,93-65c3,10,5,4,6-13c0-16,14-79,30-139c27-99,28-114,19-175c-12-79-6-166,15-212c9-19,25-66,37-106c23-78,20-96-20-116c-36-18-34-31,7-49c49-21,142-22,183-2c37,19,37,45,0,54c-39,9-38,56,6,179c33,91,38,116,35,176c-7,174-2,220,45,383c3,9,9,10,22,3c29-15,68,42,82,119c13,73,11,370-3,445c-5,28-10,77-11,110c-2,33-6,69-9,80c-8,22-56,55-81,55c-8,0-36,14-62,31c-44,31-46,33-39,68c4,20,7,46,7,58c0,13,4,20,9,17s9,2,9,10s-5,18-10,21c-6,4-10,14-9,23C1860,2545,1796,2593,1740,2573z M1570,1469c0-13-28-18-33-6c-3,7,3,13,14,13S1570,1473,1570,1469z" />
-                    </g>
-                </svg>
-            </div>
-        </div>
+            <path :class="['muscle-base', muscleHeatmap['chest'].color]" 
+                  d="M78,110 C88,120 112,120 122,110 C130,135 115,145 100,150 C85,145 70,135 78,110 Z" />
+
+            <path :class="['muscle-base', muscleHeatmap['core'].color]" 
+                  d="M72,130 L128,130 L118,190 L100,205 L82,190 Z" />
+
+            <path :class="['muscle-base', muscleHeatmap['arms'].color]" 
+                  d="M42,115 C38,145 35,185 45,235 L58,225 C52,185 52,145 62,125 Z M158,115 C162,145 165,185 155,235 L142,225 C148,185 148,145 138,125 Z" />
+
+            <path :class="['muscle-base', muscleHeatmap['legs'].color]" 
+                  d="M82,205 L62,240 C58,280 65,330 75,385 L95,385 L100,205 Z M118,205 L138,240 C142,280 135,330 125,385 L105,385 L100,205 Z" />
+        </g>
+    </svg>
+
+    <svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+        <g fill="none">
+            <path d="M100,25 C112,25 118,35 118,50 C118,60 112,70 100,70 C88,70 82,60 82,50 C82,35 88,25 100,25" class="muscle-base" />
+
+            <path :class="['muscle-base', muscleHeatmap['back'].color]" 
+                  d="M100,70 L75,85 L52,140 L100,200 L148,140 L125,85 Z" />
+
+            <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" 
+                  d="M62,75 L42,90 L48,125 L65,115 Z M138,75 L158,90 L152,125 L135,115 Z" />
+
+            <path :class="['muscle-base', muscleHeatmap['arms'].color]" 
+                  d="M42,90 L32,220 L48,230 L52,160 Z M158,90 L168,220 L152,230 L148,160 Z" />
+
+            <path :class="['muscle-base', muscleHeatmap['legs'].color]" 
+                  d="M70,200 L100,215 L130,200 L135,245 C120,265 80,265 65,245 Z M70,245 C65,290 70,335 75,385 L95,385 L100,245 Z M130,245 C135,290 130,335 125,385 L105,385 L100,245 Z" />
+        </g>
+    </svg>
+</div>
+</div>
 
         <div class="mb-8">
             <h3 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">This Week</h3>
@@ -425,6 +452,7 @@
                 toast: { visible: false, title: '', message: '' },
                 logoutModal: false,
                 
+                // Data
                 routines: [], 
                 libraryExercises: [], 
                 schedule: [], 
@@ -433,6 +461,7 @@
                 iconLibrary: ICONS,
                 daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                 
+                // Heatmap Data (Status keys mapped to SVG paths)
                 muscleHeatmap: { 
                     'chest': {color: 'fill-blue-500', lastTrained: null}, 
                     'back': {color: 'fill-blue-500', lastTrained: null}, 
@@ -442,13 +471,16 @@
                     'core': {color: 'fill-blue-500', lastTrained: null}
                 },
 
+                // Modals
                 scheduleModal: null, 
                 previewModal: null,
 
+                // Builder State
                 newRoutine: { id: null, name: '', icon: 'activity', exercises: [] },
                 newExercise: { name: '', group: '', icon: 'dumbbell' },
                 exerciseSearch: '',
 
+                // Active Session
                 activeRoutine: { name: '', data: [] },
                 stackTaken: false,
                 sessionTimer: 0, 
@@ -497,9 +529,6 @@
         },
         updated() { this.$nextTick(() => lucide.createIcons()); },
         methods: {
-            getMuscleClass(group) {
-                return this.muscleHeatmap[group]?.color || 'fill-blue-500';
-            },
             async confirmLogout() { 
                 await _client.auth.signOut(); 
                 window.location.href = 'index.html'; 
@@ -622,6 +651,7 @@
                     }
                 } catch (e) {
                     console.error(e);
+                    // Fallback
                     setTimeout(async () => {
                         const fillerExercises = this.libraryExercises.slice(0, 3).map(e => e.id);
                         if(fillerExercises.length) {
@@ -677,19 +707,19 @@
             },
             
             async saveExercise() {
-                if(!this.newExercise.name) return;
-                const muscleGroup = this.newExercise.group.toLowerCase();
-                const payload = { 
-                    name: this.newExercise.name, 
-                    muscle_group: muscleGroup, 
-                    icon_name: this.newExercise.icon || 'dumbbell', 
-                    user_id: this.session.user.id 
-                };
-                await _client.from('exercises').insert([payload]);
-                this.newExercise = { name: '', group: '', icon: 'dumbbell' }; 
-                await this.fetchExercises();
-                this.showToast("Library Updated", "Exercise added.");
-            },
+    if(!this.newExercise.name) return;
+    const muscleGroup = this.newExercise.group.toLowerCase();
+    const payload = { 
+        name: this.newExercise.name, 
+        muscle_group: muscleGroup, 
+        icon_name: this.newExercise.icon || 'dumbbell', 
+        user_id: this.session.user.id 
+    };
+    await _client.from('exercises').insert([payload]);
+    this.newExercise = { name: '', group: '', icon: 'dumbbell' }; 
+    await this.fetchExercises();
+    this.showToast("Library Updated", "Exercise added.");
+},
             async saveRoutine() {
                 if(!this.newRoutine.name) return;
                 const payload = { 
@@ -764,33 +794,34 @@
             },
             
             async finishSession() {
-                if(!confirm("Finish Workout?")) return;
-                clearInterval(this.sessionInterval);
-                this.loading = true;
-                this.loadingText = "Analyzing Performance...";
-                
-                const logs = this.activeRoutine.data.map(ex => ({ 
-                    user_id: this.session.user.id, 
-                    exercise_name: ex.name, 
-                    protocol_name: this.activeRoutine.name, 
-                    sets_data: ex.sets.filter(s => s.done), 
-                    created_at: new Date().toISOString() 
-                })).filter(l => l.sets_data.length);
+    if(!confirm("Finish Workout?")) return;
+    clearInterval(this.sessionInterval);
+    this.loading = true;
+    this.loadingText = "Analyzing Performance...";
+    
+    const logs = this.activeRoutine.data.map(ex => ({ 
+        user_id: this.session.user.id, 
+        exercise_name: ex.name, 
+        protocol_name: this.activeRoutine.name, 
+        sets_data: ex.sets.filter(s => s.done), 
+        created_at: new Date().toISOString() 
+    })).filter(l => l.sets_data.length);
 
-                if(logs.length) await _client.from('workout_logs').insert(logs);
-                
-                if(this.stackTaken) {
-                    const { data: inv } = await _client.from('inventory').select('*');
-                    const updates = inv.map(i => _client.from('inventory').update({servings_left: Math.max(0, i.servings_left - 1)}).eq('id', i.id));
-                    await Promise.all(updates);
-                }
+    if(logs.length) await _client.from('workout_logs').insert(logs);
+    
+    // Auto-update serving inventory if stack was taken
+    if(this.stackTaken) {
+        const { data: inv } = await _client.from('inventory').select('*');
+        const updates = inv.map(i => _client.from('inventory').update({servings_left: Math.max(0, i.servings_left - 1)}).eq('id', i.id));
+        await Promise.all(updates);
+    }
 
-                await this.fetchHistory(); 
-                this.calculateHeatmap(); 
-                this.view = 'dashboard'; 
-                this.loading = false;
-                this.showToast("Victory", "Session archived.");
-            }
+    await this.fetchHistory(); 
+    this.calculateHeatmap(); 
+    this.view = 'dashboard'; 
+    this.loading = false;
+    this.showToast("Victory", "Session archived.");
+}
         }
     }).mount('#app');
 </script>
