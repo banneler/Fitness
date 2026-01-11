@@ -37,6 +37,9 @@
         .bar-grow { transform-origin: bottom; animation: grow 1s ease-out forwards; transform: scaleY(0); }
         @keyframes grow { to { transform: scaleY(1); } }
 
+        /* WARNING OVERLAY BLEND */
+        .warning-overlay { mix-blend-mode: multiply; }
+
         .matrix-cell { aspect-ratio: 1/1; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.01); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
         .matrix-active { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3); color: #22c55e; }
 
@@ -178,6 +181,16 @@
                                 <rect :y="150 - day.p" width="28" :height="day.p" :fill="day.active ? '#3b82f6' : '#1e293b'" rx="2" class="bar-grow" />
                                 <rect :y="150 - day.p - day.c" width="28" :height="day.c" :fill="day.active ? '#10b981' : '#334155'" rx="2" class="bar-grow" style="animation-delay:0.1s" />
                                 <rect :y="150 - day.p - day.c - day.f" width="28" :height="day.f" :fill="day.active ? '#f59e0b' : '#475569'" rx="2" class="bar-grow" style="animation-delay:0.2s" />
+                                
+                                <rect v-if="day.isOver" 
+                                      :y="150 - day.p - day.c - day.f" 
+                                      width="28" 
+                                      :height="day.p + day.c + day.f" 
+                                      fill="#ef4444" 
+                                      fill-opacity="0.4"
+                                      rx="2" 
+                                      class="bar-grow warning-overlay" />
+
                                 <text x="14" y="165" text-anchor="middle" font-size="8" :fill="day.isToday ? '#fff' : '#64748b'" font-weight="black" class="uppercase tracking-tighter">{{ day.label }}</text>
                             </g>
                         </svg>
@@ -361,15 +374,21 @@
                     const d = new Date(); d.setDate(d.getDate() - i);
                     const ds = d.toISOString().split('T')[0];
                     const logs = this.weeklyLogs.filter(l => l.created_at.startsWith(ds));
+                    
                     const p = logs.reduce((sum, l) => sum + (l.protein || 0), 0);
                     const c = logs.reduce((sum, l) => sum + (l.carbs || 0), 0);
                     const f = logs.reduce((sum, l) => sum + (l.fat || 0), 0);
+                    
+                    // NEW: Calculate total calories accurately from logs
+                    const totalCals = logs.reduce((sum, l) => sum + (l.calories || 0), 0);
+                    
                     days.push({ 
                         label: d.toLocaleDateString('en-US', {weekday:'narrow'}), 
                         p: p * this.chartScale, 
                         c: c * this.chartScale, 
                         f: f * this.chartScale, 
-                        active: p >= this.targets.protein, 
+                        active: p >= this.targets.protein, // Green/Blue if protein hit
+                        isOver: totalCals > this.targets.cals, // Red overlay if cals exceeded
                         isToday: ds === new Date().toISOString().split('T')[0] 
                     });
                 }
@@ -393,35 +412,26 @@
         methods: {
             async handleLogout() { await _client.auth.signOut(); window.location.href = 'index.html'; },
             
-            // FIX: Explicitly fetch the last NON-NULL target, avoiding blank weight logs
             async fetchTargets() {
                 const { data } = await _client.from('daily_metrics')
                     .select('target_protein, target_calories')
-                    .neq('target_calories', null) // FILTER NULLS
+                    .neq('target_calories', null)
                     .order('created_at', { ascending: false })
                     .limit(1);
                 if(data?.[0]) { this.targets.protein = data[0].target_protein; this.targets.cals = data[0].target_calories; }
             },
             
-            // FIX: Update today's row if exists, else insert
             async saveTargets() {
                 const today = new Date().toISOString().split('T')[0];
-                
-                // Check for existing today record
-                const { data: existing } = await _client.from('daily_metrics')
-                    .select('id')
-                    .gte('created_at', today)
-                    .limit(1);
+                const { data: existing } = await _client.from('daily_metrics').select('id').gte('created_at', today).limit(1);
 
                 let error;
                 if(existing && existing.length > 0) {
-                    // Update
                     const { error: err } = await _client.from('daily_metrics')
                         .update({ target_protein: this.targets.protein, target_calories: this.targets.cals })
                         .eq('id', existing[0].id);
                     error = err;
                 } else {
-                    // Insert new
                     const { error: err } = await _client.from('daily_metrics')
                         .insert([{ 
                             user_id: this.session.user.id, 
