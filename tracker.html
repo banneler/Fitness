@@ -17,19 +17,16 @@
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
         .loading-mask { position: fixed; inset: 0; background: #020617; z-index: 999; display: flex; align-items: center; justify-content: center; }
 
-        /* Toggle Button Styles */
         .toggle-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .toggle-active { background: #3b82f6; color: white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
         .toggle-inactive { background: rgba(30, 41, 59, 0.5); color: #94a3b8; }
 
-        /* Animations */
         @keyframes pulse-orange {
             0%, 100% { filter: drop-shadow(0 0 5px #f97316); }
             50% { filter: drop-shadow(0 0 15px #f97316); }
         }
         .streak-fire { animation: pulse-orange 2s infinite; }
         
-        /* Bar Graph Animation */
         .bar-grow { transform-origin: bottom; animation: grow 1s ease-out forwards; transform: scaleY(0); }
         @keyframes grow { to { transform: scaleY(1); } }
     </style>
@@ -164,15 +161,15 @@
                             <line x1="0" y1="75" x2="300" y2="75" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 2" />
                             <line x1="0" y1="112.5" x2="300" y2="112.5" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 2" />
 
-                            <line x1="0" y1="60" x2="300" y2="60" stroke="white" stroke-opacity="0.3" stroke-width="1" stroke-dasharray="4 2" />
+                            <line v-if="macroScale > 0" x1="0" :y1="150 - (180 * macroScale)" x2="300" :y2="150 - (180 * macroScale)" stroke="white" stroke-opacity="0.3" stroke-width="1" stroke-dasharray="4 2" />
 
                             <g v-for="(day, index) in weeklyMacros" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
-                                <rect :y="150 - day.fatHeight" width="28" :height="day.fatHeight" fill="#ef4444" rx="4" class="bar-grow" style="animation-delay: 0.1s" />
-                                
-                                <rect :y="150 - day.fatHeight - day.carbHeight" width="28" :height="day.carbHeight" fill="#eab308" rx="4" class="bar-grow" style="animation-delay: 0.2s" />
-                                
-                                <rect :y="150 - day.fatHeight - day.carbHeight - day.protHeight" width="28" :height="day.protHeight" fill="#3b82f6" rx="4" class="bar-grow" style="animation-delay: 0.3s" />
+                                <rect :y="150 - day.protHeight" width="28" :height="day.protHeight" fill="#3b82f6" rx="2" class="bar-grow" style="animation-delay: 0.1s" />
 
+                                <rect :y="150 - day.protHeight - day.fatHeight" width="28" :height="day.fatHeight" fill="#ef4444" rx="2" class="bar-grow" style="animation-delay: 0.2s" />
+                                
+                                <rect :y="150 - day.protHeight - day.fatHeight - day.carbHeight" width="28" :height="day.carbHeight" fill="#eab308" rx="2" class="bar-grow" style="animation-delay: 0.3s" />
+                                
                                 <text x="14" y="165" text-anchor="middle" font-size="8" fill="#64748b" font-weight="bold" class="uppercase">{{ day.label }}</text>
                             </g>
                         </svg>
@@ -292,21 +289,20 @@
                 initialLoading: true,
                 session: null,
                 view: 'intel', 
-                weeklyLogs: [], // Stores 7 days of logs
+                weeklyLogs: [],
                 weightHistory: [],
                 inventory: [],
                 rawWorkouts: [],
                 streak: 0,
-                // Graph Data
                 chartPath: '',
                 chartFillPath: '',
                 lastPoint: {x: 0, y: 0},
-                startDate: ''
+                startDate: '',
+                macroScale: 0 
             }
         },
         computed: {
             dailyTotals() {
-                // Filter 'weeklyLogs' for just today
                 const today = new Date().toISOString().split('T')[0];
                 const todaysLogs = this.weeklyLogs.filter(l => l.created_at.startsWith(today));
 
@@ -318,7 +314,6 @@
                 }), { cals: 0, protein: 0, carbs: 0, fat: 0 });
             },
             weeklyMacros() {
-                // Generate last 7 dates
                 const days = [];
                 for(let i=6; i>=0; i--) {
                     const d = new Date();
@@ -326,23 +321,31 @@
                     days.push(d.toISOString().split('T')[0]);
                 }
 
-                // Map data to graph heights
-                return days.map(dateStr => {
+                // 1. Calculate Raw Totals
+                const rawData = days.map(dateStr => {
                     const daysLogs = this.weeklyLogs.filter(l => l.created_at.startsWith(dateStr));
-                    
-                    const p = daysLogs.reduce((sum, l) => sum + (l.protein || 0), 0);
-                    const c = daysLogs.reduce((sum, l) => sum + (l.carbs || 0), 0);
-                    const f = daysLogs.reduce((sum, l) => sum + (l.fat || 0), 0);
-                    
-                    // Simple Scaling: 150px height = ~300g Macro (approx visualization scale)
-                    const scale = 0.5; 
-                    
                     return {
                         date: dateStr,
-                        label: new Date(dateStr).toLocaleDateString('en-US', {weekday:'narrow'}),
-                        protHeight: p * scale,
-                        carbHeight: c * scale,
-                        fatHeight: f * scale
+                        p: daysLogs.reduce((sum, l) => sum + (l.protein || 0), 0),
+                        c: daysLogs.reduce((sum, l) => sum + (l.carbs || 0), 0),
+                        f: daysLogs.reduce((sum, l) => sum + (l.fat || 0), 0)
+                    };
+                });
+
+                // 2. Find Max Daily Total (in grams)
+                const maxTotal = Math.max(...rawData.map(d => d.p + d.c + d.f));
+                const safeMax = maxTotal > 0 ? maxTotal : 100;
+
+                // 3. Dynamic Scale (Fit to 135px height, keeping top buffer)
+                // We use "this" to set data property for the target line to use too
+                this.macroScale = 135 / safeMax; 
+
+                return rawData.map(d => {
+                    return {
+                        label: new Date(d.date).toLocaleDateString('en-US', {weekday:'narrow'}),
+                        protHeight: d.p * this.macroScale,
+                        carbHeight: d.c * this.macroScale,
+                        fatHeight: d.f * this.macroScale
                     };
                 });
             },
@@ -394,15 +397,12 @@
         },
         methods: {
             async fetchWeeklyLogs() {
-                // Fetch last 7 days instead of just today
                 const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
                 const { data } = await _client.from('food_logs').select('*').gte('created_at', sevenDaysAgo);
                 this.weeklyLogs = data || [];
             },
             async fetchWeight() {
-                // Fetch 30 days of metrics
                 const { data } = await _client.from('daily_metrics').select('*').order('created_at', { ascending: true }).limit(30);
-                
                 if (data && data.length) {
                     this.weightHistory = [...data].reverse();
                     this.calculateGraph(data);
