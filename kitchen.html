@@ -20,6 +20,10 @@
         /* Toast Animation */
         .toast-enter-active, .toast-leave-active { transition: all 0.5s ease; }
         .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(20px); }
+
+        /* Hide Scrollbar for Horizontal List */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -69,12 +73,21 @@
     <input type="file" ref="cameraInput" accept="image/*" capture="environment" class="hidden" @change="handleScan">
 
     <div class="glass rounded-[2.5rem] p-8 shadow-2xl mb-8">
-        <div class="flex justify-between items-center mb-8">
+        <div class="flex justify-between items-center mb-6">
             <h3 class="text-white text-lg font-black italic uppercase">Fuel Log</h3>
             <button @click="triggerCamera" :disabled="scanning" class="bg-blue-600/20 px-4 py-2 rounded-xl border border-blue-500/30 text-blue-500 text-[10px] font-black uppercase italic flex items-center gap-2 active:scale-95 transition-all">
                 <i data-lucide="camera" class="w-3 h-3"></i> 
                 AI SCAN
             </button>
+        </div>
+
+        <div v-if="recentFoods.length" class="mb-6">
+            <p class="text-[8px] text-slate-500 font-black uppercase tracking-widest mb-3 ml-1">Quick Add</p>
+            <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x">
+                <button v-for="item in recentFoods" :key="item.id" @click="selectFood(item)" class="snap-start flex-shrink-0 bg-slate-900/50 border border-white/10 hover:border-green-500/50 hover:bg-green-500/10 rounded-xl px-4 py-3 active:scale-95 transition-all">
+                    <span class="text-xs font-bold text-slate-300 uppercase whitespace-nowrap">{{ item.food_name }}</span>
+                </button>
+            </div>
         </div>
 
         <input type="text" v-model="foodSearch" @input="filterMemory" placeholder="Search Memory..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl py-5 px-6 outline-none font-black text-lg mb-6 placeholder-slate-700 focus:ring-1 focus:ring-green-500/50 transition-all">
@@ -160,6 +173,7 @@
                 foodSearch: '', 
                 foodEntry: { cals: 0, protein: 0, carbs: 0, fat: 0 }, 
                 memory: [], 
+                recentFoods: [], // New Array for Quick Bar
                 filteredMemory: [], 
                 showMemory: false,
                 dailyLogs: [],
@@ -170,7 +184,8 @@
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
-            await Promise.all([this.initMemory(), this.fetchDailyLogs()]);
+            // Fetch Recent Foods alongside other init data
+            await Promise.all([this.initMemory(), this.fetchDailyLogs(), this.fetchRecentFoods()]);
             this.initialLoading = false;
             
             this.$nextTick(() => { lucide.createIcons(); });
@@ -187,6 +202,28 @@
             async initMemory() {
                 const { data } = await _client.from('food_memory').select('*').order('use_count', { ascending: false });
                 this.memory = data || [];
+            },
+            async fetchRecentFoods() {
+                // Fetch last 50 entries to ensure we find enough unique items
+                const { data } = await _client.from('food_logs')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                
+                if (data) {
+                    const unique = [];
+                    const seen = new Set();
+                    for (const item of data) {
+                        // Normalize string for better deduping
+                        const cleanName = item.food_name.trim().toLowerCase();
+                        if (!seen.has(cleanName)) {
+                            seen.add(cleanName);
+                            unique.push(item);
+                            if (unique.length >= 10) break; // Limit to top 10 unique
+                        }
+                    }
+                    this.recentFoods = unique;
+                }
             },
             async fetchDailyLogs() {
                 const today = new Date().toISOString().split('T')[0];
@@ -219,12 +256,14 @@
                 this.showToast("Fuel Logged Successfully");
                 this.foodSearch = '';
                 this.foodEntry = { cals: 0, protein: 0, carbs: 0, fat: 0 };
-                this.fetchDailyLogs(); 
+                this.fetchDailyLogs();
+                this.fetchRecentFoods(); // Refresh quick bar
             },
             async deleteLog(id) {
                 if(confirm("Delete this entry?")) {
                     await _client.from('food_logs').delete().eq('id', id);
                     this.fetchDailyLogs(); 
+                    this.fetchRecentFoods(); // Refresh just in case
                 }
             },
             triggerCamera() {
@@ -234,7 +273,7 @@
                 const file = event.target.files[0];
                 if (!file) return;
 
-                this.scanning = true; // Shows Overlay
+                this.scanning = true;
                 
                 try {
                     const reader = new FileReader();
@@ -245,7 +284,7 @@
                             body: { image: base64Image }
                         });
 
-                        this.scanning = false; // Hides Overlay
+                        this.scanning = false;
 
                         if (error) {
                             console.error("Supabase Error:", error);
@@ -254,10 +293,7 @@
                         }
 
                         if (data) {
-                            // Show Toast
                             this.showToast("Macros Extracted");
-                            
-                            // Populate Fields
                             this.foodSearch = data.food_name || "Scanned Item";
                             this.foodEntry = {
                                 cals: data.calories || 0,
