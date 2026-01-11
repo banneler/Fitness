@@ -67,7 +67,6 @@
     createApp({
         data() { return { loading: true, processing: false, email: '', password: '', errorMsg: '' } },
         async mounted() {
-            // Auto-redirect if already logged in
             const { data: { session } } = await _client.auth.getSession();
             if (session) {
                 window.location.href = 'today.html';
