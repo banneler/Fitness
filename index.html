@@ -34,7 +34,6 @@
             min-height: 100vh;
         }
         
-        /* --- LOGO INTEGRATION --- */
         .auth-logo {
             filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.6));
             transition: filter 0.3s;
@@ -52,14 +51,12 @@
             display: block;
         }
 
-        /* Color Injection Logic */
         .svg-inject path[fill="#FEFEFE"] { fill: var(--logo-primary-color) !important; transition: fill 0.3s; }
         .svg-inject path[fill="#010101"] { fill: #FFFFFF !important; transition: fill 0.3s; }
         
         .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
 
-        /* Loading Overlay Mask */
         .loading-mask {
             position: fixed;
             inset: 0;
@@ -92,19 +89,28 @@
                 <h1 class="text-3xl font-black tracking-tighter uppercase italic text-white leading-none">
                     <span class="text-blue-500">CONSTELLATION</span> FITNESS
                 </h1>
-                <p class="text-slate-500 text-[10px] uppercase tracking-[0.4em] mt-4 font-black italic">Performance Lifestyle</p>
+                <p class="text-slate-500 text-[10px] uppercase tracking-[0.4em] mt-4 font-black italic">
+                    {{ isSignUp ? 'Initialize New Profile' : 'Performance Lifestyle' }}
+                </p>
             </div>
             
             <div class="w-full space-y-4">
                 <input type="email" v-model="email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-white placeholder-slate-600">
                 <input type="password" v-model="password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-white placeholder-slate-600">
                 
-                <button @click="handleLogin" :disabled="processing" class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all tracking-tighter uppercase italic flex items-center justify-center">
-                    <span v-if="!processing">LOG IN</span>
+                <button @click="handleAuth" :disabled="processing" class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all tracking-tighter uppercase italic flex items-center justify-center">
+                    <span v-if="!processing">{{ isSignUp ? 'CREATE ACCOUNT' : 'LOG IN' }}</span>
                     <span v-else>CONNECTING...</span>
                 </button>
+
+                <div class="text-center pt-4">
+                    <button @click="isSignUp = !isSignUp" class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-blue-400 transition-colors">
+                        {{ isSignUp ? 'Already have a profile? Log In' : 'No Access? Initialize Profile' }}
+                    </button>
+                </div>
                 
-                <p v-if="errorMsg" class="text-center text-red-500 text-xs font-bold mt-4">{{ errorMsg }}</p>
+                <p v-if="errorMsg" class="text-center text-red-500 text-xs font-bold mt-4 px-4 leading-relaxed">{{ errorMsg }}</p>
+                <p v-if="successMsg" class="text-center text-green-500 text-xs font-bold mt-4 px-4 leading-relaxed">{{ successMsg }}</p>
             </div>
         </div>
     </transition>
@@ -122,20 +128,28 @@
             return { 
                 loading: true, 
                 processing: false, 
+                isSignUp: false,
                 email: '', 
                 password: '', 
                 errorMsg: '',
+                successMsg: '',
                 logoSvg: '' 
             } 
         },
         async mounted() {
-            // 1. Fetch the Logo
+            // Force-kill Service Workers if they are hanging around
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                }
+            }
+
             fetch('c-logo.svg')
                 .then(res => res.text())
                 .then(data => { this.logoSvg = data; })
                 .catch(err => console.error("Logo load failed", err));
 
-            // 2. Check Session
             const { data: { session } } = await _client.auth.getSession();
             if (session) {
                 window.location.href = 'today.html';
@@ -145,21 +159,37 @@
             }
         },
         methods: {
-            async handleLogin() {
+            async handleAuth() {
                 this.processing = true;
                 this.errorMsg = '';
-                const { data, error } = await _client.auth.signInWithPassword({ email: this.email, password: this.password });
-                if (error) {
-                    this.errorMsg = error.message;
+                this.successMsg = '';
+
+                if (this.isSignUp) {
+                    const { data, error } = await _client.auth.signUp({ 
+                        email: this.email, 
+                        password: this.password 
+                    });
+                    if (error) {
+                        this.errorMsg = error.message;
+                    } else {
+                        this.successMsg = "Initialization Link Sent. Check your email.";
+                    }
                     this.processing = false;
                 } else {
-                    window.location.href = 'today.html';
+                    const { data, error } = await _client.auth.signInWithPassword({ 
+                        email: this.email, 
+                        password: this.password 
+                    });
+                    if (error) {
+                        this.errorMsg = error.message;
+                        this.processing = false;
+                    } else {
+                        window.location.href = 'today.html';
+                    }
                 }
             }
         }
     }).mount('#app');
 </script>
-
-
 </body>
 </html>
