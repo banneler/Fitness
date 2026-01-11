@@ -52,11 +52,10 @@
                     <i data-lucide="flame" class="w-4 h-4 text-orange-500 streak-fire fill-orange-500"></i>
                     <span class="text-lg font-black text-white italic">{{ streak }}</span>
                 </div>
-                <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all">
-                    <i data-lucide="layout-grid" class="w-5 h-5 text-slate-400"></i>
-                </a>
-            </div>
-        </header>
+            <button @click="handleLogout" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
+        <i data-lucide="log-out" class="w-5 h-5"></i>
+    </button>
+</header>
 
         <div class="flex p-1 bg-slate-900 rounded-xl mb-8 border border-white/5">
             <button @click="view = 'intel'" :class="view === 'intel' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">
@@ -488,6 +487,12 @@
                     this.fetchInventory();
                 }
             },
+            async handleLogout() {
+    if(confirm("Log out of Constellation?")) {
+        await _client.auth.signOut();
+        window.location.href = 'index.html';
+    }
+},
             async updateStock(item, amount) {
                 const newAmount = item.servings_left + amount;
                 await _client.from('inventory').update({ servings_left: newAmount }).eq('id', item.id);
