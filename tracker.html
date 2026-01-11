@@ -21,11 +21,20 @@
         .toggle-active { background: #3b82f6; color: white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
         .toggle-inactive { background: rgba(30, 41, 59, 0.5); color: #94a3b8; }
 
+        @keyframes pulse-orange {
+            0%, 100% { filter: drop-shadow(0 0 5px #f97316); }
+            50% { filter: drop-shadow(0 0 15px #f97316); }
+        }
+        .streak-fire { animation: pulse-orange 2s infinite; }
+        
         .bar-grow { transform-origin: bottom; animation: grow 1s ease-out forwards; transform: scaleY(0); }
         @keyframes grow { to { transform: scaleY(1); } }
-        
-        .matrix-cell { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.02); }
-        .matrix-active { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: #60a5fa; }
+
+        .matrix-cell { aspect-ratio: 1/1; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.01); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+        .matrix-active { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); color: #3b82f6; box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.1); }
+
+        .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
+        .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
     </style>
 </head>
 <body class="font-sans antialiased text-slate-200">
@@ -33,8 +42,8 @@
     
     <div v-if="initialLoading" class="loading-mask">
         <div class="animate-pulse flex flex-col items-center gap-4">
-            <div class="w-10 h-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
-            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Compiling Performance Intelligence</p>
+            <div class="w-10 h-10 rounded-full border-2 border-purple-500 border-t-transparent animate-spin"></div>
+            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Compiling Performance Data</p>
         </div>
     </div>
 
@@ -42,20 +51,22 @@
         <header class="flex justify-between items-center mb-8">
             <div>
                 <h1 class="text-3xl font-black italic text-purple-500 uppercase tracking-tighter">Tracker</h1>
-                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Growth & Biometrics</p>
+                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Intelligence & Progress</p>
             </div>
             <div class="flex items-center gap-3">
                 <div v-if="streak > 0" class="glass px-3 py-1 rounded-full flex items-center gap-2 border-orange-500/20">
-                    <i data-lucide="flame" class="w-4 h-4 text-orange-500 fill-orange-500"></i>
+                    <i data-lucide="flame" class="w-4 h-4 text-orange-500 streak-fire fill-orange-500"></i>
                     <span class="text-lg font-black text-white italic">{{ streak }}</span>
                 </div>
-                <button @click="handleLogout" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-slate-400 hover:text-red-500"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                <button @click="logoutModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>
             </div>
         </header>
 
         <div class="flex p-1 bg-slate-900 rounded-xl mb-8 border border-white/5">
-            <button @click="view = 'intel'" :class="view === 'intel' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">Intelligence</button>
-            <button @click="view = 'motion'" :class="view === 'motion' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">Motion</button>
+            <button @click="view = 'intel'" :class="view === 'intel' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest"> Intelligence </button>
+            <button @click="view = 'motion'" :class="view === 'motion' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest"> Motion </button>
         </div>
 
         <main>
@@ -70,11 +81,62 @@
                         </div>
                     </div>
                 </section>
+                
+                <section class="glass p-6 rounded-[2.5rem] shadow-2xl overflow-hidden relative border-t-4 border-t-blue-500">
+                    <div class="flex justify-between items-end mb-4 relative z-10">
+                        <div class="flex items-center gap-2 opacity-60">
+                            <i data-lucide="trending-up" class="w-4 h-4 text-blue-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">30-Day Weight</h3>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-[8px] text-slate-500 uppercase font-black tracking-widest">CURRENT</span>
+                            <span class="text-2xl font-black italic text-white">{{ currentWeight }} <span class="text-sm text-slate-500 not-italic">lbs</span></span>
+                        </div>
+                    </div>
+                    <div class="h-40 w-full relative">
+                        <svg v-if="chartPath" class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.4"/><stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+                            <polygon :points="chartFillPath" fill="url(#chartGradient)" />
+                            <polyline :points="chartPath" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" />
+                            <circle :cx="lastPoint.x" :cy="lastPoint.y" r="4" fill="#fff" stroke="#3b82f6" stroke-width="2" />
+                        </svg>
+                    </div>
+                </section>
 
-                <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
+                <section class="glass p-6 rounded-[2.5rem] shadow-xl">
                     <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Fuel Composite</h3>
-                        <span class="text-[8px] font-black text-blue-400 uppercase tracking-widest">Target: {{targets.protein}}g PRO</span>
+                        <div class="flex items-center gap-2 opacity-60">
+                            <i data-lucide="target" class="w-4 h-4 text-green-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Neural Targets</h3>
+                        </div>
+                        <button @click="showTargetModal = true" class="text-[8px] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400">Adjust</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein</span>
+                            <span class="text-xl font-black italic">{{ targets.protein }}g</span>
+                        </div>
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calories</span>
+                            <span class="text-xl font-black italic">{{ targets.cals }}</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="glass p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                    <div class="flex justify-between items-end mb-6">
+                        <div class="flex items-center gap-2 opacity-60">
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-orange-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">7-Day Composite</h3>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div><span class="text-[6px] text-slate-500 font-black uppercase">PRO</span></div>
+                            <div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div><span class="text-[6px] text-slate-500 font-black uppercase">CHO</span></div>
+                        </div>
                     </div>
                     <div class="h-44 w-full relative">
                         <div class="absolute w-full border-t border-blue-500/50 border-dashed z-10 pointer-events-none" :style="{ bottom: (targets.protein * 0.7) + 'px' }"></div>
@@ -82,24 +144,24 @@
                         <svg class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
                             <g v-for="(day, index) in weeklyMacrosFull" :key="index" :transform="`translate(${index * 42 + 5}, 0)`">
                                 <rect :y="150 - day.p" width="28" :height="day.p" :fill="day.active ? '#3b82f6' : '#1e293b'" rx="2" class="bar-grow" />
-                                <rect :y="150 - day.p - day.c" width="28" :height="day.c" :fill="day.active ? '#10b981' : '#334155'" rx="2" class="bar-grow" />
-                                <rect :y="150 - day.p - day.c - day.f" width="28" :height="day.f" :fill="day.active ? '#f59e0b' : '#475569'" rx="2" class="bar-grow" />
-                                <text x="14" y="165" text-anchor="middle" font-size="8" fill="#64748b" font-weight="black" class="uppercase">{{ day.label }}</text>
+                                <rect :y="150 - day.p - day.c" width="28" :height="day.c" :fill="day.active ? '#10b981' : '#334155'" rx="2" class="bar-grow" style="animation-delay:0.1s" />
+                                <rect :y="150 - day.p - day.c - day.f" width="28" :height="day.f" :fill="day.active ? '#f59e0b' : '#475569'" rx="2" class="bar-grow" style="animation-delay:0.2s" />
+                                <text x="14" y="165" text-anchor="middle" font-size="8" :fill="day.isToday ? '#fff' : '#64748b'" font-weight="black" class="uppercase tracking-tighter">{{ day.label }}</text>
                             </g>
                         </svg>
                     </div>
                 </section>
 
-                <section class="glass p-6 rounded-[2.5rem] shadow-xl space-y-8">
-                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Growth Metrics</h3>
+                <section class="glass p-6 rounded-[2.5rem] shadow-xl space-y-6">
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Growth Vectors</h3>
                     <div v-for="metric in ['waist', 'chest', 'arms', 'thigh']" :key="metric" class="space-y-2">
                         <div class="flex justify-between items-end px-1">
                             <span class="text-xs font-black uppercase italic">{{ metric }}</span>
                             <span class="text-[10px] font-bold text-slate-500">{{ getLatestMetric(metric) }} in</span>
                         </div>
-                        <div class="h-16 w-full bg-slate-950/40 rounded-xl border border-white/5 overflow-hidden">
+                        <div class="h-12 w-full bg-slate-950/40 rounded-xl border border-white/5 overflow-hidden">
                             <svg class="w-full h-full" viewBox="0 0 300 60" preserveAspectRatio="none">
-                                <polyline :points="getMetricPath(metric)" fill="none" stroke="#60a5fa" stroke-width="2" />
+                                <polyline :points="getMetricPath(metric)" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" />
                             </svg>
                         </div>
                     </div>
@@ -113,15 +175,15 @@
                             <input type="number" step="0.1" v-model="bodyMetrics[m]" class="bg-transparent border-none text-xl font-black w-full text-white p-0 focus:ring-0">
                         </div>
                     </div>
-                    <button @click="saveBodyMetrics" class="w-full py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase shadow-lg active:scale-95 transition-all">Submit to Registry</button>
+                    <button @click="saveBodyMetrics" class="w-full py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase shadow-lg active:scale-95 transition-all">Archiving Registry</button>
                 </section>
             </div>
 
             <div v-if="view === 'motion'" class="space-y-4">
                 <section class="glass p-6 rounded-[2.5rem] border-t-4 border-t-orange-500 shadow-2xl">
-                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Performance Registry</h3>
-                    <div v-for="session in recentWorkouts" :key="session.id" class="bg-slate-950/40 p-5 rounded-3xl border border-white/5 mb-4">
-                        <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Workout Ledger</h3>
+                    <div v-for="session in recentWorkouts" :key="session.id" class="bg-slate-950/40 p-5 rounded-3xl border border-white/5 mb-4 relative overflow-hidden">
+                        <div class="flex justify-between items-start mb-4 relative z-10">
                             <div>
                                 <h4 class="text-lg font-black italic text-slate-200 uppercase leading-none mb-1">{{ session.protocol_name }}</h4>
                                 <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{{ session.date }}</p>
@@ -131,20 +193,56 @@
                                 <span class="text-[7px] font-black text-slate-600 uppercase tracking-widest">LBS Tonnage</span>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+                        <div class="grid grid-cols-2 gap-4 border-t border-white/5 pt-4 relative z-10">
                             <div class="flex items-center gap-2">
                                 <i data-lucide="timer" class="w-3 h-3 text-slate-500"></i>
-                                <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">{{ formatTUL(session.tul) }} Load Time</span>
+                                <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">{{ formatTUL(session.tul) }} Load</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <i data-lucide="layers" class="w-3 h-3 text-slate-500"></i>
                                 <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">{{ session.setCount }} Sets</span>
                             </div>
                         </div>
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            <span v-for="ex in session.exercises" :key="ex" class="text-[7px] font-black uppercase px-2 py-1 bg-white/5 rounded-lg border border-white/5 text-slate-400">{{ ex }}</span>
+                        </div>
                     </div>
                 </section>
             </div>
         </main>
+
+        <transition name="modal">
+            <div v-if="showTargetModal" class="fixed inset-0 z-[300] flex items-end justify-center p-4">
+                <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="showTargetModal = false"></div>
+                <div class="glass w-full max-w-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl">
+                    <h2 class="text-xl font-black italic uppercase text-white mb-6">Authorize Goals</h2>
+                    <div class="space-y-4 mb-8">
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein Goal (g)</span>
+                            <input type="number" v-model="targets.protein" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
+                        </div>
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calorie Goal</span>
+                            <input type="number" v-model="targets.cals" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
+                        </div>
+                    </div>
+                    <button @click="saveTargets" class="w-full py-5 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Update Neural Memory</button>
+                </div>
+            </div>
+        </transition>
+
+        <transition name="modal">
+            <div v-if="logoutModal" class="fixed inset-0 z-[300] flex items-end justify-center p-4">
+                <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="logoutModal = false"></div>
+                <div class="glass w-full max-w-sm rounded-3xl p-6 relative border border-white/10 shadow-2xl">
+                    <h2 class="text-xl font-black italic uppercase text-center mb-2">System Logout</h2>
+                    <div class="grid grid-cols-2 gap-3 mt-6">
+                        <button @click="logoutModal = false" class="py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase">Stay</button>
+                        <button @click="handleLogout" class="py-3 rounded-xl bg-red-600 text-white font-black text-xs uppercase">Disconnect</button>
+                    </div>
+                </div>
+            </div>
+        </transition>
 
         <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-between px-6 py-4 safe-area-bottom z-[100]">
             <a href="today.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="calendar" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Today</span></a>
@@ -162,11 +260,12 @@
     createApp({
         data() {
             return {
-                initialLoading: true, view: 'intel', session: null,
+                initialLoading: true, logoutModal: false, showTargetModal: false,
+                view: 'intel', session: null, streak: 0,
                 weightHistory: [], weeklyLogs: [], rawWorkouts: [], bodyHistory: [],
                 bodyMetrics: { waist: null, chest: null, arms: null, thigh: null },
                 targets: { protein: 180, cals: 2500 },
-                streak: 0, chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0}
+                chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0}, startDate: ''
             }
         },
         computed: {
@@ -190,11 +289,11 @@
             recentWorkouts() {
                 const sessions = [];
                 let currentSession = null;
-                [...this.rawWorkouts].forEach(log => {
+                // Workouts are naturally ordered by created_at.desc from fetchWorkouts
+                this.rawWorkouts.forEach(log => {
                     const logTime = new Date(log.created_at).getTime();
-                    const tonnage = (log.sets_data || []).reduce((acc, s) => acc + (s.weight * s.reps), 0);
-                    // Approximate Time Under Load (4s per rep average)
-                    const tul = (log.sets_data || []).reduce((acc, s) => acc + (s.reps * 4), 0);
+                    const tonnage = (log.sets_data || []).reduce((acc, s) => acc + (parseFloat(s.weight || 0) * parseInt(s.reps || 0)), 0);
+                    const tul = (log.sets_data || []).reduce((acc, s) => acc + (parseInt(s.reps || 0) * 4), 0);
 
                     if(!currentSession || Math.abs(currentSession.startTime - logTime) > 3600000) {
                         currentSession = { 
@@ -213,6 +312,7 @@
             },
             weeklyMacrosFull() {
                 const days = [];
+                const maxH = 140;
                 for(let i=6; i>=0; i--) {
                     const d = new Date(); d.setDate(d.getDate() - i);
                     const ds = d.toISOString().split('T')[0];
@@ -221,8 +321,13 @@
                     const c = logs.reduce((sum, l) => sum + (l.carbs || 0), 0);
                     const f = logs.reduce((sum, l) => sum + (l.fat || 0), 0);
                     const total = p + c + f || 1;
-                    const scale = 140 / Math.max(total, 400);
-                    days.push({ label: d.toLocaleDateString('en-US', {weekday:'narrow'}), p: p*scale, c: c*scale, f: f*scale, active: p >= this.targets.protein });
+                    const scale = maxH / Math.max(total, 400); 
+                    days.push({
+                        label: d.toLocaleDateString('en-US', {weekday:'narrow'}),
+                        p: p * scale, c: c * scale, f: f * scale,
+                        active: p >= this.targets.protein,
+                        isToday: ds === new Date().toISOString().split('T')[0]
+                    });
                 }
                 return days;
             }
@@ -235,11 +340,21 @@
             this.initialLoading = false;
             this.$nextTick(() => lucide.createIcons());
         },
+        updated() { lucide.createIcons(); },
         methods: {
             async handleLogout() { await _client.auth.signOut(); window.location.href = 'index.html'; },
             async fetchTargets() {
                 const { data } = await _client.from('daily_metrics').select('target_protein, target_calories').order('created_at', { ascending: false }).limit(1);
                 if(data?.[0]) { this.targets.protein = data[0].target_protein; this.targets.cals = data[0].target_calories; }
+            },
+            async saveTargets() {
+                const { error } = await _client.from('daily_metrics').insert([{
+                    user_id: this.session.user.id,
+                    target_protein: this.targets.protein,
+                    target_calories: this.targets.cals,
+                    weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null
+                }]);
+                if(!error) { this.showTargetModal = false; this.fetchTargets(); }
             },
             async fetchBodyHistory() {
                 const { data } = await _client.from('body_metrics').select('*').order('created_at', { ascending: true });
@@ -253,8 +368,8 @@
                 const data = this.bodyHistory.filter(h => h[m]);
                 if(data.length < 2) return "";
                 const vals = data.map(d => d[m]);
-                const min = Math.min(...vals) - 0.5;
-                const max = Math.max(...vals) + 0.5;
+                const min = Math.min(...vals) - 0.2;
+                const max = Math.max(...vals) + 0.2;
                 return data.map((d, i) => `${(i/(data.length-1))*300},${60 - ((d[m]-min)/(max-min || 1)*60)}`).join(' ');
             },
             async saveBodyMetrics() {
@@ -272,16 +387,19 @@
                 if (data?.length) { this.weightHistory = data; this.calculateGraph(data); }
             },
             calculateGraph(data) {
-                const weights = data.map(d => d.weight).filter(w => w);
+                if (data.length < 2) return;
+                const weights = data.map(d => d.weight).filter(w => w !== null);
                 const min = Math.min(...weights) - 1;
                 const max = Math.max(...weights) + 1;
-                const points = weights.map((w, i) => ({ x: (i/(weights.length-1))*300, y: 150 - ((w-min)/(max-min || 1)*150) }));
+                const range = max - min || 1;
+                const points = weights.map((w, i) => ({ x: (i / (weights.length - 1)) * 300, y: 150 - ((w - min) / range) * 150 }));
                 this.chartPath = points.map(p => `${p.x},${p.y}`).join(' ');
                 this.chartFillPath = `0,150 ${this.chartPath} 300,150`;
                 this.lastPoint = points[points.length-1];
             },
             async fetchWeeklyLogs() {
-                const { data } = await _client.from('food_logs').select('*').gte('created_at', new Date(Date.now() - 7*86400000).toISOString());
+                const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+                const { data } = await _client.from('food_logs').select('*').gte('created_at', sevenDaysAgo);
                 this.weeklyLogs = data || [];
             },
             async fetchWorkouts() {
@@ -290,13 +408,19 @@
                 this.calculateStreak(data);
             },
             calculateStreak(logs) {
-                const dates = [...new Set(logs.map(l => l.created_at.split('T')[0]))].sort().reverse();
-                let s = 0; let today = new Date().toISOString().split('T')[0];
-                if(dates.includes(today)) {
-                    s++; let d = new Date(Date.now()-86400000);
-                    while(dates.includes(d.toISOString().split('T')[0])) { s++; d.setDate(d.getDate()-1); }
+                if (!logs || !logs.length) return;
+                const uniqueDates = [...new Set(logs.map(l => l.created_at.split('T')[0]))].sort().reverse();
+                let streak = 0;
+                const today = new Date().toISOString().split('T')[0];
+                const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+                if (uniqueDates.includes(today) || uniqueDates.includes(yesterday)) {
+                    let checkDate = uniqueDates.includes(today) ? new Date() : new Date(Date.now() - 86400000);
+                    while (uniqueDates.includes(checkDate.toISOString().split('T')[0])) {
+                        streak++;
+                        checkDate.setDate(checkDate.getDate() - 1);
+                    }
                 }
-                this.streak = s;
+                this.streak = streak;
             },
             formatTUL(s) { return `${Math.floor(s/60)}m ${s%60}s`; }
         }
