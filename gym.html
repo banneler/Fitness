@@ -62,14 +62,9 @@
                 <h1 class="text-3xl font-black italic text-slate-200 uppercase">Performance</h1>
                 <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Progressive Overload</p>
             </div>
-            <div class="flex gap-2">
-                <button @click="view = 'builder'" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all">
-                    <i data-lucide="wrench" class="w-5 h-5 text-blue-400"></i>
-                </button>
-                <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all">
-                    <i data-lucide="layout-grid" class="w-5 h-5 text-slate-400"></i>
-                </a>
-            </div>
+            <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all">
+                <i data-lucide="layout-grid" class="w-5 h-5 text-slate-400"></i>
+            </a>
         </header>
 
         <div class="mb-8">
@@ -97,15 +92,19 @@
         <h3 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Protocols</h3>
         <div class="grid grid-cols-2 gap-4 mb-8">
             <button v-for="routine in routines" :key="routine.id" @click="previewRoutine(routine)" class="glass p-6 rounded-3xl text-left hover:border-blue-500/50 transition-all active:scale-95 group relative overflow-hidden">
+                <div @click.stop="editRoutine(routine)" class="absolute top-3 right-3 p-2 bg-slate-950/50 rounded-full text-slate-500 hover:text-white hover:bg-blue-600 transition-all z-10">
+                    <i data-lucide="pencil" class="w-3 h-3"></i>
+                </div>
+
                 <i :data-lucide="routine.icon_name" class="w-6 h-6 text-blue-500 mb-3 group-hover:scale-110 transition-transform"></i>
-                <div class="font-black text-xl italic truncate">{{ routine.name }}</div>
+                <div class="font-black text-xl italic truncate pr-4">{{ routine.name }}</div>
                 <div class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">{{ routine.exercise_order?.length || 0 }} Exercises</div>
             </button>
             
-            <button @click="view = 'builder'" class="glass p-6 rounded-3xl text-left hover:border-green-500/50 transition-all active:scale-95 group border-dashed border-slate-700">
+            <button @click="resetBuilder" class="glass p-6 rounded-3xl text-left hover:border-green-500/50 transition-all active:scale-95 group border-dashed border-slate-700">
                 <i data-lucide="plus-circle" class="w-6 h-6 text-green-500 mb-3 group-hover:scale-110 transition-transform"></i>
                 <div class="font-black text-xl italic text-slate-400">NEW</div>
-                <div class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Create Protocol</div>
+                <div class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Workout / Exercise</div>
             </button>
         </div>
 
@@ -135,7 +134,7 @@
 
     <div v-if="view === 'builder'" class="flex-1 flex flex-col">
         <header class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-black italic uppercase">Builder</h2>
+            <h2 class="text-2xl font-black italic uppercase">{{ newRoutine.id ? 'Edit Protocol' : 'Builder' }}</h2>
             <button @click="view = 'dashboard'" class="text-slate-400 hover:text-white font-bold text-xs uppercase">Cancel</button>
         </header>
 
@@ -155,10 +154,13 @@
 
             <div class="space-y-2">
                 <p class="text-[10px] font-bold uppercase text-slate-500">Select Exercises</p>
-                <div v-if="libraryExercises.length === 0" class="text-center py-4 text-slate-600 text-xs italic">
-                    No exercises found. Create one in the "Exercise" tab.
+                
+                <input type="text" v-model="exerciseSearch" placeholder="Filter exercises..." class="w-full bg-slate-950/50 border border-white/5 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-blue-500 mb-2 placeholder-slate-600">
+
+                <div v-if="filteredExercises.length === 0" class="text-center py-4 text-slate-600 text-xs italic">
+                    No matching exercises found.
                 </div>
-                <div v-for="ex in libraryExercises" :key="ex.id" @click="toggleExerciseInRoutine(ex.id)" :class="newRoutine.exercises.includes(ex.id) ? 'border-blue-500 bg-blue-500/10' : 'border-white/5 bg-slate-900/50'" class="p-3 rounded-xl border flex justify-between items-center transition-all cursor-pointer">
+                <div v-for="ex in filteredExercises" :key="ex.id" @click="toggleExerciseInRoutine(ex.id)" :class="newRoutine.exercises.includes(ex.id) ? 'border-blue-500 bg-blue-500/10' : 'border-white/5 bg-slate-900/50'" class="p-3 rounded-xl border flex justify-between items-center transition-all cursor-pointer">
                     <div class="flex items-center gap-3">
                         <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4 text-slate-500"></i>
                         <span class="text-xs font-bold text-white">{{ ex.name }}</span>
@@ -167,7 +169,9 @@
                 </div>
             </div>
 
-            <button @click="saveRoutine" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all mt-6">Save Protocol</button>
+            <button @click="saveRoutine" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all mt-6">
+                {{ newRoutine.id ? 'Update Protocol' : 'Save Protocol' }}
+            </button>
         </div>
 
         <div v-if="builderTab === 'exercise'" class="space-y-4">
@@ -309,26 +313,10 @@
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
     );
 
-    // EXPANDED BODY PART ICONS
     const ICONS = [
-        'dumbbell',       // General
-        'biceps-flexed',  // Arms
-        'weight',         // Heavy/Kettlebell
-        'disc',           // Plates
-        'anchor',         // Back/Deadlifts
-        'sword',          // Triceps/Precision
-        'shield',         // Core/Chest
-        'arrow-up-circle',// Shoulders
-        'arrow-down-circle',// Lats
-        'move',           // Legs
-        'layers',         // Machines/Stacks
-        'columns-2',      // Legs (Pillars)
-        'footprints',     // Cardio
-        'bike',           // Cycling
-        'waves',          // Swim
-        'zap',            // HIIT
-        'activity',       // General Cardio
-        'trophy'          // PRs
+        'dumbbell', 'biceps-flexed', 'weight', 'disc', 'anchor', 'sword', 'shield',
+        'arrow-up-circle', 'arrow-down-circle', 'move', 'layers', 'columns-2', 
+        'footprints', 'bike', 'waves', 'zap', 'activity', 'trophy'
     ];
 
     createApp({
@@ -353,8 +341,9 @@
                 previewModal: null,
 
                 // Builder State
-                newRoutine: { name: '', icon: 'activity', exercises: [] },
+                newRoutine: { id: null, name: '', icon: 'activity', exercises: [] },
                 newExercise: { name: '', group: '', icon: 'dumbbell' },
+                exerciseSearch: '',
 
                 // Active Session
                 activeRoutine: { name: '', data: [] },
@@ -379,6 +368,11 @@
                     });
                 }
                 return days;
+            },
+            filteredExercises() {
+                if (!this.exerciseSearch) return this.libraryExercises;
+                const search = this.exerciseSearch.toLowerCase();
+                return this.libraryExercises.filter(ex => ex.name.toLowerCase().includes(search));
             }
         },
         async mounted() {
@@ -477,6 +471,24 @@
                 this.showToast('Schedule Updated', routine ? `${routine.name} set for ${day}` : 'Rest day assigned');
             },
 
+            // Builder
+            resetBuilder() {
+                this.newRoutine = { id: null, name: '', icon: 'activity', exercises: [] };
+                this.builderTab = 'routine';
+                this.exerciseSearch = '';
+                this.view = 'builder';
+            },
+            editRoutine(routine) {
+                this.newRoutine = { 
+                    id: routine.id,
+                    name: routine.name,
+                    icon: routine.icon_name,
+                    exercises: [...(routine.exercise_order || [])] 
+                };
+                this.builderTab = 'routine';
+                this.exerciseSearch = '';
+                this.view = 'builder';
+            },
             toggleExerciseInRoutine(id) {
                 const idx = this.newRoutine.exercises.indexOf(id);
                 if (idx > -1) this.newRoutine.exercises.splice(idx, 1);
@@ -495,7 +507,6 @@
                 const { error } = await _client.from('exercises').insert([payload]);
                 
                 if (error) {
-                    console.error(error);
                     this.showToast('Error', 'Failed to save exercise');
                     return;
                 }
@@ -506,18 +517,27 @@
             },
             async saveRoutine() {
                 if(!this.newRoutine.name) return;
-                await _client.from('routines').insert([{ 
-                    name: this.newRoutine.name, 
+                
+                const payload = {
+                    name: this.newRoutine.name,
                     icon_name: this.newRoutine.icon,
                     exercise_order: this.newRoutine.exercises,
-                    user_id: this.session.user.id 
-                }]);
-                this.newRoutine = { name: '', icon: 'activity', exercises: [] };
+                    user_id: this.session.user.id
+                };
+
+                if (this.newRoutine.id) {
+                    await _client.from('routines').update(payload).eq('id', this.newRoutine.id);
+                    this.showToast('Protocol Updated', 'Routine saved successfully');
+                } else {
+                    await _client.from('routines').insert([payload]);
+                    this.showToast('Protocol Created', 'New workout available');
+                }
+
                 this.fetchRoutines();
                 this.view = 'dashboard';
-                this.showToast('Protocol Saved', 'New workout available');
             },
 
+            // Active Session
             getExerciseName(id) {
                 const ex = this.libraryExercises.find(e => e.id === id);
                 return ex ? ex.name : 'Unknown Exercise';
