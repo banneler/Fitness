@@ -26,13 +26,11 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Custom Checkbox */
         .custom-checkbox { appearance: none; background-color: #1e293b; width: 1.5rem; height: 1.5rem; border-radius: 0.5rem; display: grid; place-content: center; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1); }
         .custom-checkbox::before { content: ""; width: 0.75rem; height: 0.75rem; transform: scale(0); transition: 120ms transform ease-in-out; box-shadow: inset 1em 1em white; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
         .custom-checkbox:checked { background-color: #3b82f6; border-color: #3b82f6; }
         .custom-checkbox:checked::before { transform: scale(1); }
 
-        /* Failure Checkbox */
         .failure-checkbox { appearance: none; width: 1.2rem; height: 1.2rem; background-color: #334155; -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain; mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain; transition: all 0.2s; }
         .failure-checkbox:checked { background-color: #ef4444; filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.8)); }
 
@@ -42,9 +40,6 @@
         .pr-active { border-color: #eab308 !important; box-shadow: 0 0 15px rgba(234, 179, 8, 0.2); color: #eab308 !important; background: rgba(234, 179, 8, 0.05); }
         .input-loading { border-color: #a855f7 !important; background-color: rgba(168, 85, 247, 0.1) !important; animation: pulse-purple 1.5s infinite; }
         @keyframes pulse-purple { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-
-        .superset-link { position: absolute; left: 1.5rem; top: -1rem; bottom: 50%; width: 2px; background: #3b82f6; z-index: 0; }
-        .superset-dot { position: absolute; left: 1.2rem; top: 50%; width: 0.75rem; height: 0.75rem; background: #020617; border: 2px solid #3b82f6; border-radius: 50%; z-index: 1; transform: translateY(-50%); }
 
         .muscle-base { fill: rgba(30, 41, 59, 0.1); stroke: rgba(255, 255, 255, 0.2); stroke-width: 1px; stroke-linecap: round; stroke-linejoin: round; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         .fill-red-500 { fill: rgba(239, 68, 68, 0.4) !important; stroke: #ef4444 !important; }
@@ -258,49 +253,61 @@
         </div>
 
         <div class="flex-1 space-y-6 mb-24 overflow-y-auto" id="session-container">
-            <div v-for="(exercise, exIndex) in activeRoutine.data" :key="exIndex" @click="activeExerciseIdx = exIndex" class="glass p-5 rounded-3xl border border-white/10 exercise-card relative" :class="activeExerciseIdx === exIndex ? 'exercise-active' : 'exercise-blurred'">
+            
+            <div v-for="(group, groupIdx) in activeRoutine.data" 
+                 :key="groupIdx" 
+                 @click="activeExerciseIdx = groupIdx"
+                 class="glass p-5 rounded-3xl border border-white/10 exercise-card relative"
+                 :class="activeExerciseIdx === groupIdx ? 'exercise-active' : 'exercise-blurred'">
                  
-                 <div v-if="exercise.isSuperset" class="superset-link"></div>
-                 <div v-if="exercise.isSuperset" class="superset-dot"></div>
-
                 <div class="flex justify-between items-center mb-4 pl-4">
                     <div class="flex items-center gap-2">
-                        <i :data-lucide="exercise.icon || 'dumbbell'" class="w-5 h-5 text-blue-500"></i>
+                        <i :data-lucide="group.exercises[0].icon || 'dumbbell'" class="w-5 h-5 text-blue-500"></i>
                         <div>
-                            <h3 class="font-black text-lg italic text-blue-400 leading-none">{{ exercise.name }}</h3>
-                            <span v-if="exercise.weightType === 'per_side'" class="text-[8px] font-bold uppercase text-slate-500 tracking-wider">Per Arm / Side</span>
+                            <h3 class="font-black text-lg italic text-blue-400 leading-none">
+                                <span v-for="(ex, i) in group.exercises" :key="i">
+                                    {{ ex.name }}<span v-if="i < group.exercises.length - 1" class="text-slate-500"> + </span>
+                                </span>
+                            </h3>
+                            <span v-if="group.exercises[0].weightType === 'per_side'" class="text-[8px] font-bold uppercase text-slate-500 tracking-wider">Per Arm / Side</span>
                         </div>
-                    </div>
-                    <div class="flex gap-2">
-                         <span v-if="exercise.isPR" class="bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest border border-yellow-500/50 animate-pulse">NEW PR!</span>
                     </div>
                 </div>
                 
                 <div class="grid grid-cols-12 gap-2 text-[8px] text-slate-500 font-black uppercase tracking-widest mb-2 text-center pl-4">
-                    <div class="col-span-1">Set</div>
+                    <div class="col-span-1">#</div>
+                    <div class="col-span-1">Ex</div>
                     <div class="col-span-4">lbs</div>
-                    <div class="col-span-4">Reps</div>
+                    <div class="col-span-3">Reps</div>
                     <div class="col-span-2">Done</div>
                     <div class="col-span-1"><i data-lucide="skull" class="w-3 h-3 mx-auto"></i></div>
                 </div>
 
-                <div v-for="(set, setIndex) in exercise.sets" :key="setIndex" class="grid grid-cols-12 gap-2 mb-2 items-center pl-4">
-                    <div class="col-span-1 flex justify-center">
-                        <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">{{ setIndex + 1 }}</div>
+                <template v-for="setIndex in getMaxSets(group)" :key="setIndex">
+                    <div v-for="(ex, exIdx) in group.exercises" :key="ex.id + '-' + setIndex" class="grid grid-cols-12 gap-2 mb-2 items-center pl-4 relative" :class="{'mt-4 border-t border-white/5 pt-4': setIndex > 0 && exIdx === 0}">
+                        
+                        <div class="col-span-1 flex justify-center">
+                            <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">{{ setIndex + 1 }}</div>
+                        </div>
+                        
+                        <div class="col-span-1 flex justify-center">
+                            <i :data-lucide="ex.icon || 'dumbbell'" class="w-3 h-3 text-slate-600"></i>
+                        </div>
+
+                        <div class="col-span-4">
+                            <input v-if="ex.sets[setIndex]" type="number" v-model="ex.sets[setIndex].weight" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[setIndex].prevWeight || '-'">
+                        </div>
+                        <div class="col-span-3">
+                            <input v-if="ex.sets[setIndex]" type="number" v-model="ex.sets[setIndex].reps" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[setIndex].prevReps || '-'">
+                        </div>
+                        <div class="col-span-2 flex justify-center"><input v-if="ex.sets[setIndex]" type="checkbox" v-model="ex.sets[setIndex].done" class="custom-checkbox"></div>
+                        <div class="col-span-1 flex justify-center"><input v-if="ex.sets[setIndex]" type="checkbox" v-model="ex.sets[setIndex].failure" class="failure-checkbox"></div>
                     </div>
-                    <div class="col-span-4">
-                        <input type="number" v-model="set.weight" @input="checkPR(exercise, set.weight)" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :class="{'pr-active': set.weight > (exercise.personalRecord || 0), 'input-loading': exercise.loadingHistory}" :placeholder="set.prevWeight || '-'">
-                    </div>
-                    <div class="col-span-4">
-                        <input type="number" v-model="set.reps" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :class="{'input-loading': exercise.loadingHistory}" :placeholder="set.prevReps || '-'">
-                    </div>
-                    <div class="col-span-2 flex justify-center"><input type="checkbox" v-model="set.done" class="custom-checkbox"></div>
-                    <div class="col-span-1 flex justify-center"><input type="checkbox" v-model="set.failure" class="failure-checkbox"></div>
-                </div>
+                </template>
                 
-                <div class="flex gap-2 mt-3 pl-4">
-                     <button @click.stop="addSet(exIndex)" class="flex-1 py-2 border border-dashed border-slate-700 rounded-xl text-[10px] text-slate-500 font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-500">+ Set</button>
-                     <button v-if="activeExerciseIdx === exIndex && exIndex < activeRoutine.data.length - 1" @click.stop="activeExerciseIdx++" class="flex-1 py-2 bg-slate-800 rounded-xl text-[10px] text-white font-black uppercase tracking-widest hover:bg-slate-700">Next Exercise &darr;</button>
+                <div class="flex gap-2 mt-4 pl-4">
+                     <button @click.stop="addSetToGroup(groupIdx)" class="flex-1 py-3 border border-dashed border-slate-700 rounded-xl text-[10px] text-slate-500 font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-500">+ Set (All)</button>
+                     <button v-if="activeExerciseIdx === groupIdx && groupIdx < activeRoutine.data.length - 1" @click.stop="activeExerciseIdx++" class="flex-1 py-3 bg-slate-800 rounded-xl text-[10px] text-white font-black uppercase tracking-widest hover:bg-slate-700">Next Cluster &darr;</button>
                 </div>
             </div>
         </div>
@@ -338,6 +345,9 @@
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
     );
 
+    const ICONS = ['dumbbell', 'biceps-flexed', 'weight', 'disc', 'anchor', 'sword', 'shield', 'arrow-up-circle', 'arrow-down-circle', 'move', 'layers', 'columns-2', 'footprints', 'bike', 'waves', 'zap', 'activity', 'trophy'];
+    const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Cardio'];
+
     createApp({
         data() { 
             return { 
@@ -363,7 +373,7 @@
                 previewModal: null,
 
                 // Active Session
-                activeRoutine: { name: '', data: [] },
+                activeRoutine: { name: '', data: [] }, // data is now an Array of CLUSTERS (groups)
                 activeExerciseIdx: 0,
                 stackTaken: false,
                 sessionTimer: 0, 
@@ -381,21 +391,34 @@
                 for(let i=0; i<7; i++) {
                     const d = new Date(); 
                     d.setDate(d.getDate() + i);
-                    days.push({ dateNum: d.getDate(), dayName: d.toLocaleDateString('en-US', {weekday:'short'}), fullDate: d.toISOString().split('T')[0] });
+                    days.push({ 
+                        dateNum: d.getDate(), 
+                        dayName: d.toLocaleDateString('en-US', {weekday:'short'}), 
+                        fullDate: d.toISOString().split('T')[0] 
+                    });
                 }
                 return days;
             }
         },
         async mounted() {
             const { data: { session }, error } = await _client.auth.getSession();
-            if (error || !session) { window.location.href = 'index.html'; return; }
+            if (error || !session) { 
+                window.location.href = 'index.html'; 
+                return; 
+            }
             this.session = session;
             
             try {
-                await Promise.all([this.fetchRoutines(), this.fetchExercises(), this.fetchSchedule(), this.fetchHistory()]);
+                await Promise.all([
+                    this.fetchRoutines(), 
+                    this.fetchExercises(), 
+                    this.fetchSchedule(), 
+                    this.fetchHistory()
+                ]);
                 this.calculateHeatmap();
             } catch (err) {
-                this.showToast("Sync Error", "Could not load data.");
+                console.error("Initialization error:", err);
+                this.showToast("Sync Error", "Could not load data. Pull to refresh.");
             } finally {
                 this.loading = false;
                 this.$nextTick(() => lucide.createIcons());
@@ -403,32 +426,78 @@
         },
         updated() { this.$nextTick(() => lucide.createIcons()); },
         methods: {
-            async confirmLogout() { await _client.auth.signOut(); window.location.href = 'index.html'; },
-            showToast(title, message) { this.toast = { visible: true, title, message }; setTimeout(() => this.toast.visible = false, 3000); },
+            async confirmLogout() { 
+                await _client.auth.signOut(); 
+                window.location.href = 'index.html'; 
+            },
+            showToast(title, message) { 
+                this.toast = { visible: true, title, message }; 
+                setTimeout(() => this.toast.visible = false, 3000); 
+            },
             
-            async fetchRoutines() { const { data } = await _client.from('routines').select('*').order('created_at'); this.routines = data || []; },
-            async fetchExercises() { const { data } = await _client.from('exercises').select('*').order('name'); this.libraryExercises = data || []; },
-            async fetchSchedule() { const { data } = await _client.from('schedule').select('*, routines(name, icon_name)'); this.schedule = data || []; },
+            async fetchRoutines() { 
+                const { data } = await _client.from('routines').select('*').order('created_at'); 
+                this.routines = data || []; 
+            },
+            async fetchExercises() { 
+                const { data } = await _client.from('exercises').select('*').order('name'); 
+                this.libraryExercises = data || []; 
+            },
+            async fetchSchedule() { 
+                const { data } = await _client.from('schedule').select('*, routines(name, icon_name)'); 
+                this.schedule = data || []; 
+            },
             async fetchHistory() {
-                const { data: rawData } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false }).limit(300);
+                const { data: rawData } = await _client.from('workout_logs')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(300);
                 this.rawLogs = rawData || [];
-                // PR Logic
+
                 this.rawLogs.forEach(log => {
                     if(log.sets_data) {
                         log.sets_data.forEach(s => {
                             const w = parseFloat(s.weight) || 0;
-                            if(w > (this.personalRecords[log.exercise_name] || 0)) this.personalRecords[log.exercise_name] = w;
+                            if(w > (this.personalRecords[log.exercise_name] || 0)) {
+                                this.personalRecords[log.exercise_name] = w;
+                            }
                         });
                     }
                 });
-                // Session Logic
-                const sessions = []; let currentSession = null;
+
+                if (!this.rawLogs.length) { 
+                    this.recentSessions = []; 
+                    return; 
+                }
+                
+                const sessions = []; 
+                let currentSession = null;
+                
                 this.rawLogs.forEach((log) => {
                     const logTime = new Date(log.created_at).getTime();
-                    if (!currentSession) { currentSession = { id: log.id, startTime: logTime, name: log.protocol_name || 'Training Session', date: new Date(log.created_at).toLocaleDateString(), volume: 1 }; } 
-                    else {
+                    
+                    if (!currentSession) {
+                        currentSession = { 
+                            id: log.id, 
+                            startTime: logTime, 
+                            name: log.protocol_name || 'Training Session', 
+                            date: new Date(log.created_at).toLocaleDateString(), 
+                            volume: 1 
+                        };
+                    } else {
                         const diffMins = Math.abs(currentSession.startTime - logTime) / (1000 * 60);
-                        if (diffMins < 60) { currentSession.volume++; } else { sessions.push(currentSession); currentSession = { id: log.id, startTime: logTime, name: log.protocol_name || 'Training Session', date: new Date(log.created_at).toLocaleDateString(), volume: 1 }; }
+                        if (diffMins < 60) {
+                            currentSession.volume++;
+                        } else { 
+                            sessions.push(currentSession); 
+                            currentSession = { 
+                                id: log.id, 
+                                startTime: logTime, 
+                                name: log.protocol_name || 'Training Session', 
+                                date: new Date(log.created_at).toLocaleDateString(), 
+                                volume: 1 
+                            }; 
+                        }
                     }
                 });
                 if (currentSession) sessions.push(currentSession);
@@ -436,8 +505,10 @@
             },
 
             calculateHeatmap() {
-                const now = new Date().getTime(); const oneDay = 1000 * 60 * 60 * 24;
+                const now = new Date().getTime();
+                const oneDay = 1000 * 60 * 60 * 24;
                 for(let m in this.muscleHeatmap) this.muscleHeatmap[m].lastTrained = null;
+
                 this.rawLogs.forEach(log => {
                     const exDef = this.libraryExercises.find(e => e.name === log.exercise_name);
                     if(exDef && exDef.muscle_group) {
@@ -445,23 +516,31 @@
                         if(['quads', 'hamstrings', 'glutes', 'calves'].includes(groupKey)) groupKey = 'legs';
                         if(['lats', 'traps', 'lower back'].includes(groupKey)) groupKey = 'back';
                         if(['biceps', 'triceps', 'forearms'].includes(groupKey)) groupKey = 'arms';
-                        if(this.muscleHeatmap[groupKey] && (!this.muscleHeatmap[groupKey].lastTrained || new Date(log.created_at).getTime() > this.muscleHeatmap[groupKey].lastTrained)) {
-                             this.muscleHeatmap[groupKey].lastTrained = new Date(log.created_at).getTime();
+
+                        if(this.muscleHeatmap[groupKey]) {
+                             const logTime = new Date(log.created_at).getTime();
+                             if(!this.muscleHeatmap[groupKey].lastTrained || logTime > this.muscleHeatmap[groupKey].lastTrained) {
+                                 this.muscleHeatmap[groupKey].lastTrained = logTime;
+                             }
                         }
                     }
                 });
+
                 for(let m in this.muscleHeatmap) {
                     if(this.muscleHeatmap[m].lastTrained) {
                         const daysSince = (now - this.muscleHeatmap[m].lastTrained) / oneDay;
                         if(daysSince < 2) this.muscleHeatmap[m].color = 'fill-red-500 animate-pulse'; 
                         else if(daysSince < 4) this.muscleHeatmap[m].color = 'fill-orange-500';
                         else this.muscleHeatmap[m].color = 'fill-blue-500';
-                    } else { this.muscleHeatmap[m].color = 'fill-blue-500'; }
+                    } else {
+                         this.muscleHeatmap[m].color = 'fill-blue-500';
+                    }
                 }
             },
 
             async generateAIWorkout() {
-                this.loading = true; this.loadingText = "Analyzing Biometrics...";
+                this.loading = true;
+                this.loadingText = "Analyzing Biometrics...";
                 try {
                     const { data, error } = await _client.functions.invoke('ai-workout-generator');
                     if(error) throw error;
@@ -470,6 +549,7 @@
                         await this.fetchRoutines();
                     }
                 } catch (e) {
+                    console.error(e);
                     setTimeout(async () => {
                         const fillerExercises = this.libraryExercises.slice(0, 3).map(e => e.id);
                         if(fillerExercises.length) {
@@ -484,27 +564,38 @@
                 this.loading = false;
             },
 
-            getScheduleForDay(dayName) { const entry = this.schedule.find(s => s.day_of_week === dayName); return entry ? { name: entry.routines.name, icon_name: entry.routines.icon_name } : null; },
+            getScheduleForDay(dayName) { 
+                const entry = this.schedule.find(s => s.day_of_week === dayName); 
+                return entry ? { name: entry.routines.name, icon_name: entry.routines.icon_name } : null; 
+            },
             openScheduleModal(dayObj) { this.scheduleModal = dayObj; },
             async saveSchedule(routine) {
                 if (!this.scheduleModal) return;
                 const day = this.scheduleModal.dayName; 
                 if (routine) await _client.from('schedule').upsert({ user_id: this.session.user.id, day_of_week: day, routine_id: routine.id }, { onConflict: 'user_id, day_of_week' });
                 else await _client.from('schedule').delete().eq('user_id', this.session.user.id).eq('day_of_week', day);
-                this.scheduleModal = null; this.fetchSchedule(); this.showToast('Schedule Updated', routine ? `${routine.name} set` : 'Rest day assigned');
+                this.scheduleModal = null; 
+                this.fetchSchedule(); 
+                this.showToast('Schedule Updated', routine ? `${routine.name} set` : 'Rest day assigned');
             },
 
+            // --- ACTIVE SESSION ENGINE (NEW CLUSTER LOGIC) ---
             previewRoutine(routine) { this.previewModal = { ...routine, exercises: routine.exercise_order || [] }; },
             getExerciseName(id) { const ex = this.libraryExercises.find(e => e.id === id); return ex ? ex.name : 'Unknown Exercise'; },
 
-            // --- ACTIVE SESSION ENGINE ---
             async startActiveSession(routine) {
                 this.previewModal = null; 
                 this.view = 'active_session';
-                this.activeExerciseIdx = 0; 
-                this.$nextTick(() => { window.scrollTo(0,0); const c = document.getElementById('session-container'); if(c) c.scrollTop = 0; });
+                this.activeExerciseIdx = 0; // This now refers to the GROUP index
+
+                this.$nextTick(() => {
+                    window.scrollTo(0,0);
+                    const container = document.getElementById('session-container');
+                    if(container) container.scrollTop = 0;
+                });
                 
-                const sessionExercises = (routine.exercise_order || []).map((id, index) => {
+                // 1. Prepare Exercises
+                const flatExercises = (routine.exercise_order || []).map((id, index) => {
                     const exDef = this.libraryExercises.find(e => e.id === id);
                     const pr = exDef ? (this.personalRecords[exDef.name] || 0) : 0;
                     return { 
@@ -512,57 +603,118 @@
                         name: exDef ? exDef.name : 'Exercise', 
                         icon: exDef ? exDef.icon_name : 'dumbbell', 
                         weightType: exDef ? exDef.weight_type : 'combined',
-                        personalRecord: pr, isPR: false, loadingHistory: true, 
-                        isSuperset: (routine.supersets || []).includes(index),
+                        personalRecord: pr, 
+                        isPR: false, 
+                        loadingHistory: true, 
+                        // Note: isSuperset in routine means "linked to previous". 
+                        isLinked: (routine.supersets || []).includes(index),
                         sets: [{weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}] 
                     };
                 });
-                this.activeRoutine = { name: routine.name, data: sessionExercises };
+
+                // 2. Group into Clusters
+                const clusters = [];
+                flatExercises.forEach((ex) => {
+                    if (ex.isLinked && clusters.length > 0) {
+                        // Add to previous cluster
+                        clusters[clusters.length - 1].exercises.push(ex);
+                    } else {
+                        // Start new cluster
+                        clusters.push({ type: 'cluster', exercises: [ex] });
+                    }
+                });
+                
+                this.activeRoutine = { name: routine.name, data: clusters };
+
+                // 3. Init Timer
                 this.sessionTimer = 0;
                 this.sessionStartTime = Date.now();
-                this.sessionInterval = setInterval(() => { const delta = Date.now() - this.sessionStartTime; this.sessionTimer = Math.floor(delta / 1000); }, 1000);
+                this.sessionInterval = setInterval(() => { 
+                    const delta = Date.now() - this.sessionStartTime;
+                    this.sessionTimer = Math.floor(delta / 1000);
+                }, 1000);
 
-                for (let ex of this.activeRoutine.data) {
-                    const { data: lastLog } = await _client.from('workout_logs').select('sets_data').eq('exercise_name', ex.name).order('created_at', { ascending: false }).limit(1).single();
-                    if(lastLog && lastLog.sets_data && lastLog.sets_data.length > 0) {
-                        ex.sets = lastLog.sets_data.map(s => ({
-                            weight: '', prevWeight: s.weight,
-                            reps: '', prevReps: s.reps,
-                            done: false, failure: false 
-                        }));
-                        while(ex.sets.length < 3) { ex.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false }); }
+                // 4. Fetch History for ALL Exercises
+                for (let group of this.activeRoutine.data) {
+                    for (let ex of group.exercises) {
+                        const { data: lastLog } = await _client.from('workout_logs')
+                            .select('sets_data')
+                            .eq('exercise_name', ex.name)
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .single();
+
+                        if(lastLog && lastLog.sets_data && lastLog.sets_data.length > 0) {
+                            ex.sets = lastLog.sets_data.map(s => ({
+                                weight: '', prevWeight: s.weight,
+                                reps: '', prevReps: s.reps,
+                                done: false, failure: false 
+                            }));
+                            while(ex.sets.length < 3) {
+                                ex.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
+                            }
+                        }
+                        ex.loadingHistory = false;
                     }
-                    ex.loadingHistory = false;
                 }
             },
 
-            checkPR(exercise, weight) { if(weight > exercise.personalRecord) exercise.isPR = true; else exercise.isPR = false; },
-            addSet(exIndex) { 
-                const prev = this.activeRoutine.data[exIndex].sets.slice(-1)[0]; 
-                this.activeRoutine.data[exIndex].sets.push({ weight: '', prevWeight: prev?.prevWeight||'', reps: '', prevReps: prev?.prevReps||'', done: false, failure: false }); 
+            // Helper to determine rows in interleaved grid
+            getMaxSets(group) {
+                return Math.max(...group.exercises.map(e => e.sets.length));
             },
+
+            checkPR(exercise, weight) {
+                if(weight > exercise.personalRecord) exercise.isPR = true;
+                else exercise.isPR = false;
+            },
+            
+            addSetToGroup(groupIdx) {
+                const group = this.activeRoutine.data[groupIdx];
+                // Add one set to every exercise in this cluster
+                group.exercises.forEach(ex => {
+                    const prev = ex.sets.slice(-1)[0]; 
+                    ex.sets.push({ weight: '', prevWeight: prev?.prevWeight||'', reps: '', prevReps: prev?.prevReps||'', done: false, failure: false }); 
+                });
+            },
+
             toggleRestTimer() { 
                 this.restTimerRunning = !this.restTimerRunning; 
-                if(this.restTimerRunning) { this.restTimer = 0; this.restInterval = setInterval(() => this.restTimer++, 1000); } 
-                else clearInterval(this.restInterval); 
+                if(this.restTimerRunning) { 
+                    this.restTimer = 0; 
+                    this.restInterval = setInterval(() => this.restTimer++, 1000); 
+                } else clearInterval(this.restInterval); 
             },
-            formatTimer(s) { if(s < 0) s = 0; return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
+            formatTimer(s) { 
+                if(s < 0) s = 0;
+                return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; 
+            },
             
-            openFinishModal() { this.finishModal = true; },
             async confirmFinishSession() {
                 clearInterval(this.sessionInterval);
-                this.finishModal = false; this.loading = true; this.loadingText = "Analyzing Performance...";
+                this.finishModal = false;
+                this.loading = true;
+                this.loadingText = "Analyzing Performance...";
                 
-                const logs = this.activeRoutine.data.map(ex => ({ 
-                    user_id: this.session.user.id, 
-                    exercise_name: ex.name, 
-                    protocol_name: this.activeRoutine.name, 
-                    sets_data: ex.sets.filter(s => s.done),
-                    duration_seconds: this.sessionTimer,
-                    created_at: new Date().toISOString() 
-                })).filter(l => l.sets_data.length);
+                // FLATTEN CLUSTERS BACK TO LOGS
+                const flatLogs = [];
+                this.activeRoutine.data.forEach(group => {
+                    group.exercises.forEach(ex => {
+                        const validSets = ex.sets.filter(s => s.done);
+                        if (validSets.length > 0) {
+                            flatLogs.push({
+                                user_id: this.session.user.id, 
+                                exercise_name: ex.name, 
+                                protocol_name: this.activeRoutine.name, 
+                                sets_data: validSets,
+                                duration_seconds: this.sessionTimer,
+                                created_at: new Date().toISOString() 
+                            });
+                        }
+                    });
+                });
 
-                if(logs.length) await _client.from('workout_logs').insert(logs);
+                if(flatLogs.length) await _client.from('workout_logs').insert(flatLogs);
                 
                 if(this.stackTaken) {
                     const { data: inv } = await _client.from('inventory').select('*');
@@ -571,8 +723,12 @@
                         await Promise.all(updates);
                     }
                 }
-                await this.fetchHistory(); this.calculateHeatmap(); 
-                this.view = 'dashboard'; this.loading = false; this.showToast("Victory", "Session archived.");
+
+                await this.fetchHistory(); 
+                this.calculateHeatmap(); 
+                this.view = 'dashboard'; 
+                this.loading = false;
+                this.showToast("Victory", "Session archived.");
             }
         }
     }).mount('#app');
