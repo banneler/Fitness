@@ -28,6 +28,10 @@
 
         .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
+
+        /* Toast Animation */
+        .toast-enter-active, .toast-leave-active { transition: all 0.5s ease; }
+        .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(20px); }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -39,6 +43,18 @@
             <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Syncing Protocols</p>
         </div>
     </div>
+
+    <transition name="toast">
+        <div v-if="toast.visible" class="fixed bottom-24 left-6 right-6 glass border-blue-500/30 p-4 rounded-2xl shadow-2xl z-[250] flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                <i data-lucide="check" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h4 class="text-sm font-black italic text-white uppercase">{{ toast.title }}</h4>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ toast.message }}</p>
+            </div>
+        </div>
+    </transition>
 
     <div v-if="view === 'dashboard'">
         <header class="flex justify-between items-center mb-6">
@@ -64,7 +80,6 @@
                      class="snap-start flex-shrink-0 w-20 glass rounded-2xl p-3 flex flex-col items-center border border-white/5 relative group active:scale-95 transition-transform">
                     
                     <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">{{ dayObj.dayName }}</span>
-                    
                     <span class="text-xs font-bold text-slate-300 mb-2">{{ dayObj.dateNum }}</span>
                     
                     <div v-if="getScheduleForDay(dayObj.dayName)" class="flex flex-col items-center">
@@ -99,6 +114,11 @@
                 <i data-lucide="history" class="w-4 h-4 text-slate-400"></i>
                 <h3 class="text-xs font-black uppercase tracking-widest">Recent Sessions</h3>
             </div>
+            
+            <div v-if="recentSessions.length === 0" class="text-center py-4 text-slate-600 text-xs italic">
+                No recent activity found.
+            </div>
+
             <div class="space-y-4">
                 <div v-for="session in recentSessions" :key="session.id" class="flex justify-between items-center border-b border-white/5 pb-4 last:border-0">
                     <div>
@@ -301,6 +321,7 @@
                 session: null,
                 view: 'dashboard', 
                 builderTab: 'routine',
+                toast: { visible: false, title: '', message: '' },
                 
                 // Data
                 routines: [],
@@ -310,7 +331,7 @@
                 iconLibrary: ICONS,
                 
                 // Modals
-                scheduleModal: null, // Tracks selected day for scheduling
+                scheduleModal: null, 
                 previewModal: null,
 
                 // Builder State
@@ -335,7 +356,7 @@
                     d.setDate(d.getDate() + i);
                     days.push({
                         dateNum: d.getDate(),
-                        dayName: d.toLocaleDateString('en-US', {weekday:'short'}), // 'Mon'
+                        dayName: d.toLocaleDateString('en-US', {weekday:'short'}), 
                         fullDate: d.toISOString().split('T')[0]
                     });
                 }
@@ -353,6 +374,10 @@
         },
         updated() { this.$nextTick(() => lucide.createIcons()); },
         methods: {
+            showToast(title, message) {
+                this.toast = { visible: true, title, message };
+                setTimeout(() => this.toast.visible = false, 3000);
+            },
             async fetchRoutines() {
                 const { data } = await _client.from('routines').select('*').order('created_at');
                 this.routines = data || [];
@@ -366,31 +391,56 @@
                 this.schedule = data || [];
             },
             async fetchHistory() {
-                const { data } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false }).limit(50);
-                if (!data) return;
+                // Better grouping: Group logs if created within 60 mins of each other
+                const { data } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false }).limit(100);
+                if (!data || !data.length) {
+                    this.recentSessions = [];
+                    return;
+                }
                 
                 const sessions = [];
-                const processedDates = new Set();
+                let currentSession = null;
                 
-                data.forEach(log => {
-                    const date = new Date(log.created_at).toLocaleDateString();
-                    if (!processedDates.has(date)) {
-                        const count = data.filter(d => new Date(d.created_at).toLocaleDateString() === date).length;
-                        sessions.push({
+                // Iterate through logs (newest first)
+                data.forEach((log) => {
+                    const logTime = new Date(log.created_at).getTime();
+                    
+                    if (!currentSession) {
+                        // Start new session bucket
+                        currentSession = {
                             id: log.id,
+                            startTime: logTime,
                             name: log.exercise_name.includes('Recovery') ? 'Recovery Session' : 'Training Session', 
-                            date: date,
-                            volume: count
-                        });
-                        processedDates.add(date);
+                            date: new Date(log.created_at).toLocaleDateString(),
+                            volume: 1
+                        };
+                    } else {
+                        // Check if belongs to current session (within 60 mins)
+                        const diffMins = Math.abs(currentSession.startTime - logTime) / (1000 * 60);
+                        
+                        if (diffMins < 60) {
+                            currentSession.volume++;
+                        } else {
+                            // Close previous session and start new
+                            sessions.push(currentSession);
+                            currentSession = {
+                                id: log.id,
+                                startTime: logTime,
+                                name: log.exercise_name.includes('Recovery') ? 'Recovery Session' : 'Training Session',
+                                date: new Date(log.created_at).toLocaleDateString(),
+                                volume: 1
+                            };
+                        }
                     }
                 });
+                
+                // Push the final session
+                if (currentSession) sessions.push(currentSession);
+                
                 this.recentSessions = sessions.slice(0, 5);
             },
             
-            // Scheduling
             getScheduleForDay(dayName) {
-                // Map based on static day names (Mon, Tue)
                 const entry = this.schedule.find(s => s.day_of_week === dayName);
                 return entry ? { name: entry.routines.name, icon_name: entry.routines.icon_name } : null;
             },
@@ -400,7 +450,7 @@
             async saveSchedule(routine) {
                 if (!this.scheduleModal) return;
                 
-                const day = this.scheduleModal.dayName; // Saving against 'Mon', 'Tue' etc.
+                const day = this.scheduleModal.dayName; 
                 
                 if (routine) {
                     await _client.from('schedule').upsert({ 
@@ -409,15 +459,14 @@
                         routine_id: routine.id 
                     }, { onConflict: 'user_id, day_of_week' });
                 } else {
-                    // Clear schedule
                     await _client.from('schedule').delete().eq('user_id', this.session.user.id).eq('day_of_week', day);
                 }
                 
                 this.scheduleModal = null;
                 this.fetchSchedule();
+                this.showToast('Schedule Updated', routine ? `${routine.name} set for ${day}` : 'Rest day assigned');
             },
 
-            // Builder
             toggleExerciseInRoutine(id) {
                 const idx = this.newRoutine.exercises.indexOf(id);
                 if (idx > -1) this.newRoutine.exercises.splice(idx, 1);
@@ -425,10 +474,26 @@
             },
             async saveExercise() {
                 if(!this.newExercise.name) return;
-                await _client.from('exercises').insert([{ ...this.newExercise, user_id: this.session.user.id }]);
+                
+                // FIX: Map 'icon' to 'icon_name' to match DB Schema
+                const payload = {
+                    name: this.newExercise.name,
+                    muscle_group: this.newExercise.group,
+                    icon_name: this.newExercise.icon, 
+                    user_id: this.session.user.id
+                };
+
+                const { error } = await _client.from('exercises').insert([payload]);
+                
+                if (error) {
+                    console.error(error);
+                    this.showToast('Error', 'Failed to save exercise');
+                    return;
+                }
+
                 this.newExercise = { name: '', group: '', icon: 'dumbbell' };
                 await this.fetchExercises(); 
-                alert('Exercise Added');
+                this.showToast('Library Updated', 'Exercise added successfully');
             },
             async saveRoutine() {
                 if(!this.newRoutine.name) return;
@@ -441,9 +506,9 @@
                 this.newRoutine = { name: '', icon: 'activity', exercises: [] };
                 this.fetchRoutines();
                 this.view = 'dashboard';
+                this.showToast('Protocol Saved', 'New workout available');
             },
 
-            // Active Session
             getExerciseName(id) {
                 const ex = this.libraryExercises.find(e => e.id === id);
                 return ex ? ex.name : 'Unknown Exercise';
@@ -504,9 +569,12 @@
                     await Promise.all(updates);
                 }
 
+                // Refresh Data BEFORE switching view to ensure "Recent Sessions" populates
+                await this.fetchHistory(); 
+                
                 this.view = 'dashboard';
-                this.fetchHistory();
                 this.loading = false;
+                this.showToast('Session Complete', 'Workout saved to history');
             }
         }
     }).mount('#app');
