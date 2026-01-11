@@ -162,11 +162,11 @@
                             <line x1="0" y1="112.5" x2="300" y2="112.5" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 2" />
 
                             <g v-for="(day, index) in weeklyMacros" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
-                                <rect :y="150 - day.protHeight" width="28" :height="day.protHeight" fill="#3b82f6" rx="2" class="bar-grow" style="animation-delay: 0.1s" />
+                                <rect :y="150 - day.protHeight" width="28" :height="day.protHeight" :fill="day.colors.p" rx="2" class="bar-grow" style="animation-delay: 0.1s" />
 
-                                <rect :y="150 - day.protHeight - day.fatHeight" width="28" :height="day.fatHeight" fill="#ef4444" rx="2" class="bar-grow" style="animation-delay: 0.2s" />
+                                <rect :y="150 - day.protHeight - day.fatHeight" width="28" :height="day.fatHeight" :fill="day.colors.f" rx="2" class="bar-grow" style="animation-delay: 0.2s" />
                                 
-                                <rect :y="150 - day.protHeight - day.fatHeight - day.carbHeight" width="28" :height="day.carbHeight" fill="#eab308" rx="2" class="bar-grow" style="animation-delay: 0.3s" />
+                                <rect :y="150 - day.protHeight - day.fatHeight - day.carbHeight" width="28" :height="day.carbHeight" :fill="day.colors.c" rx="2" class="bar-grow" style="animation-delay: 0.3s" />
                                 
                                 <text x="14" y="165" text-anchor="middle" font-size="8" fill="#64748b" font-weight="bold" class="uppercase">{{ day.label }}</text>
                             </g>
@@ -321,7 +321,6 @@
                     days.push(d.toISOString().split('T')[0]);
                 }
 
-                // 1. Calculate Raw Totals
                 const rawData = days.map(dateStr => {
                     const daysLogs = this.weeklyLogs.filter(l => l.created_at.startsWith(dateStr));
                     return {
@@ -332,20 +331,22 @@
                     };
                 });
 
-                // 2. Find Max Daily Total (in grams)
                 const maxTotal = Math.max(...rawData.map(d => d.p + d.c + d.f));
                 const safeMax = maxTotal > 0 ? maxTotal : 100;
-
-                // 3. Dynamic Scale (Fit to 135px height, keeping top buffer)
-                // We use "this" to set data property for the target line to use too
                 this.macroScale = 135 / safeMax; 
 
                 return rawData.map(d => {
+                    // Logic: If Protein >= 180, use colors. Else, use Gray.
+                    const hitTarget = d.p >= 180;
+                    
                     return {
                         label: new Date(d.date).toLocaleDateString('en-US', {weekday:'narrow'}),
                         protHeight: d.p * this.macroScale,
                         carbHeight: d.c * this.macroScale,
-                        fatHeight: d.f * this.macroScale
+                        fatHeight: d.f * this.macroScale,
+                        colors: hitTarget ? 
+                            { p: '#3b82f6', f: '#ef4444', c: '#eab308' } : 
+                            { p: '#1e293b', f: '#334155', c: '#475569' } // Grays
                     };
                 });
             },
