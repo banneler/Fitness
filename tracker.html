@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Tracker | Constellation</title>
+
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Constellation">
+    <link rel="manifest" href="manifest.json">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -71,35 +78,35 @@
 
         <main>
             <div v-if="view === 'intel'" class="space-y-6">
-<section class="glass p-6 rounded-[2.5rem] shadow-2xl border-t-4 border-t-purple-600 mb-6 bg-gradient-to-br from-purple-900/10 to-transparent">
-    <div class="flex justify-between items-center mb-6">
-        <div class="flex items-center gap-2">
-            <i data-lucide="brain-circuit" class="w-5 h-5 text-purple-400"></i>
-            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-white">Neural Analyst</h3>
-        </div>
-        <button @click="runAnalysis" :disabled="isAnalyzing" class="px-4 py-2 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-400 text-[10px] font-black uppercase italic active:scale-95 transition-all">
-            <span v-if="!isAnalyzing">SYNC LINK</span>
-            <span v-else class="animate-pulse">ANALYZING...</span>
-        </button>
-    </div>
+                <section class="glass p-6 rounded-[2.5rem] shadow-2xl border-t-4 border-t-purple-600 mb-6 bg-gradient-to-br from-purple-900/10 to-transparent">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="brain-circuit" class="w-5 h-5 text-purple-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-white">Neural Analyst</h3>
+                        </div>
+                        <button @click="runAnalysis" :disabled="isAnalyzing" class="px-4 py-2 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-400 text-[10px] font-black uppercase italic active:scale-95 transition-all">
+                            <span v-if="!isAnalyzing">SYNC LINK</span>
+                            <span v-else class="animate-pulse">ANALYZING...</span>
+                        </button>
+                    </div>
 
-    <div v-if="analysis" class="space-y-4">
-        <div class="bg-slate-950/50 p-5 rounded-3xl border border-white/5">
-            <p class="text-[10px] text-purple-400 font-black uppercase mb-2 tracking-widest">Executive Briefing</p>
-            <p class="text-sm italic leading-relaxed text-slate-200">{{ analysis.summary }}</p>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-            <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                <p class="text-[8px] text-orange-400 font-black uppercase mb-1">Prediction</p>
-                <p class="text-[10px] font-bold text-slate-300 italic">{{ analysis.prediction }}</p>
-            </div>
-            <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                <p class="text-[8px] text-emerald-400 font-black uppercase mb-1">Growth Vector</p>
-                <p class="text-[10px] font-bold text-slate-300 italic">{{ analysis.advice }}</p>
-            </div>
-        </div>
-    </div>
-</section>
+                    <div v-if="analysis" class="space-y-4">
+                        <div class="bg-slate-950/50 p-5 rounded-3xl border border-white/5">
+                            <p class="text-[10px] text-purple-400 font-black uppercase mb-2 tracking-widest">Executive Briefing</p>
+                            <p class="text-sm italic leading-relaxed text-slate-200">{{ analysis.summary }}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                                <p class="text-[8px] text-orange-400 font-black uppercase mb-1">Prediction</p>
+                                <p class="text-[10px] font-bold text-slate-300 italic">{{ analysis.prediction }}</p>
+                            </div>
+                            <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                                <p class="text-[8px] text-emerald-400 font-black uppercase mb-1">Growth Vector</p>
+                                <p class="text-[10px] font-bold text-slate-300 italic">{{ analysis.advice }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
                 
                 <section class="glass p-6 rounded-[2.5rem] shadow-2xl overflow-hidden relative border-t-4 border-t-blue-500">
                     <div class="flex justify-between items-end mb-4 relative z-10">
@@ -300,7 +307,7 @@
                 targets: { protein: 180, cals: 2500 },
                 chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0}, startDate: '',
                 isAnalyzing: false,
-        analysis: null
+                analysis: null
             }
         },
         computed: {
@@ -391,21 +398,20 @@
                 if(data?.[0]) { this.targets.protein = data[0].target_protein; this.targets.cals = data[0].target_calories; }
             },
             async runAnalysis() {
-        this.isAnalyzing = true;
-        try {
-            const { data, error } = await _client.functions.invoke('ai-performance-summary', {
-                body: { user_id: this.session.user.id }
-            });
-            if (error) throw error;
-            this.analysis = data;
-            // Re-initialize icons if the AI output contains patterns Lucide recognizes
-            this.$nextTick(() => lucide.createIcons());
-        } catch (e) {
-            console.error("Neural link failed", e);
-        } finally {
-            this.isAnalyzing = false;
-        }
-    },
+                this.isAnalyzing = true;
+                try {
+                    const { data, error } = await _client.functions.invoke('ai-performance-summary', {
+                        body: { user_id: this.session.user.id }
+                    });
+                    if (error) throw error;
+                    this.analysis = data;
+                    this.$nextTick(() => lucide.createIcons());
+                } catch (e) {
+                    console.error("Neural link failed", e);
+                } finally {
+                    this.isAnalyzing = false;
+                }
+            },
             async saveTargets() {
                 const { error } = await _client.from('daily_metrics').insert([{ user_id: this.session.user.id, target_protein: this.targets.protein, target_calories: this.targets.cals, weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null }]);
                 if(!error) { this.showTargetModal = false; await this.fetchTargets(); }
@@ -469,5 +475,14 @@
         }
     }).mount('#app');
 </script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+
 </body>
 </html>
