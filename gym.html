@@ -289,16 +289,14 @@
                             <i :data-lucide="ex.icon || 'dumbbell'" class="w-3 h-3 text-slate-600"></i>
                         </div>
 
-                        <div class="col-span-4" v-if="ex.sets[setIndex]">
+                        <div class="col-span-4">
                             <input type="number" v-model="ex.sets[setIndex].weight" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[setIndex].prevWeight || '-'">
                         </div>
-                        <div class="col-span-3" v-if="ex.sets[setIndex]">
+                        <div class="col-span-3">
                             <input type="number" v-model="ex.sets[setIndex].reps" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[setIndex].prevReps || '-'">
                         </div>
-                        <div class="col-span-2 flex justify-center" v-if="ex.sets[setIndex]"><input type="checkbox" v-model="ex.sets[setIndex].done" class="custom-checkbox"></div>
-                        <div class="col-span-1 flex justify-center" v-if="ex.sets[setIndex]"><input type="checkbox" v-model="ex.sets[setIndex].failure" class="failure-checkbox"></div>
-                        
-                        <div v-if="!ex.sets[setIndex]" class="col-span-11 bg-slate-900/20 h-8 rounded border border-dashed border-slate-800"></div>
+                        <div class="col-span-2 flex justify-center"><input type="checkbox" v-model="ex.sets[setIndex].done" class="custom-checkbox"></div>
+                        <div class="col-span-1 flex justify-center"><input type="checkbox" v-model="ex.sets[setIndex].failure" class="failure-checkbox"></div>
                     </div>
                 </template>
                 
@@ -601,6 +599,7 @@
                         weightType: exDef ? exDef.weight_type : 'combined',
                         personalRecord: pr, 
                         isLinked: (routine.supersets || []).includes(index),
+                        // Initialize with default 3 sets, normalized later
                         sets: [{weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}] 
                     };
                 });
@@ -666,6 +665,7 @@
             
             addSetToGroup(groupIdx) {
                 const group = this.activeRoutine.data[groupIdx];
+                // Add one set to every exercise in this cluster to keep alignment
                 group.exercises.forEach(ex => {
                     const prev = ex.sets.slice(-1)[0]; 
                     ex.sets.push({ weight: '', prevWeight: prev?.prevWeight||'', reps: '', prevReps: prev?.prevReps||'', done: false, failure: false }); 
