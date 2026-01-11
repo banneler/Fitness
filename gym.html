@@ -278,25 +278,25 @@
                     <div class="col-span-1"><i data-lucide="skull" class="w-3 h-3 mx-auto"></i></div>
                 </div>
 
-                <template v-for="setIndex in getMaxSets(group)" :key="setIndex">
-                    <div v-for="(ex, exIdx) in group.exercises" :key="ex.id + '-' + setIndex" class="grid grid-cols-12 gap-2 mb-2 items-center pl-4 relative" :class="{'mt-4 border-t border-white/5 pt-4': setIndex > 0 && exIdx === 0}">
+                <template v-for="(n, i) in getMaxSets(group)" :key="i">
+                    <div v-for="(ex, exIdx) in group.exercises" :key="ex.id + '-' + i" class="grid grid-cols-12 gap-2 mb-2 items-center pl-4 relative" :class="{'mt-4 border-t border-white/5 pt-4': i > 0 && exIdx === 0}">
                         
                         <div class="col-span-1 flex justify-center">
-                            <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">{{ setIndex + 1 }}</div>
+                            <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">{{ i + 1 }}</div>
                         </div>
                         
                         <div class="col-span-1 flex justify-center">
                             <i :data-lucide="ex.icon || 'dumbbell'" class="w-3 h-3 text-slate-600"></i>
                         </div>
 
-                        <div class="col-span-4" v-if="ex.sets[setIndex]">
-                            <input type="number" v-model="ex.sets[setIndex].weight" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[setIndex].prevWeight || '-'">
+                        <div class="col-span-4" v-if="ex.sets[i]">
+                            <input type="number" v-model="ex.sets[i].weight" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[i].prevWeight || '-'">
                         </div>
-                        <div class="col-span-3" v-if="ex.sets[setIndex]">
-                            <input type="number" v-model="ex.sets[setIndex].reps" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[setIndex].prevReps || '-'">
+                        <div class="col-span-3" v-if="ex.sets[i]">
+                            <input type="number" v-model="ex.sets[i].reps" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[i].prevReps || '-'">
                         </div>
-                        <div class="col-span-2 flex justify-center" v-if="ex.sets[setIndex]"><input type="checkbox" v-model="ex.sets[setIndex].done" class="custom-checkbox"></div>
-                        <div class="col-span-1 flex justify-center" v-if="ex.sets[setIndex]"><input type="checkbox" v-model="ex.sets[setIndex].failure" class="failure-checkbox"></div>
+                        <div class="col-span-2 flex justify-center" v-if="ex.sets[i]"><input type="checkbox" v-model="ex.sets[i].done" class="custom-checkbox"></div>
+                        <div class="col-span-1 flex justify-center" v-if="ex.sets[i]"><input type="checkbox" v-model="ex.sets[i].failure" class="failure-checkbox"></div>
                     </div>
                 </template>
                 
