@@ -161,8 +161,6 @@
                             <line x1="0" y1="75" x2="300" y2="75" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 2" />
                             <line x1="0" y1="112.5" x2="300" y2="112.5" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 2" />
 
-                            <line v-if="macroScale > 0" x1="0" :y1="150 - (180 * macroScale)" x2="300" :y2="150 - (180 * macroScale)" stroke="white" stroke-opacity="0.3" stroke-width="1" stroke-dasharray="4 2" />
-
                             <g v-for="(day, index) in weeklyMacros" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
                                 <rect :y="150 - day.protHeight" width="28" :height="day.protHeight" fill="#3b82f6" rx="2" class="bar-grow" style="animation-delay: 0.1s" />
 
@@ -172,6 +170,8 @@
                                 
                                 <text x="14" y="165" text-anchor="middle" font-size="8" fill="#64748b" font-weight="bold" class="uppercase">{{ day.label }}</text>
                             </g>
+
+                            <line v-if="macroScale > 0" x1="0" :y1="150 - (180 * macroScale)" x2="300" :y2="150 - (180 * macroScale)" stroke="#22c55e" stroke-opacity="0.8" stroke-width="1" stroke-dasharray="4 2" />
                         </svg>
                     </div>
                 </section>
