@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Tracker | Constellation</title>
 
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -50,7 +50,7 @@
     <div v-if="initialLoading" class="loading-mask">
         <div class="animate-pulse flex flex-col items-center gap-4">
             <div class="w-10 h-10 rounded-full border-2 border-purple-500 border-t-transparent animate-spin"></div>
-            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Compiling Performance Intelligence</p>
+            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Compiling Intelligence</p>
         </div>
     </div>
 
@@ -212,7 +212,6 @@
             </div>
 
             <div v-if="view === 'motion'" class="space-y-6">
-                
                 <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
                     <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4 ml-1">Activity Spectrum (30D)</h3>
                     <div class="grid grid-cols-6 gap-2">
@@ -325,7 +324,7 @@
             chartScale() { return 135 / this.globalMaxMacros; },
             calculateProteinLineY() {
                 const h = this.targets.protein * this.chartScale;
-                return h + 'px'; // Mapped directly to the bottom anchor in relative container
+                return h + 'px';
             },
             activityMatrix() {
                 const days = [];
@@ -393,10 +392,49 @@
         updated() { lucide.createIcons(); },
         methods: {
             async handleLogout() { await _client.auth.signOut(); window.location.href = 'index.html'; },
+            
+            // FIX: Explicitly fetch the last NON-NULL target, avoiding blank weight logs
             async fetchTargets() {
-                const { data } = await _client.from('daily_metrics').select('target_protein, target_calories').order('created_at', { ascending: false }).limit(1);
+                const { data } = await _client.from('daily_metrics')
+                    .select('target_protein, target_calories')
+                    .neq('target_calories', null) // FILTER NULLS
+                    .order('created_at', { ascending: false })
+                    .limit(1);
                 if(data?.[0]) { this.targets.protein = data[0].target_protein; this.targets.cals = data[0].target_calories; }
             },
+            
+            // FIX: Update today's row if exists, else insert
+            async saveTargets() {
+                const today = new Date().toISOString().split('T')[0];
+                
+                // Check for existing today record
+                const { data: existing } = await _client.from('daily_metrics')
+                    .select('id')
+                    .gte('created_at', today)
+                    .limit(1);
+
+                let error;
+                if(existing && existing.length > 0) {
+                    // Update
+                    const { error: err } = await _client.from('daily_metrics')
+                        .update({ target_protein: this.targets.protein, target_calories: this.targets.cals })
+                        .eq('id', existing[0].id);
+                    error = err;
+                } else {
+                    // Insert new
+                    const { error: err } = await _client.from('daily_metrics')
+                        .insert([{ 
+                            user_id: this.session.user.id, 
+                            target_protein: this.targets.protein, 
+                            target_calories: this.targets.cals, 
+                            weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null 
+                        }]);
+                    error = err;
+                }
+
+                if(!error) { this.showTargetModal = false; await this.fetchTargets(); }
+            },
+
             async runAnalysis() {
                 this.isAnalyzing = true;
                 try {
@@ -411,10 +449,6 @@
                 } finally {
                     this.isAnalyzing = false;
                 }
-            },
-            async saveTargets() {
-                const { error } = await _client.from('daily_metrics').insert([{ user_id: this.session.user.id, target_protein: this.targets.protein, target_calories: this.targets.cals, weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null }]);
-                if(!error) { this.showTargetModal = false; await this.fetchTargets(); }
             },
             async fetchBodyHistory() {
                 const { data } = await _client.from('body_metrics').select('*').order('created_at', { ascending: true });
