@@ -62,12 +62,8 @@
         </header>
 
         <div class="flex p-1 bg-slate-900 rounded-xl mb-8 border border-white/5">
-            <button @click="view = 'intel'" :class="view === 'intel' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">
-                Intelligence
-            </button>
-            <button @click="view = 'motion'" :class="view === 'motion' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">
-                Motion
-            </button>
+            <button @click="view = 'intel'" :class="view === 'intel' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">Intelligence</button>
+            <button @click="view = 'motion'" :class="view === 'motion' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">Motion</button>
         </div>
 
         <main>
@@ -77,20 +73,18 @@
                     <div class="flex justify-between items-end mb-4 relative z-10">
                         <div class="flex items-center gap-2 opacity-60">
                             <i data-lucide="trending-up" class="w-4 h-4 text-blue-400"></i>
-                            <h3 class="text-xs font-black uppercase tracking-widest">30-Day Weight</h3>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">30-Day Weight</h3>
                         </div>
                         <div class="text-right">
                             <span class="block text-[8px] text-slate-500 uppercase font-black tracking-widest">CURRENT</span>
                             <span class="text-2xl font-black italic text-white">{{ currentWeight }} <span class="text-sm text-slate-500 not-italic">lbs</span></span>
                         </div>
                     </div>
-                    
                     <div class="h-40 w-full relative">
                         <svg v-if="chartPath" class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
                             <defs>
                                 <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.4"/>
-                                    <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+                                    <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.4"/><stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
                                 </linearGradient>
                             </defs>
                             <polygon :points="chartFillPath" fill="url(#chartGradient)" />
@@ -111,7 +105,6 @@
                         </div>
                         <button @click="showTargetModal = true" class="text-[8px] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white transition-colors">Adjust Goals</button>
                     </div>
-
                     <div class="grid grid-cols-2 gap-4">
                         <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
                             <span class="text-[8px] text-slate-500 font-black block mb-1">PROTEIN</span>
@@ -124,81 +117,74 @@
                     </div>
                 </section>
 
-                <section class="glass p-6 rounded-[2.5rem] shadow-xl">
-                    <div class="flex items-center gap-2 mb-6 opacity-60">
-                        <i data-lucide="edit-3" class="w-4 h-4 text-purple-400"></i>
-                        <h3 class="text-xs font-black uppercase tracking-widest">Biometric Log</h3>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3 mb-6">
-                        <div v-for="field in [{id:'weight', label:'Weight', unit:'lbs'}, {id:'sleep', label:'Sleep', unit:'hrs'}, {id:'hr', label:'R-HR', unit:'bpm'}]" :key="field.id" class="bg-slate-950/50 p-3 rounded-2xl border border-white/5 text-center">
-                            <span class="text-[7px] text-slate-500 font-black uppercase block mb-1">{{ field.label }}</span>
-                            <input type="number" v-model="biometrics[field.id]" class="bg-transparent border-none text-lg font-black w-full text-center p-0 focus:ring-0">
+                <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
+                    <div class="flex justify-between items-end mb-6">
+                        <div class="flex items-center gap-2 opacity-60">
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-orange-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">7-Day Fuel Composite</h3>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div><span class="text-[6px] text-slate-500 font-black uppercase">PRO</span></div>
+                            <div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div><span class="text-[6px] text-slate-500 font-black uppercase">CHO</span></div>
+                            <div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div><span class="text-[6px] text-slate-500 font-black uppercase">FAT</span></div>
                         </div>
                     </div>
-                    <button @click="saveBiometrics" class="w-full py-4 rounded-2xl bg-purple-600 text-white font-black text-xs uppercase shadow-lg shadow-purple-900/20 active:scale-95 transition-all">Submit Biometrics</button>
-                </section>
-
-                <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
-                    <div class="flex items-center gap-2 mb-6 opacity-60">
-                        <i data-lucide="pie-chart" class="w-4 h-4 text-orange-400"></i>
-                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Daily Fuel Consistency</h3>
-                    </div>
-                    <div class="h-40 w-full">
+                    <div class="h-44 w-full">
                         <svg class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
-                            <g v-for="(day, index) in weeklyMacros" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
-                                <rect :y="150 - day.protHeight" width="28" :height="day.protHeight" :fill="day.hit ? '#3b82f6' : '#1e293b'" rx="2" class="bar-grow" />
-                                <text x="14" y="165" text-anchor="middle" font-size="8" fill="#64748b" font-weight="bold" class="uppercase">{{ day.label }}</text>
+                            <g v-for="(day, index) in weeklyMacrosFull" :key="index" :transform="`translate(${index * 42 + 5}, 0)`">
+                                <rect :y="150 - day.p" width="28" :height="day.p" :fill="day.active ? '#3b82f6' : '#1e293b'" rx="2" class="bar-grow" />
+                                <rect :y="150 - day.p - day.c" width="28" :height="day.c" :fill="day.active ? '#10b981' : '#334155'" rx="2" class="bar-grow" style="animation-delay:0.1s" />
+                                <rect :y="150 - day.p - day.c - day.f" width="28" :height="day.f" :fill="day.active ? '#f59e0b' : '#475569'" rx="2" class="bar-grow" style="animation-delay:0.2s" />
+                                
+                                <text x="14" y="165" text-anchor="middle" font-size="8" :fill="day.isToday ? '#fff' : '#64748b'" font-weight="black" class="uppercase tracking-tighter">{{ day.label }}</text>
                             </g>
                         </svg>
                     </div>
+                </section>
+
+                <section class="glass p-6 rounded-[2.5rem] shadow-xl">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-2 opacity-60">
+                            <i data-lucide="ruler" class="w-4 h-4 text-emerald-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Body Metrics</h3>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 mb-6">
+                        <div v-for="m in ['waist', 'chest', 'arms']" :key="m" class="bg-slate-950/50 p-3 rounded-2xl border border-white/5 text-center">
+                            <span class="text-[7px] text-slate-500 font-black uppercase block mb-1">{{ m }}</span>
+                            <input type="number" step="0.1" v-model="bodyMetrics[m]" class="bg-transparent border-none text-lg font-black w-full text-center p-0 focus:ring-0" placeholder="0.0">
+                        </div>
+                    </div>
+                    <button @click="saveBodyMetrics" class="w-full py-4 rounded-2xl bg-emerald-600 text-white font-black text-[10px] uppercase shadow-lg shadow-emerald-900/20 active:scale-95 transition-all">Archive Measurements</button>
                 </section>
             </div>
 
             <div v-if="view === 'motion'" class="space-y-4">
                 <section class="glass p-6 rounded-[2.5rem] border-t-4 border-t-orange-500 shadow-2xl">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex items-center gap-2 opacity-60">
-                            <i data-lucide="activity" class="w-4 h-4 text-orange-400"></i>
-                            <h3 class="text-xs font-black uppercase tracking-widest">Performance Sessions</h3>
-                        </div>
+                    <div class="flex items-center gap-2 mb-6 opacity-60">
+                        <i data-lucide="activity" class="w-4 h-4 text-orange-400"></i>
+                        <h3 class="text-xs font-black uppercase tracking-widest">Workout Ledger</h3>
                     </div>
-                    
-                    <div v-if="!recentWorkouts.length" class="text-center py-8 text-slate-600 italic text-xs">No motion data detected in the local sector.</div>
-                    
+                    <div v-if="!recentWorkouts.length" class="text-center py-8 text-slate-600 italic text-xs">No motion data detected.</div>
                     <div v-else class="space-y-4">
-                        <div v-for="session in recentWorkouts" :key="session.id" class="bg-slate-950/40 p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
+                        <div v-for="session in recentWorkouts" :key="session.id" class="bg-slate-950/40 p-5 rounded-2xl border border-white/5 relative group">
                             <div class="flex justify-between items-start mb-3">
                                 <div>
                                     <span class="block font-black text-slate-200 uppercase text-sm italic tracking-tight">{{ session.protocol_name }}</span>
                                     <span class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">{{ session.date }}</span>
                                 </div>
                                 <div class="bg-blue-600/20 px-3 py-1 rounded-xl text-[9px] font-black text-blue-400 border border-blue-500/20 uppercase">
-                                    {{ session.setCount }} Total Sets
+                                    {{ session.setCount }} Sets
                                 </div>
                             </div>
                             <div class="flex flex-wrap gap-2">
-                                <span v-for="ex in session.exercises" :key="ex" class="text-[7px] font-black uppercase px-2 py-0.5 bg-white/5 rounded border border-white/5 text-slate-400">
-                                    {{ ex }}
-                                </span>
+                                <span v-for="ex in session.exercises" :key="ex" class="text-[7px] font-black uppercase px-2 py-1 bg-white/5 rounded-lg border border-white/5 text-slate-400">{{ ex }}</span>
                             </div>
                         </div>
                     </div>
                 </section>
             </div>
         </main>
-
-        <transition name="modal">
-            <div v-if="logoutModal" class="fixed inset-0 z-[300] flex items-end justify-center p-4">
-                <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="logoutModal = false"></div>
-                <div class="glass w-full max-w-sm rounded-3xl p-6 relative border border-white/10 shadow-2xl">
-                    <h2 class="text-xl font-black italic uppercase text-center mb-2 text-white">System Logout</h2>
-                    <div class="grid grid-cols-2 gap-3 mt-8">
-                        <button @click="logoutModal = false" class="py-4 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase">Stay</button>
-                        <button @click="handleLogout" class="py-4 rounded-xl bg-red-600 text-white font-black text-xs uppercase shadow-lg shadow-red-900/20">Disconnect</button>
-                    </div>
-                </div>
-            </div>
-        </transition>
 
         <transition name="modal">
             <div v-if="showTargetModal" class="fixed inset-0 z-[300] flex items-end justify-center p-4">
@@ -216,6 +202,19 @@
                         </div>
                     </div>
                     <button @click="saveTargets" class="w-full py-5 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Update Neural Memory</button>
+                </div>
+            </div>
+        </transition>
+
+        <transition name="modal">
+            <div v-if="logoutModal" class="fixed inset-0 z-[300] flex items-end justify-center p-4">
+                <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="logoutModal = false"></div>
+                <div class="glass w-full max-w-sm rounded-3xl p-6 relative border border-white/10">
+                    <h2 class="text-xl font-black italic uppercase text-center mb-2">System Logout</h2>
+                    <div class="grid grid-cols-2 gap-3 mt-6">
+                        <button @click="logoutModal = false" class="py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs">Cancel</button>
+                        <button @click="handleLogout" class="py-3 rounded-xl bg-red-600 text-white font-black text-xs">Disconnect</button>
+                    </div>
                 </div>
             </div>
         </transition>
@@ -239,30 +238,21 @@
                 initialLoading: true, logoutModal: false, showTargetModal: false,
                 view: 'intel', session: null, streak: 0,
                 weightHistory: [], weeklyLogs: [], rawWorkouts: [],
-                biometrics: { weight: null, sleep: null, hr: null },
+                bodyMetrics: { waist: null, chest: null, arms: null },
                 targets: { protein: 180, cals: 2500 },
-                chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0}, startDate: ''
+                chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0}, startDate: '',
+                toast: { visible: false, message: '' }
             }
         },
         computed: {
-            currentWeight() { 
-                return this.weightHistory.length ? this.weightHistory[this.weightHistory.length-1].weight : '--'; 
-            },
+            currentWeight() { return this.weightHistory.length ? this.weightHistory[this.weightHistory.length-1].weight : '--'; },
             recentWorkouts() {
-                // SESSION GROUPING LOGIC: Groups logs within 1 hour into a single "Session"
                 const sessions = [];
                 let currentSession = null;
                 [...this.rawWorkouts].reverse().forEach(log => {
                     const logTime = new Date(log.created_at).getTime();
                     if(!currentSession || Math.abs(currentSession.startTime - logTime) > 3600000) {
-                        currentSession = { 
-                            id: log.id, 
-                            protocol_name: log.protocol_name || 'Generic Training', 
-                            startTime: logTime, 
-                            date: new Date(log.created_at).toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'}), 
-                            setCount: 0,
-                            exercises: new Set()
-                        };
+                        currentSession = { id: log.id, protocol_name: log.protocol_name || 'Generic Training', startTime: logTime, date: new Date(log.created_at).toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'}), setCount: 0, exercises: new Set() };
                         sessions.push(currentSession);
                     }
                     currentSession.setCount += (log.sets_data?.length || 0);
@@ -270,17 +260,23 @@
                 });
                 return sessions.reverse().slice(0, 15);
             },
-            weeklyMacros() {
+            weeklyMacrosFull() {
                 const days = [];
+                const maxH = 135;
                 for(let i=6; i>=0; i--) {
                     const d = new Date(); d.setDate(d.getDate() - i);
-                    const dateStr = d.toISOString().split('T')[0];
-                    const logs = this.weeklyLogs.filter(l => l.created_at.startsWith(dateStr));
+                    const ds = d.toISOString().split('T')[0];
+                    const logs = this.weeklyLogs.filter(l => l.created_at.startsWith(ds));
                     const p = logs.reduce((sum, l) => sum + (l.protein || 0), 0);
+                    const c = logs.reduce((sum, l) => sum + (l.carbs || 0), 0);
+                    const f = logs.reduce((sum, l) => sum + (l.fat || 0), 0);
+                    const total = p + c + f || 1;
+                    const scale = maxH / Math.max(total, 400); 
                     days.push({
                         label: d.toLocaleDateString('en-US', {weekday:'narrow'}),
-                        protHeight: Math.min(135, p * 0.75),
-                        hit: p >= this.targets.protein
+                        p: p * scale, c: c * scale, f: f * scale,
+                        active: p >= this.targets.protein,
+                        isToday: ds === new Date().toISOString().split('T')[0]
                     });
                 }
                 return days;
@@ -297,10 +293,7 @@
         methods: {
             async handleLogout() { await _client.auth.signOut(); window.location.href = 'index.html'; },
             async fetchTargets() {
-                const { data } = await _client.from('daily_metrics')
-                    .select('target_protein, target_calories')
-                    .order('created_at', { ascending: false })
-                    .limit(1);
+                const { data } = await _client.from('daily_metrics').select('target_protein, target_calories').order('created_at', { ascending: false }).limit(1);
                 if(data?.[0]?.target_protein) {
                     this.targets.protein = data[0].target_protein;
                     this.targets.cals = data[0].target_calories || 2500;
@@ -313,42 +306,31 @@
                     target_calories: this.targets.cals,
                     weight: this.currentWeight !== '--' ? this.currentWeight : null
                 }]);
-                if(!error) {
-                    this.showTargetModal = false;
-                    this.fetchTargets();
-                }
+                if(!error) { this.showTargetModal = false; this.fetchTargets(); }
             },
-            async saveBiometrics() {
-                if(!this.biometrics.weight) return;
-                const { error } = await _client.from('daily_metrics').insert([{
+            async saveBodyMetrics() {
+                if(!this.bodyMetrics.waist) return;
+                const { error } = await _client.from('body_metrics').insert([{
                     user_id: this.session.user.id,
-                    weight: parseFloat(this.biometrics.weight),
-                    sleep_quality: parseInt(this.biometrics.sleep),
-                    resting_hr: parseInt(this.biometrics.hr),
-                    target_protein: this.targets.protein,
-                    target_calories: this.targets.cals
+                    waist: parseFloat(this.bodyMetrics.waist),
+                    chest: parseFloat(this.bodyMetrics.chest),
+                    arms: parseFloat(this.bodyMetrics.arms)
                 }]);
                 if(!error) {
-                    this.biometrics = { weight: null, sleep: null, hr: null };
-                    await this.fetchWeight();
+                    this.bodyMetrics = { waist: null, chest: null, arms: null };
+                    alert("Measurements Archived.");
                 }
             },
             async fetchWeight() {
-                const { data } = await _client.from('daily_metrics')
-                    .select('*')
-                    .order('created_at', { ascending: true })
-                    .limit(30);
-                if (data?.length) {
-                    this.weightHistory = data;
-                    this.calculateGraph(data);
-                }
+                const { data } = await _client.from('daily_metrics').select('*').order('created_at', { ascending: true }).limit(30);
+                if (data?.length) { this.weightHistory = data; this.calculateGraph(data); }
             },
             calculateGraph(data) {
                 if (data.length < 2) return;
                 const weights = data.map(d => d.weight).filter(w => w !== null);
                 const min = Math.min(...weights) - 1;
                 const max = Math.max(...weights) + 1;
-                const range = max - min;
+                const range = max - min || 1;
                 const points = weights.map((w, i) => {
                     const x = (i / (weights.length - 1)) * 300;
                     const y = 150 - ((w - min) / range) * 150;
@@ -375,7 +357,6 @@
                 let streak = 0;
                 const today = new Date().toISOString().split('T')[0];
                 const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-                
                 if (uniqueDates.includes(today) || uniqueDates.includes(yesterday)) {
                     let checkDate = uniqueDates.includes(today) ? new Date() : new Date(Date.now() - 86400000);
                     while (uniqueDates.includes(checkDate.toISOString().split('T')[0])) {
