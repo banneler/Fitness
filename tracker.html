@@ -390,32 +390,22 @@
                 const { data } = await _client.from('daily_metrics').select('target_protein, target_calories').order('created_at', { ascending: false }).limit(1);
                 if(data?.[0]) { this.targets.protein = data[0].target_protein; this.targets.cals = data[0].target_calories; }
             },
-      async runAnalysis() {
-    this.isAnalyzing = true;
-    this.analysis = null;
-    try {
-        const { data, error } = await _client.functions.invoke('ai-performance-summary', {
-            body: { user_id: this.session.user.id },
-            // ADD THIS: Explicitly pass the JWT to satisfy the 401 challenge
-            headers: {
-                Authorization: `Bearer ${this.session.access_token}`
-            }
-        });
-
-        if (error) throw error;
-        this.analysis = data;
-        this.$nextTick(() => lucide.createIcons());
-    } catch (e) {
-        console.error("Neural link failed", e);
-        this.analysis = {
-            summary: "Neural Link Rejected. Authorization sequence failed (401).",
-            prediction: "Offline",
-            advice: "Check RLS / Auth Headers"
-        };
-    } finally {
-        this.isAnalyzing = false;
-    }
-}
+            async runAnalysis() {
+        this.isAnalyzing = true;
+        try {
+            const { data, error } = await _client.functions.invoke('ai-performance-summary', {
+                body: { user_id: this.session.user.id }
+            });
+            if (error) throw error;
+            this.analysis = data;
+            // Re-initialize icons if the AI output contains patterns Lucide recognizes
+            this.$nextTick(() => lucide.createIcons());
+        } catch (e) {
+            console.error("Neural link failed", e);
+        } finally {
+            this.isAnalyzing = false;
+        }
+    },
             async saveTargets() {
                 const { error } = await _client.from('daily_metrics').insert([{ user_id: this.session.user.id, target_protein: this.targets.protein, target_calories: this.targets.cals, weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null }]);
                 if(!error) { this.showTargetModal = false; await this.fetchTargets(); }
