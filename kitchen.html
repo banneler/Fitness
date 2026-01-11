@@ -16,6 +16,10 @@
         .tab-active svg { stroke-width: 3px; }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
         .loading-mask { position: fixed; inset: 0; background: #020617; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        
+        /* Toast Animation */
+        .toast-enter-active, .toast-leave-active { transition: all 0.5s ease; }
+        .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(20px); }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -27,6 +31,30 @@
             <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Synchronizing</p>
         </div>
     </div>
+
+    <div v-if="scanning" class="loading-mask bg-slate-950/80 backdrop-blur-sm z-[200]">
+        <div class="flex flex-col items-center gap-6">
+            <div class="relative">
+                <div class="w-16 h-16 rounded-full border-4 border-slate-800 border-t-green-500 animate-spin"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <i data-lucide="brain-circuit" class="w-6 h-6 text-green-500 animate-pulse"></i>
+                </div>
+            </div>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-green-500 italic animate-pulse">Analyzing Fuel Structure...</p>
+        </div>
+    </div>
+
+    <transition name="toast">
+        <div v-if="toast.visible" class="fixed bottom-24 left-6 right-6 glass border-green-500/30 p-4 rounded-2xl shadow-2xl z-[150] flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                <i data-lucide="check" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h4 class="text-sm font-black italic text-white uppercase">Analysis Complete</h4>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ toast.message }}</p>
+            </div>
+        </div>
+    </transition>
 
     <header class="flex justify-between items-center mb-10">
         <div>
@@ -44,9 +72,8 @@
         <div class="flex justify-between items-center mb-8">
             <h3 class="text-white text-lg font-black italic uppercase">Fuel Log</h3>
             <button @click="triggerCamera" :disabled="scanning" class="bg-blue-600/20 px-4 py-2 rounded-xl border border-blue-500/30 text-blue-500 text-[10px] font-black uppercase italic flex items-center gap-2 active:scale-95 transition-all">
-                <i v-if="scanning" data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>
-                <i v-else data-lucide="camera" class="w-3 h-3"></i> 
-                {{ scanning ? 'ANALYZING...' : 'AI SCAN' }}
+                <i data-lucide="camera" class="w-3 h-3"></i> 
+                AI SCAN
             </button>
         </div>
 
@@ -135,7 +162,8 @@
                 memory: [], 
                 filteredMemory: [], 
                 showMemory: false,
-                dailyLogs: [] 
+                dailyLogs: [],
+                toast: { visible: false, message: '' }
             } 
         },
         async mounted() {
@@ -145,18 +173,17 @@
             await Promise.all([this.initMemory(), this.fetchDailyLogs()]);
             this.initialLoading = false;
             
-            // Initialize icons after mount
-            this.$nextTick(() => {
-                lucide.createIcons();
-            });
+            this.$nextTick(() => { lucide.createIcons(); });
         },
         updated() {
-            // Re-initialize icons whenever Vue updates the DOM (e.g. toggling loading spinner)
-            this.$nextTick(() => {
-                lucide.createIcons();
-            });
+            this.$nextTick(() => { lucide.createIcons(); });
         },
         methods: {
+            showToast(msg) {
+                this.toast.message = msg;
+                this.toast.visible = true;
+                setTimeout(() => { this.toast.visible = false; }, 3000);
+            },
             async initMemory() {
                 const { data } = await _client.from('food_memory').select('*').order('use_count', { ascending: false });
                 this.memory = data || [];
@@ -189,6 +216,7 @@
                     user_id: this.session.user.id 
                 }]);
                 
+                this.showToast("Fuel Logged Successfully");
                 this.foodSearch = '';
                 this.foodEntry = { cals: 0, protein: 0, carbs: 0, fat: 0 };
                 this.fetchDailyLogs(); 
@@ -206,7 +234,7 @@
                 const file = event.target.files[0];
                 if (!file) return;
 
-                this.scanning = true;
+                this.scanning = true; // Shows Overlay
                 
                 try {
                     const reader = new FileReader();
@@ -217,6 +245,8 @@
                             body: { image: base64Image }
                         });
 
+                        this.scanning = false; // Hides Overlay
+
                         if (error) {
                             console.error("Supabase Error:", error);
                             alert("Upload Failed: " + (error.message || "Unknown error"));
@@ -224,6 +254,10 @@
                         }
 
                         if (data) {
+                            // Show Toast
+                            this.showToast("Macros Extracted");
+                            
+                            // Populate Fields
                             this.foodSearch = data.food_name || "Scanned Item";
                             this.foodEntry = {
                                 cals: data.calories || 0,
@@ -231,14 +265,13 @@
                                 carbs: data.carbs || 0,
                                 fat: data.fat || 0
                             };
-                            alert("Scan Complete.");
                         }
-                        this.scanning = false;
                     };
                     reader.readAsDataURL(file);
                 } catch (e) {
                     console.error(e);
                     this.scanning = false;
+                    alert("Error processing image.");
                 } finally {
                     event.target.value = ''; 
                 }
