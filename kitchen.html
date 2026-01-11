@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Kitchen | Constellation</title>
 
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -99,7 +99,7 @@
                     </div>
                     <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
                         <span class="text-[8px] text-slate-600 uppercase font-black italic tracking-widest block mb-1">Total Servings</span>
-                        <input type="number" v-model="newSupp.servings" class="bg-transparent border-none text-lg font-black w-full text-white p-0 focus:ring-0 placeholder-slate-800" placeholder="30">
+                        <input type="number" inputmode="decimal" v-model="newSupp.servings" class="bg-transparent border-none text-lg font-black w-full text-white p-0 focus:ring-0 placeholder-slate-800" placeholder="30">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -210,9 +210,21 @@
             </div>
 
             <div class="grid grid-cols-2 gap-4 mb-6">
-                <div v-for="m in ['cals','protein','carbs','fat']" :key="m" class="bg-slate-950/50 p-4 rounded-2xl border border-white/5 focus-within:border-green-500/50 transition-colors">
-                    <span class="text-[8px] text-slate-600 uppercase font-black italic tracking-widest">{{m}}</span>
-                    <input type="number" v-model="foodEntry[m]" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0 placeholder-slate-800" placeholder="0">
+                <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5 focus-within:border-green-500/50 transition-colors">
+                    <span class="text-[8px] text-slate-600 uppercase font-black italic tracking-widest">Calories</span>
+                    <input type="number" inputmode="decimal" v-model="foodEntry.cals" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0 placeholder-slate-800" placeholder="0">
+                </div>
+                <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5 focus-within:border-green-500/50 transition-colors">
+                    <span class="text-[8px] text-slate-600 uppercase font-black italic tracking-widest">Protein</span>
+                    <input type="number" inputmode="decimal" v-model="foodEntry.protein" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0 placeholder-slate-800" placeholder="0">
+                </div>
+                <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5 focus-within:border-green-500/50 transition-colors">
+                    <span class="text-[8px] text-slate-600 uppercase font-black italic tracking-widest">Carbs</span>
+                    <input type="number" inputmode="decimal" v-model="foodEntry.carbs" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0 placeholder-slate-800" placeholder="0">
+                </div>
+                <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5 focus-within:border-green-500/50 transition-colors">
+                    <span class="text-[8px] text-slate-600 uppercase font-black italic tracking-widest">Fat</span>
+                    <input type="number" inputmode="decimal" v-model="foodEntry.fat" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0 placeholder-slate-800" placeholder="0">
                 </div>
             </div>
             
@@ -351,6 +363,7 @@
             async fetchTargets() {
                 const { data } = await _client.from('daily_metrics')
                     .select('target_calories, target_protein, target_carbs, target_fat')
+                    .neq('target_calories', null) // FIX: Ignore empty rows
                     .order('created_at', { ascending: false })
                     .limit(1);
                 
