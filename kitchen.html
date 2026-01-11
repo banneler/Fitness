@@ -24,16 +24,15 @@
         .progress-container { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
         .progress-fill { height: 100%; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
 
-        /* Toast Animation */
+        /* Animations */
         .toast-enter-active, .toast-leave-active { transition: all 0.5s ease; }
         .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(20px); }
         
-        /* Modal Animation */
         .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
     </style>
 </head>
-<body class="font-sans antialiased">
+<body class="font-sans antialiased text-slate-200">
 <div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32">
     
     <div v-if="initialLoading" class="loading-mask">
@@ -61,7 +60,7 @@
                 <i data-lucide="check" class="w-5 h-5"></i>
             </div>
             <div>
-                <h4 class="text-sm font-black italic text-white uppercase">System Update</h4>
+                <h4 class="text-sm font-black italic text-white uppercase">Kitchen Update</h4>
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ toast.message }}</p>
             </div>
         </div>
@@ -74,8 +73,31 @@
                 <h2 class="text-xl font-black italic uppercase text-center mb-2 text-white">System Logout</h2>
                 <p class="text-xs text-slate-500 font-bold text-center mb-6">End current session?</p>
                 <div class="grid grid-cols-2 gap-3">
-                    <button @click="logoutModal = false" class="py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">Cancel</button>
-                    <button @click="confirmLogout" class="py-3 rounded-xl bg-red-600 text-white font-black text-xs uppercase shadow-lg shadow-red-900/20 hover:bg-red-500 transition-colors">Disconnect</button>
+                    <button @click="logoutModal = false" class="py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase">Cancel</button>
+                    <button @click="confirmLogout" class="py-3 rounded-xl bg-red-600 text-white font-black text-xs uppercase">Disconnect</button>
+                </div>
+            </div>
+        </div>
+    </transition>
+
+    <transition name="modal">
+        <div v-if="showAddSuppModal" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
+            <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="showAddSuppModal = false"></div>
+            <div class="glass w-full max-w-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl">
+                <h2 class="text-xl font-black italic uppercase text-white mb-6 tracking-tight">Supply Intake</h2>
+                <div class="space-y-4 mb-8">
+                    <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                        <span class="text-[8px] text-slate-600 uppercase font-black italic tracking-widest block mb-1">Supp Name</span>
+                        <input type="text" v-model="newSupp.name" class="bg-transparent border-none text-lg font-black w-full text-white p-0 focus:ring-0 placeholder-slate-800" placeholder="e.g. Creatine">
+                    </div>
+                    <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                        <span class="text-[8px] text-slate-600 uppercase font-black italic tracking-widest block mb-1">Total Servings</span>
+                        <input type="number" v-model="newSupp.servings" class="bg-transparent border-none text-lg font-black w-full text-white p-0 focus:ring-0 placeholder-slate-800" placeholder="30">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button @click="showAddSuppModal = false" class="py-4 rounded-2xl bg-slate-900 text-slate-400 font-bold text-xs uppercase">Abort</button>
+                    <button @click="saveNewSupplement" class="py-4 rounded-2xl bg-purple-600 text-white font-black text-xs uppercase shadow-lg shadow-purple-900/20">Authorize</button>
                 </div>
             </div>
         </div>
@@ -143,13 +165,12 @@
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-white text-lg font-black italic uppercase tracking-tight">Log Fuel</h3>
                 <button @click="triggerCamera" :disabled="scanning" class="bg-blue-600/20 px-4 py-2 rounded-xl border border-blue-500/30 text-blue-500 text-[10px] font-black uppercase italic flex items-center gap-2 active:scale-95 transition-all">
-                    <i data-lucide="camera" class="w-3 h-3"></i> 
-                    AI SCAN
+                    <i data-lucide="camera" class="w-3 h-3"></i> AI SCAN
                 </button>
             </div>
 
             <div v-if="recentFoods.length" class="mb-6">
-                <p class="text-[8px] text-slate-500 font-black uppercase tracking-widest mb-3 ml-1">Quick Add</p>
+                <p class="text-[8px] text-slate-500 font-black uppercase tracking-widest mb-3 ml-1">Quick Re-Log</p>
                 <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x">
                     <button v-for="item in recentFoods" :key="item.id" @click="selectFood(item)" class="snap-start flex-shrink-0 bg-slate-900/50 border border-white/10 hover:border-green-500/50 hover:bg-green-500/10 rounded-xl px-4 py-3 active:scale-95 transition-all">
                         <span class="text-xs font-bold text-slate-300 uppercase whitespace-nowrap">{{ item.food_name }}</span>
@@ -159,12 +180,12 @@
 
             <input type="file" ref="cameraInput" accept="image/*" capture="environment" class="hidden" @change="handleScan">
 
-            <input type="text" v-model="foodSearch" @input="filterMemory" placeholder="Search Memory..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl py-5 px-6 outline-none font-black text-lg mb-6 placeholder-slate-700 focus:ring-1 focus:ring-green-500/50 transition-all">
+            <input type="text" v-model="foodSearch" @input="filterMemory" placeholder="Search Neural Memory..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl py-5 px-6 outline-none font-black text-lg mb-6 placeholder-slate-700 focus:ring-1 focus:ring-green-500/50 transition-all">
             
             <div v-if="showMemory && filteredMemory.length" class="glass rounded-2xl overflow-hidden mb-6 border-blue-500/20">
                 <button v-for="item in filteredMemory" :key="item.id" @click="selectFood(item)" class="w-full px-6 py-4 text-left border-b border-white/5 hover:bg-blue-500/10 flex justify-between font-black text-xs italic transition-colors">
                     <span class="text-white uppercase">{{ item.food_name }}</span>
-                    <span class="opacity-50">{{ item.calories }}c | {{ item.protein }}p</span>
+                    <span class="opacity-50 text-slate-400">{{ item.calories }}c | {{ item.protein }}p</span>
                 </button>
             </div>
 
@@ -175,7 +196,7 @@
                 </div>
             </div>
             
-            <button @click="saveFood" class="w-full bg-green-600 hover:bg-green-500 py-5 rounded-2xl font-black text-xl shadow-xl shadow-green-900/20 active:scale-95 transition-all">LOG FUEL</button>
+            <button @click="saveFood" class="w-full bg-green-600 hover:bg-green-500 py-5 rounded-2xl font-black text-xl shadow-xl shadow-green-900/20 active:scale-95 transition-all">SUBMIT FUEL</button>
         </div>
 
         <section class="glass p-6 rounded-[2.5rem] shadow-xl">
@@ -184,24 +205,22 @@
                     <i data-lucide="package" class="w-4 h-4 text-purple-400"></i>
                     <h3 class="text-xs font-black uppercase tracking-widest text-slate-400">The Stack</h3>
                 </div>
-                <button @click="addItem" class="text-[10px] font-black uppercase text-purple-400 flex items-center gap-1 active:scale-95">
-                    <i data-lucide="plus" class="w-3 h-3"></i> Add Item
+                <button @click="showAddSuppModal = true" class="text-[10px] font-black uppercase text-purple-400 flex items-center gap-1 active:scale-95">
+                    <i data-lucide="plus" class="w-3 h-3"></i> Add Stack Item
                 </button>
             </div>
 
             <div class="space-y-3">
-                <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
+                <div v-for="item in inventory" :key="item.id" class="bg-slate-950/40 p-5 rounded-2xl border border-white/5 relative overflow-hidden">
                     <div class="flex justify-between items-center relative z-10">
                         <div>
                             <div class="text-sm font-black italic uppercase text-white tracking-tight">{{ item.item_name }}</div>
                             <div class="text-[9px] font-bold uppercase tracking-wider mt-1" :class="item.servings_left < 7 ? 'text-red-500 animate-pulse' : 'text-slate-500'">
-                                {{ Math.floor(item.servings_left) }} Servings Left
+                                {{ Math.floor(item.servings_left) }} Units Left
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <button @click="updateStock(item, -1)" class="bg-purple-600/20 hover:bg-purple-600 px-4 py-2 rounded-xl border border-purple-500/30 text-purple-400 hover:text-white text-[10px] font-black uppercase italic transition-all active:scale-90">
-                                Take
-                            </button>
+                            <button @click="updateStock(item, -1)" class="bg-purple-600/20 hover:bg-purple-600 px-4 py-2 rounded-xl border border-purple-500/30 text-purple-400 hover:text-white text-[10px] font-black uppercase italic transition-all active:scale-90">Intake</button>
                             <button @click="deleteItem(item.id)" class="bg-slate-900 p-2 rounded-xl text-slate-600 hover:text-red-500 transition-colors">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
@@ -211,32 +230,23 @@
                         <div class="h-full bg-purple-500 transition-all duration-500" :style="{ width: (item.servings_left / item.total_servings * 100) + '%' }"></div>
                     </div>
                 </div>
-                <div v-if="inventory.length === 0" class="text-center py-4 text-slate-600 text-xs italic">Stack is empty.</div>
+                <div v-if="inventory.length === 0" class="text-center py-4 text-slate-600 text-xs italic tracking-widest">Inventory Static</div>
             </div>
         </section>
 
         <div class="glass rounded-[2.5rem] p-8 shadow-2xl">
             <div class="flex items-center gap-2 mb-6 opacity-60">
                 <i data-lucide="list" class="w-4 h-4 text-green-400"></i>
-                <h3 class="text-xs font-black uppercase tracking-widest">Today's Ledger</h3>
+                <h3 class="text-xs font-black uppercase tracking-widest text-slate-400">Daily Ledger</h3>
             </div>
-
-            <div v-if="dailyLogs.length === 0" class="text-center py-4 text-slate-600 italic text-xs">
-                No fuel recorded today.
-            </div>
-
+            <div v-if="dailyLogs.length === 0" class="text-center py-4 text-slate-600 italic text-xs tracking-widest uppercase">No Fuel Recorded</div>
             <div v-else class="space-y-4">
                 <div v-for="log in dailyLogs" :key="log.id" class="flex justify-between items-center border-b border-white/5 pb-4 last:border-0 last:pb-0">
                     <div>
                         <div class="font-black text-sm uppercase italic text-slate-200">{{ log.food_name }}</div>
-                        <div class="text-[10px] text-slate-500 font-bold mt-1 tracking-wider">
-                            {{ log.calories }} <span class="text-[8px]">CAL</span> <span class="mx-1">•</span>
-                            {{ log.protein }} <span class="text-[8px]">PRO</span>
-                        </div>
+                        <div class="text-[10px] text-slate-500 font-bold mt-1 tracking-wider">{{ log.calories }} CAL • {{ log.protein }} PRO • {{ log.carbs }} CHO</div>
                     </div>
-                    <button @click="deleteLog(log.id)" class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-slate-600 hover:text-red-500 transition-all active:scale-90">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
+                    <button @click="deleteLog(log.id)" class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-slate-600 hover:text-red-500 active:scale-90"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             </div>
         </div>
@@ -244,31 +254,16 @@
     </main>
 
     <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-between px-6 py-4 safe-area-bottom z-[100]">
-        <a href="today.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
-            <i data-lucide="calendar" class="w-6 h-6 mb-1"></i>
-            <span class="text-[8px] font-black uppercase italic tracking-widest">Today</span>
-        </a>
-        <a href="gym.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
-            <i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i>
-            <span class="text-[8px] font-black uppercase italic tracking-widest">Gym</span>
-        </a>
-        <a href="#" class="flex flex-col items-center tab-active text-green-500">
-            <i data-lucide="utensils" class="w-6 h-6 mb-1"></i>
-            <span class="text-[8px] font-black uppercase italic tracking-widest">Kitchen</span>
-        </a>
-        <a href="tracker.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
-            <i data-lucide="line-chart" class="w-6 h-6 mb-1"></i>
-            <span class="text-[8px] font-black uppercase italic tracking-widest">Tracker</span>
-        </a>
+        <a href="today.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="calendar" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Today</span></a>
+        <a href="gym.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Gym</span></a>
+        <a href="#" class="flex flex-col items-center tab-active text-green-500"><i data-lucide="utensils" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Kitchen</span></a>
+        <a href="tracker.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="line-chart" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Tracker</span></a>
     </nav>
 </div>
 
 <script>
     const { createApp } = Vue;
-    const _client = supabase.createClient(
-        'https://mvoyrchefjcpjkdtezmz.supabase.co', 
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
-    );
+    const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
 
     createApp({
         data() {
@@ -276,6 +271,7 @@
                 initialLoading: true,
                 scanning: false,
                 logoutModal: false,
+                showAddSuppModal: false,
                 session: null, 
                 foodSearch: '', 
                 foodEntry: { cals: 0, protein: 0, carbs: 0, fat: 0 }, 
@@ -285,6 +281,7 @@
                 showMemory: false,
                 dailyLogs: [],
                 inventory: [],
+                newSupp: { name: '', servings: null },
                 targets: { cals: 2500, protein: 180, carbs: 250, fat: 80 },
                 toast: { visible: false, message: '' }
             } 
@@ -303,16 +300,17 @@
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
-            
+
             await Promise.all([
                 this.initMemory(), 
                 this.fetchDailyLogs(), 
-                this.fetchRecentFoods(),
-                this.fetchInventory(),
-                this.fetchTargets() 
+                this.fetchRecentFoods(), 
+                this.fetchInventory(), 
+                this.fetchTargets()
             ]);
+
             this.initialLoading = false;
-            this.$nextTick(() => lucide.createIcons());
+            this.$nextTick(() => { lucide.createIcons(); });
         },
         updated() { lucide.createIcons(); },
         methods: {
@@ -320,16 +318,14 @@
                 await _client.auth.signOut();
                 window.location.href = 'index.html';
             },
-            async handleLogout() {
-                this.logoutModal = true;
-            },
             showToast(msg) {
                 this.toast.message = msg;
                 this.toast.visible = true;
                 setTimeout(() => { this.toast.visible = false; }, 3000);
             },
             async fetchTargets() {
-                const { data } = await _client.from('daily_metrics')
+                // Fetch the latest targets from the daily_metrics table
+                const { data, error } = await _client.from('daily_metrics')
                     .select('target_calories, target_protein, target_carbs, target_fat')
                     .order('created_at', { ascending: false })
                     .limit(1);
@@ -381,7 +377,7 @@
             },
             async saveFood() {
                 if(!this.foodSearch) return;
-                await _client.from('food_logs').insert([{ 
+                const { error } = await _client.from('food_logs').insert([{ 
                     food_name: this.foodSearch, 
                     calories: this.foodEntry.cals, 
                     protein: this.foodEntry.protein, 
@@ -390,34 +386,44 @@
                     user_id: this.session.user.id 
                 }]);
                 
-                this.showToast("Fuel Logged");
-                this.foodSearch = '';
-                this.foodEntry = { cals: 0, protein: 0, carbs: 0, fat: 0 };
-                await Promise.all([this.fetchDailyLogs(), this.fetchRecentFoods()]);
-            },
-            async deleteLog(id) {
-                if(confirm("Delete entry?")) {
-                    await _client.from('food_logs').delete().eq('id', id);
-                    this.fetchDailyLogs(); 
+                if(!error) {
+                    this.showToast("Fuel Sequence Logged");
+                    this.foodSearch = '';
+                    this.foodEntry = { cals: 0, protein: 0, carbs: 0, fat: 0 };
+                    await Promise.all([this.fetchDailyLogs(), this.fetchRecentFoods()]);
                 }
             },
-            async addItem() {
-                const name = prompt("Item Name:");
-                const servings = prompt("Total Servings:");
-                if (name && servings) {
-                    await _client.from('inventory').insert([{ item_name: name, total_servings: parseInt(servings), servings_left: parseInt(servings), user_id: this.session.user.id }]);
-                    this.fetchInventory();
+            async deleteLog(id) {
+                if(confirm("Expunge entry?")) {
+                    await _client.from('food_logs').delete().eq('id', id);
+                    await this.fetchDailyLogs(); 
+                }
+            },
+            async saveNewSupplement() {
+                if (!this.newSupp.name || !this.newSupp.servings) return;
+                const { error } = await _client.from('inventory').insert([{ 
+                    item_name: this.newSupp.name, 
+                    total_servings: parseInt(this.newSupp.servings), 
+                    servings_left: parseInt(this.newSupp.servings), 
+                    user_id: this.session.user.id 
+                }]);
+                
+                if (!error) {
+                    this.showToast("Supply Chain Authorized");
+                    this.newSupp = { name: '', servings: null };
+                    this.showAddSuppModal = false;
+                    await this.fetchInventory();
                 }
             },
             async updateStock(item, amount) {
                 const newAmount = Math.max(0, item.servings_left + amount);
-                await _client.from('inventory').update({ servings_left: newAmount }).eq('id', item.id);
-                this.fetchInventory();
+                const { error } = await _client.from('inventory').update({ servings_left: newAmount }).eq('id', item.id);
+                if(!error) await this.fetchInventory();
             },
             async deleteItem(id) {
-                if(confirm("Remove item?")) {
+                if(confirm("Decommission item?")) {
                     await _client.from('inventory').delete().eq('id', id);
-                    this.fetchInventory();
+                    await this.fetchInventory();
                 }
             },
             triggerCamera() {
@@ -438,16 +444,21 @@
                         this.scanning = false;
                         if (error) throw error;
                         if (data) {
-                            this.showToast("Macros Extracted");
-                            this.foodSearch = data.food_name || "Scanned Item";
-                            this.foodEntry = { cals: data.calories || 0, protein: data.protein || 0, carbs: data.carbs || 0, fat: data.fat || 0 };
+                            this.showToast("Neural Analysis Complete");
+                            this.foodSearch = data.food_name || "Extracted Item";
+                            this.foodEntry = { 
+                                cals: data.calories || 0, 
+                                protein: data.protein || 0, 
+                                carbs: data.carbs || 0, 
+                                fat: data.fat || 0 
+                            };
                         }
                     };
                     reader.readAsDataURL(file);
                 } catch (e) {
                     console.error(e);
                     this.scanning = false;
-                    alert("Scan failed.");
+                    alert("Analysis protocol failed.");
                 } finally {
                     event.target.value = ''; 
                 }
