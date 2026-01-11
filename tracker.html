@@ -31,7 +31,7 @@
         @keyframes grow { to { transform: scaleY(1); } }
 
         .matrix-cell { aspect-ratio: 1/1; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.01); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
-        .matrix-active { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); color: #3b82f6; box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.1); }
+        .matrix-active { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3); color: #22c55e; }
 
         .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
@@ -43,7 +43,7 @@
     <div v-if="initialLoading" class="loading-mask">
         <div class="animate-pulse flex flex-col items-center gap-4">
             <div class="w-10 h-10 rounded-full border-2 border-purple-500 border-t-transparent animate-spin"></div>
-            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Synchronizing Global Sector</p>
+            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Compiling Performance Intelligence</p>
         </div>
     </div>
 
@@ -97,6 +97,26 @@
                     </div>
                 </section>
 
+                <section class="glass p-6 rounded-[2.5rem] shadow-xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-2 opacity-60">
+                            <i data-lucide="target" class="w-4 h-4 text-green-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Neural Targets</h3>
+                        </div>
+                        <button @click="showTargetModal = true" class="text-[8px] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white transition-colors">Adjust Goals</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein Goal</span>
+                            <span class="text-xl font-black italic">{{ targets.protein }}g</span>
+                        </div>
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calorie Goal</span>
+                            <span class="text-xl font-black italic">{{ targets.cals }}</span>
+                        </div>
+                    </div>
+                </section>
+
                 <section class="glass p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
                     <div class="flex justify-between items-end mb-6">
                         <div class="flex items-center gap-2 opacity-60">
@@ -114,8 +134,10 @@
                             <line v-if="targets.protein > 0" 
                                   x1="0" :y1="150 - (targets.protein * chartScale)" 
                                   x2="300" :y2="150 - (targets.protein * chartScale)" 
-                                  stroke="#3b82f6" stroke-width="1" stroke-dasharray="4 2" opacity="0.6" />
+                                  stroke="#22c55e" stroke-width="2" stroke-dasharray="6 3" />
                             
+                            <text v-if="targets.protein > 0" x="295" :y="145 - (targets.protein * chartScale)" text-anchor="end" font-size="6" fill="#22c55e" font-weight="black" class="uppercase">Goal: {{targets.protein}}g</text>
+
                             <g v-for="(day, index) in weeklyMacrosFull" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
                                 <rect :y="150 - day.p" width="28" :height="day.p" :fill="day.active ? '#3b82f6' : '#1e293b'" rx="2" class="bar-grow" />
                                 <rect :y="150 - day.p - day.c" width="28" :height="day.c" :fill="day.active ? '#10b981' : '#334155'" rx="2" class="bar-grow" style="animation-delay:0.1s" />
@@ -127,7 +149,7 @@
                 </section>
 
                 <section class="glass p-6 rounded-[2.5rem] shadow-xl space-y-6">
-                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Structural Growth Vectors</h3>
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Growth Vectors</h3>
                     <div v-for="metric in ['waist', 'chest', 'arms', 'thigh']" :key="metric" class="space-y-2">
                         <div class="flex justify-between items-end px-1">
                             <span class="text-xs font-black uppercase italic">{{ metric }}</span>
@@ -188,9 +210,6 @@
                                 <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">{{ session.setCount }} Sets</span>
                             </div>
                         </div>
-                        <div class="flex flex-wrap gap-2 mt-4">
-                            <span v-for="ex in session.exercises" :key="ex" class="text-[7px] font-black uppercase px-2 py-1 bg-white/5 rounded-lg border border-white/5 text-slate-400">{{ ex }}</span>
-                        </div>
                     </div>
                 </section>
             </div>
@@ -199,8 +218,8 @@
         <transition name="modal">
             <div v-if="showTargetModal" class="fixed inset-0 z-[300] flex items-end justify-center p-4">
                 <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="showTargetModal = false"></div>
-                <div class="glass w-full max-w-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl">
-                    <h2 class="text-xl font-black italic uppercase text-white mb-6">Authorize Goals</h2>
+                <div class="glass w-full max-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl">
+                    <h2 class="text-xl font-black italic uppercase text-white mb-6 tracking-tight">Sync Targets</h2>
                     <div class="space-y-4 mb-8">
                         <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
                             <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein Target (g)</span>
@@ -265,10 +284,10 @@
                 }
                 return Math.max(...totals, 450); 
             },
-            chartScale() { return 130 / this.globalMaxMacros; },
+            chartScale() { return 135 / this.globalMaxMacros; },
             calculateProteinLineY() {
                 const h = this.targets.protein * this.chartScale;
-                return (h + 10) + 'px'; // +10 to account for bottom margin in SVG
+                return h + 'px'; // Mapped directly to the bottom anchor in relative container
             },
             activityMatrix() {
                 const days = [];
@@ -289,7 +308,7 @@
                     const tonnage = (log.sets_data || []).reduce((acc, s) => acc + (parseFloat(s.weight || 0) * parseInt(s.reps || 0)), 0);
                     const tul = (log.sets_data || []).reduce((acc, s) => acc + (parseInt(s.reps || 0) * 4), 0);
                     if(!currentSession || Math.abs(currentSession.startTime - logTime) > 3600000) {
-                        currentSession = { id: log.id, protocol_name: log.protocol_name || 'Training Session', startTime: logTime, date: new Date(log.created_at).toLocaleDateString(), setCount: 0, tonnage: 0, tul: 0, exercises: new Set() };
+                        currentSession = { id: log.id, protocol_name: log.protocol_name || 'Generic Session', startTime: logTime, date: new Date(log.created_at).toLocaleDateString(), setCount: 0, tonnage: 0, tul: 0, exercises: new Set() };
                         sessions.push(currentSession);
                     }
                     currentSession.setCount += (log.sets_data?.length || 0);
@@ -326,7 +345,6 @@
             this.session = session;
             await Promise.all([this.fetchWeight(), this.fetchWeeklyLogs(), this.fetchWorkouts(), this.fetchTargets(), this.fetchBodyHistory()]);
             
-            // PRE-POPULATE ARCHIVE INPUTS WITH LATEST
             if (this.bodyHistory.length) {
                 const last = this.bodyHistory[this.bodyHistory.length - 1];
                 this.bodyMetrics = { waist: last.waist, chest: last.chest, arms: last.arms, thigh: last.thigh };
@@ -357,8 +375,8 @@
                 const data = this.bodyHistory.filter(h => h[m] !== null);
                 if(data.length < 2) return "";
                 const vals = data.map(d => d[m]);
-                const min = Math.min(...vals) - 0.2;
-                const max = Math.max(...vals) + 0.2;
+                const min = Math.min(...vals) - 0.1;
+                const max = Math.max(...vals) + 0.1;
                 const range = max - min || 1;
                 return data.map((d, i) => `${(i/(data.length-1))*300},${60 - ((d[m]-min)/range*60)}`).join(' ');
             },
@@ -382,8 +400,7 @@
                 this.lastPoint = points[points.length-1];
             },
             async fetchWeeklyLogs() {
-                const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-                const { data } = await _client.from('food_logs').select('*').gte('created_at', sevenDaysAgo);
+                const { data } = await _client.from('food_logs').select('*').gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]);
                 this.weeklyLogs = data || [];
             },
             async fetchWorkouts() {
