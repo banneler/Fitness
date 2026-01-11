@@ -3,95 +3,286 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Today | Constellation Fitness</title>
+    <title>Today | Constellation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         [v-cloak] { display: none !important; }
-        body { background-color: #020617; color: white; overscroll-behavior-y: contain; }
+        body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
-        .macro-card { @apply flex flex-col items-center justify-center p-4 rounded-2xl border border-white/5 bg-slate-900/40; }
         .tab-active { color: #3b82f6; }
-        .tab-active i { stroke-width: 3px; color: #3b82f6; }
+        .tab-active i { stroke-width: 3px; filter: drop-shadow(0 0 8px #3b82f6); }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
         
-        /* Loading Overlay Mask */
-        .loading-mask {
-            position: fixed;
-            inset: 0;
-            background: #020617;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        /* Custom Range Slider */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #3b82f6; cursor: pointer; margin-top: -8px; box-shadow: 0 0 10px rgba(59,130,246,0.5); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #1e293b; border-radius: 2px; }
+        
+        /* Toast Animation */
+        .toast-enter-active, .toast-leave-active { transition: all 0.5s ease; }
+        .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(20px); }
     </style>
 </head>
 <body class="font-sans antialiased">
 <div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32">
     
-    <div v-if="initialLoading" class="loading-mask">
-        <div class="animate-pulse flex flex-col items-center gap-4">
-            <div class="w-10 h-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
-            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Synchronizing</p>
+    <transition name="toast">
+        <div v-if="toast.visible" class="fixed bottom-24 left-6 right-6 glass border-green-500/30 p-4 rounded-2xl shadow-2xl z-[250] flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                <i data-lucide="check" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h4 class="text-sm font-black italic text-white uppercase">{{ toast.title }}</h4>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ toast.message }}</p>
+            </div>
         </div>
-    </div>
+    </transition>
 
-    <header class="flex justify-between items-center mb-10">
+    <header class="flex justify-between items-center mb-8">
         <div>
-            <h1 class="text-3xl font-black italic text-blue-500 uppercase">Today</h1>
-            <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Morning Pulse</p>
+            <h1 class="text-3xl font-black italic text-white uppercase">Today</h1>
+            <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">{{ currentDate }}</p>
         </div>
-        <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg"><i data-lucide="layout-grid" class="w-5 h-5 text-slate-400"></i></a>
+        <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all">
+            <i data-lucide="layout-grid" class="w-5 h-5 text-slate-400"></i>
+        </a>
     </header>
 
-    <main class="space-y-8">
-        <div class="grid grid-cols-4 gap-2">
-            <div class="macro-card"><span class="text-[8px] text-slate-500 font-black uppercase">Cals</span><span class="text-sm font-black">{{ dailyTotals.cals }}</span></div>
-            <div class="macro-card border-blue-500/20 text-blue-400"><span class="text-[8px] uppercase font-black">Prot</span><span class="text-sm font-black">{{ dailyTotals.protein }}</span></div>
-            <div class="macro-card border-yellow-500/20 text-yellow-500"><span class="text-[8px] uppercase font-black">Carb</span><span class="text-sm font-black">{{ dailyTotals.carbs }}</span></div>
-            <div class="macro-card border-red-500/20 text-red-500"><span class="text-[8px] uppercase font-black">Fat</span><span class="text-sm font-black">{{ dailyTotals.fat }}</span></div>
-        </div>
-
-        <div class="glass rounded-[2.5rem] p-8 shadow-2xl">
-            <h3 class="text-white text-lg font-black italic uppercase mb-8 flex items-center gap-2"><i data-lucide="zap" class="text-blue-500 w-5 h-5"></i> Readiness</h3>
-            <div class="grid grid-cols-2 gap-4">
-                <div v-for="l in ['Weight', 'Sleep', 'Energy', 'HR']" :key="l" class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                    <span class="text-[8px] text-slate-600 uppercase font-black mb-1 tracking-widest">{{ l }}</span>
-                    <input type="number" step="0.1" v-model="metrics[l]" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 outline-none">
+    <main class="space-y-6">
+        
+        <div class="grid grid-cols-2 gap-4">
+            <div class="glass p-5 rounded-3xl border-t-4" :class="proteinLeft <= 0 ? 'border-t-green-500' : 'border-t-blue-500'">
+                <div class="flex items-center gap-2 mb-3 opacity-60">
+                    <i data-lucide="utensils" class="w-4 h-4" :class="proteinLeft <= 0 ? 'text-green-400' : 'text-blue-400'"></i>
+                    <span class="text-[9px] font-black uppercase tracking-widest">Fuel Target</span>
+                </div>
+                <div v-if="proteinLeft > 0">
+                    <div class="text-3xl font-black italic text-white">{{ proteinLeft }}<span class="text-xs text-slate-500 not-italic ml-1">g</span></div>
+                    <div class="text-[9px] text-slate-500 font-bold uppercase tracking-wide">Protein Remaining</div>
+                </div>
+                <div v-else>
+                    <div class="text-xl font-black italic text-green-400">GOAL HIT</div>
+                    <div class="text-[9px] text-slate-500 font-bold uppercase tracking-wide">{{ proteinCurrent }}g Consumed</div>
                 </div>
             </div>
-            <button @click="saveMetrics" class="w-full mt-8 bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl">COMMIT DATA</button>
+
+            <div class="glass p-5 rounded-3xl border-t-4 border-t-orange-500">
+                <div class="flex items-center gap-2 mb-3 opacity-60">
+                    <i data-lucide="dumbbell" class="w-4 h-4 text-orange-400"></i>
+                    <span class="text-[9px] font-black uppercase tracking-widest">Iron Volume</span>
+                </div>
+                <div class="text-2xl font-black italic text-white">{{ formatNumber(totalVolume) }}</div>
+                <div class="text-[9px] text-slate-500 font-bold uppercase tracking-wide">Lbs Moved Today</div>
+            </div>
         </div>
+
+        <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="sunrise" class="w-5 h-5 text-yellow-500"></i>
+                    <h3 class="text-lg font-black italic text-white uppercase">Morning Report</h3>
+                </div>
+                <span v-if="reportSaved" class="bg-green-500/10 text-green-500 px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest">Saved</span>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-slate-900/50 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Weight (lbs)</span>
+                    <input type="number" v-model="metrics.weight" class="bg-transparent text-right font-black text-xl text-white outline-none w-24 placeholder-slate-700" placeholder="0.0">
+                </div>
+
+                <div class="bg-slate-900/50 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Resting HR</span>
+                    <input type="number" v-model="metrics.resting_hr" class="bg-transparent text-right font-black text-xl text-white outline-none w-24 placeholder-slate-700" placeholder="0">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sleep Quality</span>
+                        <span class="text-lg font-black text-blue-400">{{ metrics.sleep_quality }}<span class="text-xs text-slate-600">/10</span></span>
+                    </div>
+                    <input type="range" v-model="metrics.sleep_quality" min="1" max="10" step="1">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Energy Level</span>
+                        <span class="text-lg font-black text-yellow-400">{{ metrics.energy_level }}<span class="text-xs text-slate-600">/10</span></span>
+                    </div>
+                    <input type="range" v-model="metrics.energy_level" min="1" max="10" step="1">
+                </div>
+
+                <button @click="saveMetrics" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all mt-4 flex items-center justify-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i> Log Readiness
+                </button>
+            </div>
+        </section>
+
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-around p-4 safe-area-bottom z-[100]">
-        <a href="today.html" class="flex flex-col items-center px-4 tab-active"><i data-lucide="zap" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Today</span></a>
-        <a href="gym.html" class="flex flex-col items-center px-4 text-slate-600"><i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Gym</span></a>
-        <a href="kitchen.html" class="flex flex-col items-center px-4 text-slate-600"><i data-lucide="utensils" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Kitchen</span></a>
-        <a href="tracker.html" class="flex flex-col items-center px-4 text-slate-600"><i data-lucide="line-chart" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic">Tracker</span></a>
+    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-between px-6 py-4 safe-area-bottom z-[100]">
+        <a href="#" class="flex flex-col items-center tab-active text-white">
+            <i data-lucide="calendar" class="w-6 h-6 mb-1"></i>
+            <span class="text-[8px] font-black uppercase italic tracking-widest">Today</span>
+        </a>
+        <a href="gym.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
+            <i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i>
+            <span class="text-[8px] font-black uppercase italic tracking-widest">Gym</span>
+        </a>
+        <a href="kitchen.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
+            <i data-lucide="utensils" class="w-6 h-6 mb-1"></i>
+            <span class="text-[8px] font-black uppercase italic tracking-widest">Kitchen</span>
+        </a>
+        <a href="tracker.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
+            <i data-lucide="line-chart" class="w-6 h-6 mb-1"></i>
+            <span class="text-[8px] font-black uppercase italic tracking-widest">Tracker</span>
+        </a>
     </nav>
 </div>
+
 <script>
     const { createApp } = Vue;
-    const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
+    const _client = supabase.createClient(
+        'https://mvoyrchefjcpjkdtezmz.supabase.co', 
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
+    );
+
     createApp({
-        data() { return { session: null, metrics: { Weight: null, Sleep: null, Energy: null, HR: null }, dailyLogs: [], initialLoading: true } },
-        computed: { dailyTotals() { return this.dailyLogs.reduce((acc, log) => ({ cals: acc.cals + (log.calories || 0), protein: acc.protein + (log.protein || 0), carbs: acc.carbs + (log.carbs || 0), fat: acc.fat + (log.fat || 0) }), { cals: 0, protein: 0, carbs: 0, fat: 0 }); } },
-        async mounted() { 
-            const { data: { session } } = await _client.auth.getSession(); 
-            this.session = session; 
-            if (this.session) await this.init(); 
-            this.initialLoading = false;
+        data() { 
+            return { 
+                session: null,
+                reportSaved: false,
+                metrics: {
+                    id: null, // To store existing ID for updates
+                    weight: null,
+                    resting_hr: null,
+                    sleep_quality: 5,
+                    energy_level: 5
+                },
+                proteinTarget: 180,
+                proteinCurrent: 0,
+                totalVolume: 0,
+                toast: { visible: false, title: '', message: '' }
+            } 
+        },
+        computed: {
+            currentDate() {
+                return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            },
+            proteinLeft() {
+                return Math.max(0, this.proteinTarget - this.proteinCurrent);
+            }
+        },
+        async mounted() {
+            const { data: { session } } = await _client.auth.getSession();
+            if (!session) { window.location.href = 'index.html'; return; }
+            this.session = session;
+            
+            await Promise.all([
+                this.fetchMetrics(),
+                this.fetchProtein(),
+                this.fetchVolume()
+            ]);
+            
             this.$nextTick(() => lucide.createIcons());
         },
         methods: {
-            async init() { const today = new Date().toISOString().split('T')[0]; const { data: logs } = await _client.from('food_logs').select('*').gte('created_at', today); this.dailyLogs = logs || []; },
-            async saveMetrics() { await _client.from('daily_metrics').insert([{ weight: this.metrics.Weight, sleep_quality: this.metrics.Sleep, energy_level: this.metrics.Energy, resting_hr: this.metrics.HR, user_id: this.session.user.id }]); alert("Readiness Synced."); }
-        },
-        updated() { lucide.createIcons(); }
+            showToast(title, message) {
+                this.toast = { visible: true, title, message };
+                setTimeout(() => this.toast.visible = false, 3000);
+            },
+            formatNumber(num) {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            },
+            async fetchMetrics() {
+                // Check if metrics exist for today
+                const today = new Date().toISOString().split('T')[0];
+                const { data } = await _client
+                    .from('daily_metrics')
+                    .select('*')
+                    .gte('created_at', today)
+                    .order('created_at', {ascending: false})
+                    .limit(1);
+
+                if (data && data.length > 0) {
+                    const saved = data[0];
+                    this.metrics = {
+                        id: saved.id,
+                        weight: saved.weight,
+                        resting_hr: saved.resting_hr,
+                        sleep_quality: saved.sleep_quality || 5,
+                        energy_level: saved.energy_level || 5
+                    };
+                    this.reportSaved = true;
+                }
+            },
+            async fetchProtein() {
+                const today = new Date().toISOString().split('T')[0];
+                const { data } = await _client.from('food_logs').select('protein').gte('created_at', today);
+                if (data) {
+                    this.proteinCurrent = data.reduce((sum, item) => sum + (item.protein || 0), 0);
+                }
+            },
+            async fetchVolume() {
+                const today = new Date().toISOString().split('T')[0];
+                const { data } = await _client.from('workout_logs').select('sets_data').gte('created_at', today);
+                
+                if (data) {
+                    let vol = 0;
+                    data.forEach(log => {
+                        if (log.sets_data) {
+                            log.sets_data.forEach(set => {
+                                // Volume = Reps * Weight (Ignore bodyweight/0 weight for volume calculation)
+                                if (set.weight > 0 && set.reps > 0) {
+                                    vol += (set.weight * set.reps);
+                                }
+                            });
+                        }
+                    });
+                    this.totalVolume = vol;
+                }
+            },
+            async saveMetrics() {
+                const payload = {
+                    user_id: this.session.user.id,
+                    weight: this.metrics.weight,
+                    resting_hr: this.metrics.resting_hr,
+                    sleep_quality: parseInt(this.metrics.sleep_quality),
+                    energy_level: parseInt(this.metrics.energy_level)
+                };
+
+                let error = null;
+
+                if (this.metrics.id) {
+                    // Update existing
+                    const { error: updateError } = await _client
+                        .from('daily_metrics')
+                        .update(payload)
+                        .eq('id', this.metrics.id);
+                    error = updateError;
+                } else {
+                    // Insert new
+                    const { data, error: insertError } = await _client
+                        .from('daily_metrics')
+                        .insert([payload])
+                        .select(); // Select back to get the new ID
+                    
+                    if (data) this.metrics.id = data[0].id;
+                    error = insertError;
+                }
+
+                if (error) {
+                    console.error(error);
+                    alert("Error saving metrics.");
+                } else {
+                    this.reportSaved = true;
+                    this.showToast("Report Logged", "Readiness data saved successfully.");
+                }
+            }
+        }
     }).mount('#app');
 </script>
 </body>
