@@ -38,9 +38,7 @@
         .exercise-blurred { opacity: 0.4; filter: grayscale(100%) blur(1px); transform: scale(0.98); pointer-events: none; }
         .exercise-active { opacity: 1; filter: none; transform: scale(1); border-color: rgba(59, 130, 246, 0.3); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); }
         .pr-active { border-color: #eab308 !important; box-shadow: 0 0 15px rgba(234, 179, 8, 0.2); color: #eab308 !important; background: rgba(234, 179, 8, 0.05); }
-        .input-loading { border-color: #a855f7 !important; background-color: rgba(168, 85, 247, 0.1) !important; animation: pulse-purple 1.5s infinite; }
-        @keyframes pulse-purple { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-
+        
         .muscle-base { fill: rgba(30, 41, 59, 0.1); stroke: rgba(255, 255, 255, 0.2); stroke-width: 1px; stroke-linecap: round; stroke-linejoin: round; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         .fill-red-500 { fill: rgba(239, 68, 68, 0.4) !important; stroke: #ef4444 !important; }
         .fill-orange-500 { fill: rgba(249, 115, 22, 0.3) !important; stroke: #f97316 !important; }
@@ -101,7 +99,7 @@
             </div>
             <div class="flex gap-2">
                 <button @click="generateAIWorkout" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-purple-400 hover:text-purple-300 hover:border-purple-500/30"><i data-lucide="sparkles" class="w-5 h-5"></i></button>
-                <button @click="logout" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                <button @click="confirmLogout" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30"><i data-lucide="log-out" class="w-5 h-5"></i></button>
             </div>
         </header>
 
@@ -115,7 +113,6 @@
                 <div class="flex gap-3 text-[8px] font-bold uppercase tracking-wider">
                     <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Recov</span>
                     <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-500"></span> Ready</span>
-                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500/50"></span> Cold</span>
                 </div>
             </div>
             <div class="flex justify-around relative z-10 px-2">
@@ -227,9 +224,7 @@
                 <h2 class="text-xl font-black italic uppercase mb-2">Schedule Protocol</h2>
                 <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mb-6">For {{ scheduleModal.dayName }} {{ scheduleModal.dateNum }}</p>
                 <div class="space-y-2 max-h-64 overflow-y-auto mb-6">
-                    <button @click="saveSchedule(null)" class="w-full text-left p-4 rounded-xl border border-white/5 bg-slate-900/50 text-slate-500 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">
-                        Rest Day (Clear)
-                    </button>
+                    <button @click="saveSchedule(null)" class="w-full text-left p-4 rounded-xl border border-white/5 bg-slate-900/50 text-slate-500 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">Rest Day (Clear)</button>
                     <button v-for="routine in routines" :key="routine.id" @click="saveSchedule(routine)" class="w-full text-left p-4 rounded-xl border border-white/5 bg-slate-900/50 hover:bg-blue-600/10 hover:border-blue-500/50 transition-all flex items-center gap-4">
                         <i :data-lucide="routine.icon_name" class="w-5 h-5 text-blue-500"></i>
                         <span class="text-white font-bold text-sm uppercase italic">{{ routine.name }}</span>
@@ -294,14 +289,16 @@
                             <i :data-lucide="ex.icon || 'dumbbell'" class="w-3 h-3 text-slate-600"></i>
                         </div>
 
-                        <div class="col-span-4">
-                            <input v-if="ex.sets[setIndex]" type="number" v-model="ex.sets[setIndex].weight" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[setIndex].prevWeight || '-'">
+                        <div class="col-span-4" v-if="ex.sets[setIndex]">
+                            <input type="number" v-model="ex.sets[setIndex].weight" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[setIndex].prevWeight || '-'">
                         </div>
-                        <div class="col-span-3">
-                            <input v-if="ex.sets[setIndex]" type="number" v-model="ex.sets[setIndex].reps" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[setIndex].prevReps || '-'">
+                        <div class="col-span-3" v-if="ex.sets[setIndex]">
+                            <input type="number" v-model="ex.sets[setIndex].reps" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[setIndex].prevReps || '-'">
                         </div>
-                        <div class="col-span-2 flex justify-center"><input v-if="ex.sets[setIndex]" type="checkbox" v-model="ex.sets[setIndex].done" class="custom-checkbox"></div>
-                        <div class="col-span-1 flex justify-center"><input v-if="ex.sets[setIndex]" type="checkbox" v-model="ex.sets[setIndex].failure" class="failure-checkbox"></div>
+                        <div class="col-span-2 flex justify-center" v-if="ex.sets[setIndex]"><input type="checkbox" v-model="ex.sets[setIndex].done" class="custom-checkbox"></div>
+                        <div class="col-span-1 flex justify-center" v-if="ex.sets[setIndex]"><input type="checkbox" v-model="ex.sets[setIndex].failure" class="failure-checkbox"></div>
+                        
+                        <div v-if="!ex.sets[setIndex]" class="col-span-11 bg-slate-900/20 h-8 rounded border border-dashed border-slate-800"></div>
                     </div>
                 </template>
                 
@@ -335,7 +332,6 @@
         <a href="kitchen.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="utensils" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Kitchen</span></a>
         <a href="tracker.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="line-chart" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Tracker</span></a>
     </nav>
-
 </div>
 
 <script>
@@ -373,7 +369,7 @@
                 previewModal: null,
 
                 // Active Session
-                activeRoutine: { name: '', data: [] }, // data is now an Array of CLUSTERS (groups)
+                activeRoutine: { name: '', data: [] }, 
                 activeExerciseIdx: 0,
                 stackTaken: false,
                 sessionTimer: 0, 
@@ -579,14 +575,14 @@
                 this.showToast('Schedule Updated', routine ? `${routine.name} set` : 'Rest day assigned');
             },
 
-            // --- ACTIVE SESSION ENGINE (NEW CLUSTER LOGIC) ---
+            // --- ACTIVE SESSION ENGINE ---
             previewRoutine(routine) { this.previewModal = { ...routine, exercises: routine.exercise_order || [] }; },
             getExerciseName(id) { const ex = this.libraryExercises.find(e => e.id === id); return ex ? ex.name : 'Unknown Exercise'; },
 
             async startActiveSession(routine) {
                 this.previewModal = null; 
                 this.view = 'active_session';
-                this.activeExerciseIdx = 0; // This now refers to the GROUP index
+                this.activeExerciseIdx = 0;
 
                 this.$nextTick(() => {
                     window.scrollTo(0,0);
@@ -604,9 +600,6 @@
                         icon: exDef ? exDef.icon_name : 'dumbbell', 
                         weightType: exDef ? exDef.weight_type : 'combined',
                         personalRecord: pr, 
-                        isPR: false, 
-                        loadingHistory: true, 
-                        // Note: isSuperset in routine means "linked to previous". 
                         isLinked: (routine.supersets || []).includes(index),
                         sets: [{weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}] 
                     };
@@ -616,10 +609,8 @@
                 const clusters = [];
                 flatExercises.forEach((ex) => {
                     if (ex.isLinked && clusters.length > 0) {
-                        // Add to previous cluster
                         clusters[clusters.length - 1].exercises.push(ex);
                     } else {
-                        // Start new cluster
                         clusters.push({ type: 'cluster', exercises: [ex] });
                     }
                 });
@@ -634,8 +625,9 @@
                     this.sessionTimer = Math.floor(delta / 1000);
                 }, 1000);
 
-                // 4. Fetch History for ALL Exercises
+                // 4. Fetch History & NORMALIZE CLUSTERS (Bug Fix for Empty Rows)
                 for (let group of this.activeRoutine.data) {
+                    // A. Fetch History
                     for (let ex of group.exercises) {
                         const { data: lastLog } = await _client.from('workout_logs')
                             .select('sets_data')
@@ -650,28 +642,30 @@
                                 reps: '', prevReps: s.reps,
                                 done: false, failure: false 
                             }));
-                            while(ex.sets.length < 3) {
-                                ex.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
-                            }
                         }
-                        ex.loadingHistory = false;
+                        // Ensure minimum 3 rows for visuals
+                        while(ex.sets.length < 3) {
+                            ex.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
+                        }
                     }
+                    
+                    // B. Normalize Sets in Cluster (Crucial Fix)
+                    const maxSets = Math.max(...group.exercises.map(e => e.sets.length));
+                    group.exercises.forEach(ex => {
+                         while(ex.sets.length < maxSets) {
+                             ex.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
+                         }
+                    });
                 }
             },
 
-            // Helper to determine rows in interleaved grid
             getMaxSets(group) {
+                if(!group || !group.exercises) return 0;
                 return Math.max(...group.exercises.map(e => e.sets.length));
-            },
-
-            checkPR(exercise, weight) {
-                if(weight > exercise.personalRecord) exercise.isPR = true;
-                else exercise.isPR = false;
             },
             
             addSetToGroup(groupIdx) {
                 const group = this.activeRoutine.data[groupIdx];
-                // Add one set to every exercise in this cluster
                 group.exercises.forEach(ex => {
                     const prev = ex.sets.slice(-1)[0]; 
                     ex.sets.push({ weight: '', prevWeight: prev?.prevWeight||'', reps: '', prevReps: prev?.prevReps||'', done: false, failure: false }); 
@@ -696,7 +690,6 @@
                 this.loading = true;
                 this.loadingText = "Analyzing Performance...";
                 
-                // FLATTEN CLUSTERS BACK TO LOGS
                 const flatLogs = [];
                 this.activeRoutine.data.forEach(group => {
                     group.exercises.forEach(ex => {
@@ -733,6 +726,5 @@
         }
     }).mount('#app');
 </script>
-
 </body>
 </html>
