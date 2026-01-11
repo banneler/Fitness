@@ -391,7 +391,6 @@
                 this.schedule = data || [];
             },
             async fetchHistory() {
-                // Better grouping: Group logs if created within 60 mins of each other
                 const { data } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false }).limit(100);
                 if (!data || !data.length) {
                     this.recentSessions = [];
@@ -401,32 +400,28 @@
                 const sessions = [];
                 let currentSession = null;
                 
-                // Iterate through logs (newest first)
                 data.forEach((log) => {
                     const logTime = new Date(log.created_at).getTime();
                     
                     if (!currentSession) {
-                        // Start new session bucket
                         currentSession = {
                             id: log.id,
                             startTime: logTime,
-                            name: log.exercise_name.includes('Recovery') ? 'Recovery Session' : 'Training Session', 
+                            // FIX: Use new protocol_name column, fallback if null
+                            name: log.protocol_name || (log.exercise_name.includes('Recovery') ? 'Recovery Session' : 'Training Session'), 
                             date: new Date(log.created_at).toLocaleDateString(),
                             volume: 1
                         };
                     } else {
-                        // Check if belongs to current session (within 60 mins)
                         const diffMins = Math.abs(currentSession.startTime - logTime) / (1000 * 60);
-                        
                         if (diffMins < 60) {
                             currentSession.volume++;
                         } else {
-                            // Close previous session and start new
                             sessions.push(currentSession);
                             currentSession = {
                                 id: log.id,
                                 startTime: logTime,
-                                name: log.exercise_name.includes('Recovery') ? 'Recovery Session' : 'Training Session',
+                                name: log.protocol_name || (log.exercise_name.includes('Recovery') ? 'Recovery Session' : 'Training Session'),
                                 date: new Date(log.created_at).toLocaleDateString(),
                                 volume: 1
                             };
@@ -434,9 +429,7 @@
                     }
                 });
                 
-                // Push the final session
                 if (currentSession) sessions.push(currentSession);
-                
                 this.recentSessions = sessions.slice(0, 5);
             },
             
@@ -475,7 +468,6 @@
             async saveExercise() {
                 if(!this.newExercise.name) return;
                 
-                // FIX: Map 'icon' to 'icon_name' to match DB Schema
                 const payload = {
                     name: this.newExercise.name,
                     muscle_group: this.newExercise.group,
@@ -557,6 +549,7 @@
                 const logs = this.activeRoutine.data.map(ex => ({
                     user_id: this.session.user.id,
                     exercise_name: ex.name,
+                    protocol_name: this.activeRoutine.name, // FIX: Save protocol name here!
                     sets_data: ex.sets.filter(s => s.done || s.weight > 0),
                     created_at: timestamp
                 })).filter(l => l.sets_data.length > 0);
@@ -569,7 +562,6 @@
                     await Promise.all(updates);
                 }
 
-                // Refresh Data BEFORE switching view to ensure "Recent Sessions" populates
                 await this.fetchHistory(); 
                 
                 this.view = 'dashboard';
