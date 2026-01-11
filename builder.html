@@ -19,20 +19,40 @@
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
-        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
-        .drag-handle { cursor: grab; touch-action: none; padding: 1rem; margin: -0.5rem; display: flex; align-items: center; justify-content: center; }
-        .drag-handle:active { cursor: grabbing; }
-        .sortable-ghost { opacity: 0.2; background: #3b82f6; border-radius: 0.75rem; }
-        .sortable-drag { opacity: 1; background: #1e293b; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); transform: scale(1.02); }
         
-        .toast-enter-active, .toast-leave-active { transition: all 0.5s ease; }
+        /* Glassmorphism Base */
+        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        
+        /* Drag & Drop Visuals */
+        .drag-handle { cursor: grab; touch-action: none; padding: 1rem; margin: -0.5rem; display: flex; align-items: center; justify-content: center; color: #64748b; transition: color 0.2s; }
+        .drag-handle:active { cursor: grabbing; color: #fff; }
+        .sortable-ghost { opacity: 0.2; background: #3b82f6; border-radius: 0.75rem; border: 1px dashed #60a5fa; }
+        .sortable-drag { opacity: 1; background: #1e293b; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.1); transform: scale(1.02); border: 1px solid rgba(255,255,255,0.1); z-index: 50; }
+
+        /* Animations */
+        .toast-enter-active, .toast-leave-active { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(20px); }
-        .slide-down-enter-active, .slide-down-leave-active { transition: all 0.3s ease; }
-        .slide-down-enter-from, .slide-down-leave-to { opacity: 0; transform: translateY(-10px); }
+        
+        .slide-down-enter-active, .slide-down-leave-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); max-height: 500px; opacity: 1; }
+        .slide-down-enter-from, .slide-down-leave-to { max-height: 0; opacity: 0; overflow: hidden; }
+
+        /* Loading Spinner */
+        .loading-mask { position: fixed; inset: 0; background: #020617; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        
+        /* Utility */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="font-sans antialiased">
 <div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32">
+
+    <div v-if="loading" class="loading-mask">
+        <div class="animate-pulse flex flex-col items-center gap-4">
+            <div class="w-10 h-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
+            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">{{ loadingText }}</p>
+        </div>
+    </div>
 
     <transition name="toast">
         <div v-if="toast.visible" class="fixed bottom-24 left-6 right-6 glass border-blue-500/30 p-4 rounded-2xl shadow-2xl z-[250] flex items-center gap-4">
@@ -47,130 +67,186 @@
     </transition>
 
     <header class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-black italic uppercase">{{ isEditing ? 'Edit Protocol' : 'Builder' }}</h2>
-        <a href="gym.html" class="text-slate-400 hover:text-white font-bold text-xs uppercase">Cancel</a>
+        <div>
+            <h2 class="text-2xl font-black italic uppercase text-white">{{ isEditing ? 'Edit Protocol' : 'Builder' }}</h2>
+            <p class="text-[10px] font-bold uppercase text-slate-500 tracking-widest">{{ activeTab === 'routine' ? 'Sequence Mode' : 'Library Mode' }}</p>
+        </div>
+        <a href="gym.html" class="px-4 py-2 rounded-xl bg-slate-900 border border-white/5 text-slate-400 hover:text-white font-bold text-xs uppercase transition-all active:scale-95">Cancel</a>
     </header>
 
     <div class="flex p-1 bg-slate-900 rounded-xl mb-6 border border-white/5">
-        <button @click="activeTab = 'routine'" :class="activeTab === 'routine' ? 'bg-blue-600 text-white' : 'text-slate-500'" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">Sequence</button>
-        <button @click="activeTab = 'exercise'" :class="activeTab === 'exercise' ? 'bg-blue-600 text-white' : 'text-slate-500'" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">Exercise Editor</button>
+        <button @click="activeTab = 'routine'" :class="activeTab === 'routine' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-300'" class="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">Sequence</button>
+        <button @click="activeTab = 'exercise'" :class="activeTab === 'exercise' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-300'" class="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">Exercise Editor</button>
     </div>
 
-    <div v-if="activeTab === 'routine'" class="space-y-4 flex-1">
-        <input v-model="routine.name" placeholder="Protocol Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none font-bold">
+    <div v-if="activeTab === 'routine'" class="space-y-6 flex-1 flex flex-col">
         
-        <div class="grid grid-cols-6 gap-2 bg-slate-900/50 p-4 rounded-xl border border-white/5">
-            <button v-for="icon in iconLibrary" :key="icon" @click="routine.icon = icon" :class="routine.icon === icon ? 'text-blue-500 bg-blue-500/10' : 'text-slate-600'" class="p-2 rounded-lg flex justify-center hover:bg-white/5 transition-all">
-                <i :data-lucide="icon" class="w-5 h-5"></i>
-            </button>
+        <div class="space-y-4">
+            <input v-model="routine.name" placeholder="Protocol Name (e.g. Push Day)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none font-bold transition-all focus:ring-1 focus:ring-blue-500">
+            
+            <div class="grid grid-cols-6 gap-2 bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                <button v-for="icon in iconLibrary" :key="icon" @click="routine.icon = icon" :class="routine.icon === icon ? 'text-blue-500 bg-blue-500/10 ring-1 ring-blue-500/50' : 'text-slate-600 hover:bg-white/5'" class="p-2 rounded-lg flex justify-center transition-all">
+                    <i :data-lucide="icon" class="w-5 h-5"></i>
+                </button>
+            </div>
         </div>
 
-        <div class="space-y-2">
-            <p class="text-[10px] font-bold uppercase text-slate-500 mb-1">Sequence Order</p>
+        <div class="space-y-2 flex-1">
+            <div class="flex justify-between items-end px-1">
+                <p class="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Sequence Order</p>
+                <p v-if="routineExercises.length > 0" class="text-[8px] font-bold text-slate-600 uppercase">Drag to Reorder</p>
+            </div>
             
-            <div v-if="routineExercises.length === 0" class="text-center py-8 text-slate-600 text-xs italic border border-dashed border-slate-800 rounded-xl">Sequence is empty. Add exercises below.</div>
+            <div v-if="routineExercises.length === 0" class="text-center py-12 text-slate-600 text-xs italic border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center gap-2">
+                <i data-lucide="layers" class="w-6 h-6 opacity-50"></i>
+                <span>Sequence is empty. Add exercises below.</span>
+            </div>
             
-            <div ref="sortableList" class="space-y-2">
-                <div v-for="(item, idx) in routineExercises" :key="item.uniqueKey" :data-key="item.uniqueKey" class="flex items-center gap-2 bg-slate-950/50 p-3 rounded-xl border border-white/5 relative group">
-                    <div class="drag-handle text-slate-600 hover:text-white"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div>
+            <div ref="sortableList" class="space-y-2 min-h-[50px]">
+                <div v-for="(item, idx) in routineExercises" :key="item.uniqueKey" :data-key="item.uniqueKey" class="flex items-center gap-3 bg-slate-950/50 p-3 rounded-2xl border border-white/5 relative group transition-colors hover:border-white/10">
+                    
+                    <div class="drag-handle hover:text-white" title="Drag to reorder">
+                        <i data-lucide="grip-vertical" class="w-5 h-5"></i>
+                    </div>
+                    
                     <div class="flex-1">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] font-mono text-slate-600">0{{idx+1}}</span>
-                            <span class="text-xs font-bold text-slate-200">{{ getExerciseName(item.id) }}</span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-[10px] font-mono text-slate-600 w-4">0{{idx+1}}</span>
+                            <div class="flex items-center gap-2">
+                                <i :data-lucide="getExerciseIcon(item.id)" class="w-4 h-4 text-slate-500"></i>
+                                <span class="text-xs font-bold text-slate-200">{{ getExerciseName(item.id) }}</span>
+                            </div>
                         </div>
-                        <div v-if="isSuperset(idx)" class="flex items-center gap-1 mt-1 text-[8px] text-blue-400 font-bold uppercase tracking-wider">
-                            <i data-lucide="link" class="w-3 h-3"></i> Linked to Above
+                        <div v-if="isSuperset(idx)" class="flex items-center gap-1 mt-1.5 ml-7 text-[8px] text-blue-400 font-black uppercase tracking-wider animate-pulse">
+                            <i data-lucide="link" class="w-3 h-3"></i> Linked to Previous
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button v-if="idx > 0" @click="toggleSuperset(idx)" class="p-2 rounded-lg transition-colors" :class="isSuperset(idx) ? 'text-blue-500 bg-blue-500/10' : 'text-slate-600 hover:text-white'">
-                            <i data-lucide="link" class="w-3 h-3"></i>
+
+                    <div class="flex items-center gap-1">
+                        <button v-if="idx > 0" @click="toggleSuperset(idx)" class="p-2 rounded-xl transition-all active:scale-90" :class="isSuperset(idx) ? 'text-blue-500 bg-blue-500/10 ring-1 ring-blue-500/30' : 'text-slate-600 hover:text-blue-400 hover:bg-slate-800'">
+                            <i data-lucide="link" class="w-4 h-4"></i>
                         </button>
-                        <button @click="removeExercise(idx)" class="p-2 text-slate-600 hover:text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        <button @click="removeExercise(idx)" class="p-2 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all active:scale-90">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="space-y-2 mt-6">
-            <div class="flex justify-between items-center">
-                <p class="text-[10px] font-bold uppercase text-slate-500">Library</p>
-                <button @click="showLibrary = !showLibrary" class="text-[10px] font-black uppercase text-blue-500 flex items-center gap-1">{{ showLibrary ? 'Hide' : 'Show' }} Library</button>
+        <div class="bg-slate-900/50 p-4 rounded-2xl border border-white/5 space-y-4">
+            <div class="flex justify-between items-center cursor-pointer" @click="showLibrary = !showLibrary">
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-lg shadow-blue-900/20">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                    </div>
+                    <span class="text-xs font-black uppercase text-white tracking-wide">Add Movement</span>
+                </div>
+                <i :data-lucide="showLibrary ? 'chevron-up' : 'chevron-down'" class="w-4 h-4 text-slate-500"></i>
             </div>
             
             <transition name="slide-down">
-                <div v-if="showLibrary" class="space-y-3">
-                    <input type="text" v-model="search" placeholder="Filter library..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none">
-                    <div class="space-y-2 max-h-60 overflow-y-auto">
-                        <button v-for="ex in filteredLibrary" :key="ex.id" @click="addExercise(ex.id)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-900/50 flex justify-between items-center active:scale-95 transition-transform text-left group">
+                <div v-if="showLibrary" class="space-y-3 pt-2">
+                    <input type="text" v-model="search" placeholder="Filter library..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-blue-500 transition-colors">
+                    <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                        <button v-for="ex in filteredLibrary" :key="ex.id" @click="addExercise(ex.id)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-950/30 flex justify-between items-center active:scale-95 transition-all text-left group hover:border-blue-500/30 hover:bg-blue-500/5">
                             <div class="flex items-center gap-3">
-                                <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4 text-slate-500"></i>
+                                <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4 text-slate-500 group-hover:text-blue-500 transition-colors"></i>
                                 <div>
                                     <div class="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{{ ex.name }}</div>
-                                    <div class="text-[9px] text-slate-500 uppercase">{{ ex.muscle_group }}</div>
+                                    <div class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">{{ ex.muscle_group }}</div>
                                 </div>
                             </div>
-                            <i data-lucide="plus" class="w-4 h-4 text-green-500"></i>
+                            <i data-lucide="plus-circle" class="w-4 h-4 text-slate-600 group-hover:text-blue-500 transition-colors"></i>
                         </button>
                     </div>
                 </div>
             </transition>
         </div>
 
-        <button @click="saveRoutine" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all mt-6">
-            {{ routine.id ? 'Update Protocol' : 'Save Protocol' }}
-        </button>
-        <button v-if="routine.id" @click="deleteRoutine" class="w-full bg-slate-900 border border-red-900/30 text-red-500 py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all mt-2">
-            Delete Protocol
-        </button>
+        <div class="pt-4 space-y-3">
+            <button @click="saveRoutine" class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-2xl font-black text-sm uppercase shadow-xl shadow-blue-900/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                {{ routine.id ? 'Update Protocol' : 'Save Protocol' }}
+            </button>
+            <button v-if="routine.id" @click="deleteRoutine" class="w-full bg-slate-900 border border-red-900/30 text-red-500 hover:bg-red-950/30 py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                Delete Protocol
+            </button>
+        </div>
     </div>
 
-    <div v-if="activeTab === 'exercise'" class="space-y-4 flex-1">
+    <div v-if="activeTab === 'exercise'" class="space-y-6 flex-1 overflow-y-auto pb-32">
         <div class="flex justify-between items-center">
-            <h3 class="text-sm font-black italic uppercase text-white">{{ exerciseForm.id ? 'Edit Exercise' : 'New Exercise' }}</h3>
-            <button v-if="exerciseForm.id" @click="clearExerciseForm" class="text-[10px] font-bold uppercase text-slate-500">Cancel Edit</button>
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" :class="exerciseForm.id ? 'bg-orange-500/20 text-orange-500' : 'bg-green-500/20 text-green-500'">
+                    <i :data-lucide="exerciseForm.id ? 'pencil' : 'plus'" class="w-4 h-4"></i>
+                </div>
+                <h3 class="text-sm font-black italic uppercase text-white">{{ exerciseForm.id ? 'Edit Exercise' : 'New Exercise' }}</h3>
+            </div>
+            <button v-if="exerciseForm.id" @click="clearExerciseForm" class="text-[10px] font-bold uppercase text-slate-500 bg-slate-900 border border-white/10 px-3 py-1.5 rounded-lg hover:text-white transition-colors">Cancel Edit</button>
         </div>
 
-        <input v-model="exerciseForm.name" placeholder="Exercise Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none font-bold">
+        <div class="space-y-4">
+            <div class="space-y-1">
+                <label class="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Name</label>
+                <input v-model="exerciseForm.name" placeholder="e.g. Incline Bench Press" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none font-bold transition-all">
+            </div>
+            
+            <div class="space-y-1">
+                <label class="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Primary Muscle</label>
+                <div class="relative">
+                    <select v-model="exerciseForm.group" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white outline-none appearance-none font-bold transition-all focus:border-blue-500">
+                        <option value="" disabled>Select Target...</option>
+                        <option v-for="m in muscleGroups" :key="m" :value="m">{{ m }}</option>
+                    </select>
+                    <i data-lucide="chevron-down" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none"></i>
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Weight Logic</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <button @click="exerciseForm.weight_type = 'combined'" class="p-4 rounded-xl border transition-all text-left relative overflow-hidden group" :class="exerciseForm.weight_type === 'combined' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-slate-900'">
+                        <div class="relative z-10">
+                            <span class="block text-[10px] font-black uppercase mb-1" :class="exerciseForm.weight_type === 'combined' ? 'text-blue-400' : 'text-slate-400'">Standard</span>
+                            <span class="block text-xs font-bold text-white">Barbell / Machine</span>
+                        </div>
+                    </button>
+                    <button @click="exerciseForm.weight_type = 'per_side'" class="p-4 rounded-xl border transition-all text-left relative overflow-hidden group" :class="exerciseForm.weight_type === 'per_side' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-slate-900'">
+                        <div class="relative z-10">
+                            <span class="block text-[10px] font-black uppercase mb-1" :class="exerciseForm.weight_type === 'per_side' ? 'text-blue-400' : 'text-slate-400'">Unilateral</span>
+                            <span class="block text-xs font-bold text-white">Dumbbell / Cable</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Visual Icon</label>
+                <div class="grid grid-cols-6 gap-2 bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                    <button v-for="icon in iconLibrary" :key="icon" @click="exerciseForm.icon = icon" :class="exerciseForm.icon === icon ? 'text-blue-500 bg-blue-500/10 ring-1 ring-blue-500/50' : 'text-slate-600 hover:bg-white/5'" class="p-2 rounded-lg flex justify-center transition-all">
+                        <i :data-lucide="icon" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
         
-        <div class="space-y-2">
-            <label class="text-[10px] font-bold uppercase text-slate-500">Target Muscle</label>
-            <select v-model="exerciseForm.group" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white outline-none appearance-none">
-                <option value="" disabled>Select Primary Muscle</option>
-                <option v-for="m in muscleGroups" :key="m" :value="m">{{ m }}</option>
-            </select>
-        </div>
-
-        <div class="flex gap-2">
-            <button @click="exerciseForm.weight_type = 'combined'" class="flex-1 p-4 rounded-xl border transition-all text-left" :class="exerciseForm.weight_type === 'combined' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-slate-900'">
-                <span class="block text-[10px] font-black uppercase text-slate-400 mb-1">Standard</span>
-                <span class="block text-xs font-bold text-white">Barbell / Machine</span>
-            </button>
-            <button @click="exerciseForm.weight_type = 'per_side'" class="flex-1 p-4 rounded-xl border transition-all text-left" :class="exerciseForm.weight_type === 'per_side' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-slate-900'">
-                <span class="block text-[10px] font-black uppercase text-slate-400 mb-1">Unilateral</span>
-                <span class="block text-xs font-bold text-white">Dumbbell / Cable</span>
-            </button>
-        </div>
-
-        <p class="text-[10px] font-bold uppercase text-slate-500 mt-4">Visual Icon</p>
-        <div class="grid grid-cols-6 gap-2 bg-slate-900/50 p-4 rounded-xl border border-white/5">
-            <button v-for="icon in iconLibrary" :key="icon" @click="exerciseForm.icon = icon" :class="exerciseForm.icon === icon ? 'text-blue-500 bg-blue-500/10' : 'text-slate-600'" class="p-2 rounded-lg flex justify-center hover:bg-white/5 transition-all">
-                <i :data-lucide="icon" class="w-5 h-5"></i>
-            </button>
-        </div>
-        
-        <button @click="saveExercise" class="w-full bg-green-600 py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all mt-6">
+        <button @click="saveExercise" class="w-full py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all mt-6 flex items-center justify-center gap-2" :class="exerciseForm.id ? 'bg-orange-600 hover:bg-orange-500 shadow-orange-900/20' : 'bg-green-600 hover:bg-green-500 shadow-green-900/20'">
+            <i :data-lucide="exerciseForm.id ? 'save' : 'plus-circle'" class="w-4 h-4"></i>
             {{ exerciseForm.id ? 'Update Exercise' : 'Add to Library' }}
         </button>
         
         <div class="mt-8 border-t border-white/10 pt-6">
-            <p class="text-[10px] font-bold uppercase text-slate-500 mb-3">Manage Library</p>
-            <input type="text" v-model="search" placeholder="Search to edit..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none mb-3">
+            <p class="text-[10px] font-black uppercase text-slate-500 mb-4 tracking-widest">Edit Existing Movements</p>
+            <input type="text" v-model="search" placeholder="Search library to edit..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none mb-3 focus:border-slate-600 transition-colors">
             <div class="space-y-2">
-                <button v-for="ex in filteredLibrary" :key="ex.id" @click="editExercise(ex)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-900/50 flex justify-between items-center active:scale-95 transition-transform text-left group hover:border-blue-500/30">
+                <button v-for="ex in filteredLibrary" :key="ex.id" @click="editExercise(ex)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-900/50 flex justify-between items-center active:scale-95 transition-transform text-left group hover:border-blue-500/30 hover:bg-blue-500/5">
                     <div class="flex items-center gap-3">
-                        <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4 text-slate-500 group-hover:text-blue-500"></i>
-                        <div class="text-xs font-bold text-white">{{ ex.name }}</div>
+                        <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 group-hover:text-blue-400 transition-colors">
+                            <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4"></i>
+                        </div>
+                        <div class="text-xs font-bold text-white group-hover:text-blue-200 transition-colors">{{ ex.name }}</div>
                     </div>
                     <i data-lucide="pencil" class="w-3 h-3 text-slate-600 group-hover:text-white"></i>
                 </button>
@@ -182,31 +258,50 @@
 
 <script>
     const { createApp } = Vue;
-    const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
+    // --- SUPABASE CLIENT ---
+    const _client = supabase.createClient(
+        'https://mvoyrchefjcpjkdtezmz.supabase.co', 
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
+    );
     
+    // --- CONSTANTS ---
     const ICONS = ['dumbbell', 'biceps-flexed', 'weight', 'disc', 'anchor', 'sword', 'shield', 'arrow-up-circle', 'arrow-down-circle', 'move', 'layers', 'columns-2', 'footprints', 'bike', 'waves', 'zap', 'activity', 'trophy'];
     const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Cardio'];
 
     createApp({
         data() {
             return {
+                loading: true,
+                loadingText: 'Initializing Builder...',
                 session: null,
-                activeTab: 'routine',
+                activeTab: 'routine', // 'routine' or 'exercise'
                 showLibrary: false,
                 search: '',
                 toast: { visible: false, title: '', message: '' },
                 
+                // Data Stores
                 library: [],
                 iconLibrary: ICONS,
                 muscleGroups: MUSCLES,
 
                 // Routine Builder State
                 isEditing: false,
-                routine: { id: null, name: '', icon: 'activity', supersets: [] },
-                routineExercises: [], // { id, uniqueKey }
+                routine: { 
+                    id: null, 
+                    name: '', 
+                    icon: 'activity', 
+                    supersets: [] // Store superset indices here
+                },
+                routineExercises: [], // Stores objects { id: 'uuid', uniqueKey: 'random' } for stable drag-drop
 
                 // Exercise Editor State
-                exerciseForm: { id: null, name: '', group: '', icon: 'dumbbell', weight_type: 'combined' }
+                exerciseForm: { 
+                    id: null, 
+                    name: '', 
+                    group: '', 
+                    icon: 'dumbbell', 
+                    weight_type: 'combined' 
+                }
             }
         },
         computed: {
@@ -218,22 +313,35 @@
         },
         watch: {
             activeTab(val) {
-                if(val === 'routine') this.$nextTick(() => this.initSortable());
+                if(val === 'routine') {
+                    this.$nextTick(() => {
+                        this.initSortable();
+                        lucide.createIcons();
+                    });
+                }
+            },
+            showLibrary(val) {
+                if(val) this.$nextTick(() => lucide.createIcons());
             }
         },
         async mounted() {
-            const { data: { session } } = await _client.auth.getSession();
-            if (!session) { window.location.href = 'index.html'; return; }
+            const { data: { session }, error } = await _client.auth.getSession();
+            if (error || !session) { window.location.href = 'index.html'; return; }
             this.session = session;
             
             await this.fetchLibrary();
             
-            // Check for edit ID in URL
+            // Check URL for Edit Mode
             const urlParams = new URLSearchParams(window.location.search);
             const editId = urlParams.get('edit');
-            if(editId) await this.loadRoutine(editId);
-            else this.$nextTick(() => this.initSortable());
+            if(editId) {
+                this.loadingText = "Loading Protocol...";
+                await this.loadRoutine(editId);
+            } else {
+                this.$nextTick(() => this.initSortable());
+            }
 
+            this.loading = false;
             this.$nextTick(() => lucide.createIcons());
         },
         updated() { this.$nextTick(() => lucide.createIcons()); },
@@ -242,55 +350,79 @@
                 this.toast = { visible: true, title, message };
                 setTimeout(() => this.toast.visible = false, 3000);
             },
+            
             async fetchLibrary() {
                 const { data } = await _client.from('exercises').select('*').order('name');
                 this.library = data || [];
             },
+            
             getExerciseName(id) {
                 const ex = this.library.find(e => e.id === id);
-                return ex ? ex.name : 'Unknown';
+                return ex ? ex.name : 'Unknown Exercise';
+            },
+            getExerciseIcon(id) {
+                const ex = this.library.find(e => e.id === id);
+                return ex ? ex.icon_name : 'dumbbell';
             },
 
-            // --- ROUTINE LOGIC ---
+            // ==========================
+            // ROUTINE BUILDER LOGIC
+            // ==========================
+            
             async loadRoutine(id) {
                 this.isEditing = true;
-                const { data } = await _client.from('routines').select('*').eq('id', id).single();
-                if(data) {
+                const { data, error } = await _client.from('routines').select('*').eq('id', id).single();
+                
+                if (error) {
+                    this.showToast("Error", "Could not load routine.");
+                    return;
+                }
+
+                if (data) {
                     this.routine = { 
                         id: data.id, 
                         name: data.name, 
                         icon: data.icon_name, 
-                        supersets: data.supersets || [] 
+                        // Fix for null supersets if column is new
+                        supersets: (data.supersets && Array.isArray(data.supersets)) ? data.supersets : [] 
                     };
-                    // Convert stored IDs to Stable Objects
+                    
+                    // Convert IDs to Stable Objects for SortableJS
                     this.routineExercises = (data.exercise_order || []).map(eid => ({
                         id: eid,
                         uniqueKey: Math.random().toString(36).substring(2, 15)
                     }));
+                    
                     this.$nextTick(() => this.initSortable());
                 }
             },
             
-            // SortableJS Init
             initSortable() {
                 const el = this.$refs.sortableList;
                 if(!el) return;
-                Sortable.create(el, {
+                
+                // Destroy old instance if exists
+                if(this.sortableInstance) this.sortableInstance.destroy();
+
+                this.sortableInstance = Sortable.create(el, {
                     handle: '.drag-handle',
                     animation: 200,
                     ghostClass: 'sortable-ghost',
                     dragClass: 'sortable-drag',
-                    forceFallback: true,
+                    forceFallback: true, // Crucial for mobile
                     onEnd: (evt) => {
+                        // 1. Move item in the local array
                         const item = this.routineExercises.splice(evt.oldIndex, 1)[0];
                         this.routineExercises.splice(evt.newIndex, 0, item);
                         
-                        // Break superset links if order changes aggressively
+                        // 2. Handle Superset Link Breakage
+                        // If we move an item that was part of a superset, we break the link 
+                        // to avoid logic errors (linking to the wrong neighbor).
                         const ss = this.routine.supersets || [];
-                        if(ss.includes(evt.oldIndex) || ss.includes(evt.newIndex)) {
-                             const sIdx = ss.indexOf(evt.oldIndex);
-                             if (sIdx > -1) ss.splice(sIdx, 1);
-                        }
+                        const affectedIndices = [evt.oldIndex, evt.newIndex];
+                        
+                        // Filter out any links that involved the moved positions
+                        this.routine.supersets = ss.filter(idx => !affectedIndices.includes(idx));
                     }
                 });
             },
@@ -304,57 +436,110 @@
                 this.search = '';
                 this.$nextTick(() => this.initSortable());
             },
+
             removeExercise(idx) {
                 this.routineExercises.splice(idx, 1);
-                // Shift superset indices down
+                // Shift superset indices: if we delete item 2, item 3 becomes 2.
+                // Any link pointing to the deleted index (or above) needs adjustment.
+                // For simplicity/safety, we will remove links around the deleted zone.
                 this.routine.supersets = (this.routine.supersets || []).filter(i => i !== idx).map(i => i > idx ? i - 1 : i);
             },
-            isSuperset(idx) { return (this.routine.supersets || []).includes(idx); },
+
+            isSuperset(idx) {
+                // "Is this item linked to the one above it?"
+                return (this.routine.supersets || []).includes(idx);
+            },
+
             toggleSuperset(idx) {
-                if(!this.routine.supersets) this.routine.supersets = [];
+                if (!this.routine.supersets) this.routine.supersets = [];
                 const ss = this.routine.supersets;
-                if(ss.includes(idx)) ss.splice(ss.indexOf(idx), 1);
-                else ss.push(idx);
+                
+                if (ss.includes(idx)) {
+                    // Unlink
+                    ss.splice(ss.indexOf(idx), 1);
+                } else {
+                    // Link
+                    ss.push(idx);
+                }
             },
 
             async saveRoutine() {
-                if(!this.routine.name) return;
+                if (!this.routine.name) {
+                    this.showToast("Error", "Please name the protocol.");
+                    return;
+                }
+                
+                this.loading = true;
+                this.loadingText = "Saving Protocol...";
+
                 const finalOrder = this.routineExercises.map(e => e.id);
                 
                 const payload = {
                     name: this.routine.name,
                     icon_name: this.routine.icon,
                     exercise_order: finalOrder,
-                    supersets: this.routine.supersets,
+                    supersets: this.routine.supersets || [], // JSONB Array
                     user_id: this.session.user.id
                 };
 
-                if(this.routine.id) {
-                    await _client.from('routines').update(payload).eq('id', this.routine.id);
+                let error = null;
+
+                if (this.routine.id) {
+                    const { error: err } = await _client.from('routines').update(payload).eq('id', this.routine.id);
+                    error = err;
                 } else {
-                    await _client.from('routines').insert([payload]);
+                    const { error: err } = await _client.from('routines').insert([payload]);
+                    error = err;
                 }
-                
-                // Redirect back to Gym
-                window.location.href = 'gym.html';
+
+                this.loading = false;
+
+                if (error) {
+                    console.error(error);
+                    this.showToast("Error", "Save failed. Check console.");
+                } else {
+                    // Success -> Redirect
+                    window.location.href = 'gym.html';
+                }
             },
+
             async deleteRoutine() {
-                if(confirm("Delete protocol?")) {
+                if (confirm("Permanently delete this protocol?")) {
+                    this.loading = true;
                     await _client.from('routines').delete().eq('id', this.routine.id);
                     window.location.href = 'gym.html';
                 }
             },
 
-            // --- EXERCISE LOGIC ---
+            // ==========================
+            // EXERCISE EDITOR LOGIC
+            // ==========================
+            
             editExercise(ex) {
-                this.exerciseForm = { ...ex, icon: ex.icon_name };
+                // Clone data to avoid live editing library list
+                this.exerciseForm = { 
+                    id: ex.id, 
+                    name: ex.name, 
+                    group: ex.muscle_group, 
+                    icon: ex.icon_name, 
+                    weight_type: ex.weight_type 
+                };
                 window.scrollTo(0,0);
             },
+
             clearExerciseForm() {
                 this.exerciseForm = { id: null, name: '', group: '', icon: 'dumbbell', weight_type: 'combined' };
             },
+
             async saveExercise() {
-                if(!this.exerciseForm.name || !this.exerciseForm.group) return;
+                if (!this.exerciseForm.name || !this.exerciseForm.group) {
+                    this.showToast("Error", "Name and Muscle Group required.");
+                    return;
+                }
+
+                this.loading = true;
+                this.loadingText = "Updating Library...";
+
                 const payload = {
                     name: this.exerciseForm.name,
                     muscle_group: this.exerciseForm.group,
@@ -363,16 +548,28 @@
                     user_id: this.session.user.id
                 };
 
-                if(this.exerciseForm.id) {
-                    await _client.from('exercises').update(payload).eq('id', this.exerciseForm.id);
-                    this.showToast("Library Updated", "Exercise modified.");
+                let error = null;
+
+                if (this.exerciseForm.id) {
+                    // Update
+                    const { error: err } = await _client.from('exercises').update(payload).eq('id', this.exerciseForm.id);
+                    error = err;
                 } else {
-                    await _client.from('exercises').insert([payload]);
-                    this.showToast("Library Updated", "Exercise added.");
+                    // Insert
+                    const { error: err } = await _client.from('exercises').insert([payload]);
+                    error = err;
+                }
+
+                if (error) {
+                    console.error(error);
+                    this.showToast("Error", "Could not save exercise.");
+                } else {
+                    this.showToast("Success", this.exerciseForm.id ? "Exercise updated." : "Exercise created.");
+                    this.clearExerciseForm();
+                    await this.fetchLibrary(); // Refresh list
                 }
                 
-                this.clearExerciseForm();
-                await this.fetchLibrary();
+                this.loading = false;
             }
         }
     }).mount('#app');
