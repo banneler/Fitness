@@ -33,19 +33,19 @@
         .custom-checkbox:checked { background-color: #3b82f6; border-color: #3b82f6; }
         .custom-checkbox:checked::before { transform: scale(1); }
 
-        /* Failure Checkbox (Red Skull) - UPDATED */
+        /* Failure Checkbox (Red Skull) */
         .failure-checkbox { 
             appearance: none; 
             width: 1.2rem; 
             height: 1.2rem; 
-            background-color: #334155; /* Slate-700 */
+            background-color: #334155; 
             -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain;
             mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain;
             transition: all 0.2s;
             cursor: pointer;
         }
         .failure-checkbox:checked { 
-            background-color: #ef4444; /* Red-500 */
+            background-color: #ef4444; 
             filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.8)); 
         }
 
@@ -410,16 +410,16 @@
                         <input type="number" 
                                v-model="set.weight" 
                                @input="checkPR(exercise, set.weight)"
-                               class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                               class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600"
                                :class="{'pr-active': set.weight > (exercise.personalRecord || 0), 'input-loading': exercise.loadingHistory}"
-                               placeholder="-">
+                               :placeholder="set.prevWeight || '-'">
                     </div>
                     <div class="col-span-4">
                         <input type="number" 
                                v-model="set.reps" 
-                               class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                               class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600"
                                :class="{'input-loading': exercise.loadingHistory}"
-                               placeholder="-">
+                               :placeholder="set.prevReps || '-'">
                     </div>
                     <div class="col-span-2 flex justify-center"><input type="checkbox" v-model="set.done" class="custom-checkbox"></div>
                     <div class="col-span-1 flex justify-center"><input type="checkbox" v-model="set.failure" class="failure-checkbox"></div>
@@ -460,7 +460,6 @@
 
 <script>
     const { createApp } = Vue;
-    // Client configuration
     const _client = supabase.createClient(
         'https://mvoyrchefjcpjkdtezmz.supabase.co', 
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
@@ -796,14 +795,12 @@
                 this.view = 'active_session';
                 this.activeExerciseIdx = 0; 
 
-                // FIX: Force scroll to top
                 this.$nextTick(() => {
                     window.scrollTo(0,0);
                     const container = document.getElementById('session-container');
                     if(container) container.scrollTop = 0;
                 });
                 
-                // Initialize exercises with loading state
                 const sessionExercises = (routine.exercise_order || []).map(id => {
                     const exDef = this.libraryExercises.find(e => e.id === id);
                     const pr = exDef ? (this.personalRecords[exDef.name] || 0) : 0;
@@ -813,8 +810,9 @@
                         icon: exDef ? exDef.icon_name : 'dumbbell', 
                         personalRecord: pr, 
                         isPR: false, 
-                        loadingHistory: true, // Start in loading state
-                        sets: [{weight:0, reps:0, done:false, failure:false}, {weight:0, reps:0, done:false, failure:false}, {weight:0, reps:0, done:false, failure:false}] 
+                        loadingHistory: true, 
+                        // Initializes with empty values; ghost data comes later
+                        sets: [{weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}] 
                     };
                 });
                 
@@ -827,7 +825,6 @@
                     this.sessionTimer = Math.floor(delta / 1000);
                 }, 1000);
 
-                // Asynchronous History Fetch
                 for (let ex of this.activeRoutine.data) {
                     const { data: lastLog } = await _client.from('workout_logs')
                         .select('sets_data')
@@ -837,17 +834,19 @@
                         .single();
 
                     if(lastLog && lastLog.sets_data && lastLog.sets_data.length > 0) {
+                        // Map previous sets to placeholder props, keep model empty
                         ex.sets = lastLog.sets_data.map(s => ({
-                            weight: s.weight,
-                            reps: s.reps, 
+                            weight: '', // Empty for user entry
+                            prevWeight: s.weight, // Ghost value
+                            reps: '', // Empty for user entry
+                            prevReps: s.reps, // Ghost value
                             done: false,
                             failure: false 
                         }));
                         while(ex.sets.length < 3) {
-                            ex.sets.push({ weight: ex.sets[ex.sets.length-1]?.weight || 0, reps: 0, done: false, failure: false });
+                            ex.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
                         }
                     }
-                    // Remove loading state once data (or lack thereof) is processed
                     ex.loadingHistory = false;
                 }
             },
@@ -858,7 +857,7 @@
             },
             addSet(exIndex) { 
                 const prev = this.activeRoutine.data[exIndex].sets.slice(-1)[0]; 
-                this.activeRoutine.data[exIndex].sets.push({ weight: prev?.weight||0, reps: prev?.reps||0, done: false, failure: false }); 
+                this.activeRoutine.data[exIndex].sets.push({ weight: '', prevWeight: prev?.prevWeight||'', reps: '', prevReps: prev?.prevReps||'', done: false, failure: false }); 
             },
             toggleRestTimer() { 
                 this.restTimerRunning = !this.restTimerRunning; 
