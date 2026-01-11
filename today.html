@@ -245,6 +245,12 @@
                     this.totalVolume = vol;
                 }
             },
+            async handleLogout() {
+    if(confirm("Log out of Constellation?")) {
+        await _client.auth.signOut();
+        window.location.href = 'index.html';
+    }
+},
             async saveMetrics() {
                 const payload = {
                     user_id: this.session.user.id,
