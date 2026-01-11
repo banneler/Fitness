@@ -97,26 +97,6 @@
                     </div>
                 </section>
 
-                <section class="glass p-6 rounded-[2.5rem] shadow-xl">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex items-center gap-2 opacity-60">
-                            <i data-lucide="target" class="w-4 h-4 text-green-400"></i>
-                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Neural Memory</h3>
-                        </div>
-                        <button @click="showTargetModal = true" class="text-[8px] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white transition-colors">Sync Goals</button>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein</span>
-                            <span class="text-xl font-black italic">{{ targets.protein }}g</span>
-                        </div>
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calories</span>
-                            <span class="text-xl font-black italic">{{ targets.cals }}</span>
-                        </div>
-                    </div>
-                </section>
-
                 <section class="glass p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
                     <div class="flex justify-between items-end mb-6">
                         <div class="flex items-center gap-2 opacity-60">
@@ -129,9 +109,9 @@
                         </div>
                     </div>
                     <div class="h-44 w-full relative">
-                        <div v-if="targets.protein > 0" class="absolute w-full border-t border-blue-500/50 border-dashed z-10 pointer-events-none" 
+                        <div class="absolute w-full border-t border-blue-500/50 border-dashed z-10 pointer-events-none" 
                              :style="{ bottom: calculateProteinLineY }">
-                             <span class="absolute right-0 -top-3 text-[6px] font-black text-blue-500/80 uppercase bg-[#020617] px-1">Goal: {{targets.protein}}g</span>
+                             <span class="absolute right-0 -top-3 text-[6px] font-black text-blue-500/80 uppercase bg-[#020617] px-1">Target: {{targets.protein}}g</span>
                         </div>
                         
                         <svg class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
@@ -146,7 +126,7 @@
                 </section>
 
                 <section class="glass p-6 rounded-[2.5rem] shadow-xl space-y-6">
-                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Structural Growth Vectors</h3>
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Growth Vectors</h3>
                     <div v-for="metric in ['waist', 'chest', 'arms', 'thigh']" :key="metric" class="space-y-2">
                         <div class="flex justify-between items-end px-1">
                             <span class="text-xs font-black uppercase italic">{{ metric }}</span>
@@ -169,6 +149,26 @@
                         </div>
                     </div>
                     <button @click="saveBodyMetrics" class="w-full py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase shadow-lg active:scale-95 transition-all">Submit to Registry</button>
+                </section>
+
+                <section class="glass p-6 rounded-[2.5rem] shadow-xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-2 opacity-60">
+                            <i data-lucide="target" class="w-4 h-4 text-green-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Neural Targets</h3>
+                        </div>
+                        <button @click="showTargetModal = true" class="text-[8px] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white transition-colors">Sync Goals</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein</span>
+                            <span class="text-xl font-black italic">{{ targets.protein }}g</span>
+                        </div>
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calories</span>
+                            <span class="text-xl font-black italic">{{ targets.cals }}</span>
+                        </div>
+                    </div>
                 </section>
             </div>
 
@@ -276,12 +276,22 @@
             currentWeight() { 
                 return this.weightHistory.length ? this.weightHistory[this.weightHistory.length-1].weight : '--'; 
             },
+            globalMaxMacros() {
+                const totals = [];
+                for(let i=6; i>=0; i--) {
+                    const d = new Date(); d.setDate(d.getDate() - i);
+                    const ds = d.toISOString().split('T')[0];
+                    const logs = this.weeklyLogs.filter(l => l.created_at.startsWith(ds));
+                    totals.push(logs.reduce((sum, l) => sum + (l.protein || 0) + (l.carbs || 0) + (l.fat || 0), 0));
+                }
+                return Math.max(...totals, 450); // Set baseline to 450 for better scaling
+            },
             calculateProteinLineY() {
-                // Goal: Map protein target to SVG coordinate. 
-                // SVG height is 150. Scaling used in chart is: 140 / Math.max(total, 400).
-                // Let's use a standard 0.35 multiplier for coordinates (matches bar scaling roughly)
-                const yPos = 150 - (this.targets.protein * 0.35);
-                return yPos + 'px';
+                // SVG coordinates are 0 at top, 150 at bottom.
+                // We scale based on 140px usable height.
+                const scale = 140 / this.globalMaxMacros;
+                const h = this.targets.protein * scale;
+                return (150 - h) + 'px';
             },
             activityMatrix() {
                 const days = [];
@@ -289,6 +299,7 @@
                 for(let i=29; i>=0; i--) {
                     const d = new Date(); d.setDate(now.getDate() - i);
                     const ds = d.toISOString().split('T')[0];
+                    // Find any workout completed on this day
                     const workout = this.rawWorkouts.find(w => w.created_at.startsWith(ds));
                     days.push({
                         date: ds,
@@ -302,7 +313,7 @@
             recentWorkouts() {
                 const sessions = [];
                 let currentSession = null;
-                // Group individual logs into 1-hour sessions
+                // Group individual exercise logs into sessions if within 1 hour
                 [...this.rawWorkouts].forEach(log => {
                     const logTime = new Date(log.created_at).getTime();
                     const tonnage = (log.sets_data || []).reduce((acc, s) => acc + (parseFloat(s.weight || 0) * parseInt(s.reps || 0)), 0);
@@ -311,7 +322,7 @@
                     if(!currentSession || Math.abs(currentSession.startTime - logTime) > 3600000) {
                         currentSession = { 
                             id: log.id, protocol_name: log.protocol_name || 'Training Session', 
-                            startTime: logTime, date: new Date(log.created_at).toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'}), 
+                            startTime: logTime, date: new Date(log.created_at).toLocaleDateString(), 
                             setCount: 0, tonnage: 0, tul: 0, exercises: new Set() 
                         };
                         sessions.push(currentSession);
@@ -325,7 +336,7 @@
             },
             weeklyMacrosFull() {
                 const days = [];
-                const maxH = 140;
+                const scale = 140 / this.globalMaxMacros;
                 for(let i=6; i>=0; i--) {
                     const d = new Date(); d.setDate(d.getDate() - i);
                     const ds = d.toISOString().split('T')[0];
@@ -333,8 +344,6 @@
                     const p = logs.reduce((sum, l) => sum + (l.protein || 0), 0);
                     const c = logs.reduce((sum, l) => sum + (l.carbs || 0), 0);
                     const f = logs.reduce((sum, l) => sum + (l.fat || 0), 0);
-                    const total = p + c + f || 1;
-                    const scale = maxH / Math.max(total, 400); 
                     days.push({
                         label: d.toLocaleDateString('en-US', {weekday:'narrow'}),
                         p: p * scale, c: c * scale, f: f * scale,
@@ -358,7 +367,7 @@
                 this.fetchBodyHistory()
             ]);
 
-            // Auto-populate measurement inputs with latest archived values
+            // AUTO-POPULATE: Measurements from latest registry entry
             if (this.bodyHistory.length) {
                 const last = this.bodyHistory[this.bodyHistory.length - 1];
                 this.bodyMetrics = { waist: last.waist, chest: last.chest, arms: last.arms, thigh: last.thigh };
@@ -388,7 +397,7 @@
                 this.bodyHistory = data || [];
             },
             getLatestMetric(m) { 
-                const valid = this.bodyHistory.filter(h => h[m]);
+                const valid = this.bodyHistory.filter(h => h[m] !== null);
                 return valid.length ? valid[valid.length-1][m] : '--'; 
             },
             getMetricPath(m) {
@@ -408,7 +417,7 @@
                     arms: parseFloat(this.bodyMetrics.arms),
                     thigh: parseFloat(this.bodyMetrics.thigh)
                 }]);
-                if(!error) { await this.fetchBodyHistory(); }
+                if(!error) { await this.fetchBodyHistory(); alert("Biometrics Registry Updated."); }
             },
             async fetchWeight() {
                 const { data } = await _client.from('daily_metrics').select('*').order('created_at', { ascending: true }).limit(30);
@@ -426,8 +435,7 @@
                 this.lastPoint = points[points.length-1];
             },
             async fetchWeeklyLogs() {
-                const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-                const { data } = await _client.from('food_logs').select('*').gte('created_at', sevenDaysAgo);
+                const { data } = await _client.from('food_logs').select('*').gte('created_at', new Date(Date.now() - 7*86400000).toISOString().split('T')[0]);
                 this.weeklyLogs = data || [];
             },
             async fetchWorkouts() {
