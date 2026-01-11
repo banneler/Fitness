@@ -309,9 +309,26 @@
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
     );
 
+    // EXPANDED BODY PART ICONS
     const ICONS = [
-        'dumbbell', 'biceps-flexed', 'arrow-up-circle', 'arrow-down-circle', 'move', 'footprints', 
-        'anchor', 'activity', 'zap', 'heart', 'bike', 'waves', 'trophy', 'target', 'timer', 'hammer'
+        'dumbbell',       // General
+        'biceps-flexed',  // Arms
+        'weight',         // Heavy/Kettlebell
+        'disc',           // Plates
+        'anchor',         // Back/Deadlifts
+        'sword',          // Triceps/Precision
+        'shield',         // Core/Chest
+        'arrow-up-circle',// Shoulders
+        'arrow-down-circle',// Lats
+        'move',           // Legs
+        'layers',         // Machines/Stacks
+        'columns-2',      // Legs (Pillars)
+        'footprints',     // Cardio
+        'bike',           // Cycling
+        'waves',          // Swim
+        'zap',            // HIIT
+        'activity',       // General Cardio
+        'trophy'          // PRs
     ];
 
     createApp({
@@ -329,7 +346,8 @@
                 schedule: [],
                 recentSessions: [],
                 iconLibrary: ICONS,
-                
+                daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+
                 // Modals
                 scheduleModal: null, 
                 previewModal: null,
@@ -407,7 +425,6 @@
                         currentSession = {
                             id: log.id,
                             startTime: logTime,
-                            // FIX: Use new protocol_name column, fallback if null
                             name: log.protocol_name || (log.exercise_name.includes('Recovery') ? 'Recovery Session' : 'Training Session'), 
                             date: new Date(log.created_at).toLocaleDateString(),
                             volume: 1
@@ -549,7 +566,7 @@
                 const logs = this.activeRoutine.data.map(ex => ({
                     user_id: this.session.user.id,
                     exercise_name: ex.name,
-                    protocol_name: this.activeRoutine.name, // FIX: Save protocol name here!
+                    protocol_name: this.activeRoutine.name, 
                     sets_data: ex.sets.filter(s => s.done || s.weight > 0),
                     created_at: timestamp
                 })).filter(l => l.sets_data.length > 0);
