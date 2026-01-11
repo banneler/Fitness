@@ -124,6 +124,20 @@
         </div>
     </transition>
 
+    <transition name="modal">
+        <div v-if="deleteFuelModal" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
+            <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="deleteFuelModal = null"></div>
+            <div class="glass w-full max-w-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl">
+                <h2 class="text-xl font-black italic uppercase text-white mb-2 text-center">Expunge Fuel</h2>
+                <p class="text-xs text-slate-500 font-bold text-center mb-8 uppercase tracking-widest leading-relaxed">Remove <span class="text-red-500">{{ deleteFuelModal.food_name }}</span> from ledger?</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button @click="deleteFuelModal = null" class="py-4 rounded-2xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">Cancel</button>
+                    <button @click="confirmDeleteLog" class="py-4 rounded-2xl bg-red-600 text-white font-black text-xs uppercase shadow-lg shadow-red-900/20 active:scale-95 transition-all">Expunge</button>
+                </div>
+            </div>
+        </div>
+    </transition>
+
     <header class="flex justify-between items-center mb-8">
         <div>
             <h1 class="text-3xl font-black italic text-green-500 uppercase">Kitchen</h1>
@@ -280,7 +294,7 @@
                             {{ log.calories }} CAL • {{ log.protein }} PRO • {{ log.carbs }} CHO
                         </div>
                     </div>
-                    <button @click="deleteLog(log.id)" class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-slate-600 hover:text-red-500 active:scale-90 transition-all">
+                    <button @click="openDeleteFuelModal(log)" class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-slate-600 hover:text-red-500 active:scale-90 transition-all">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -309,6 +323,7 @@
                 logoutModal: false,
                 showAddSuppModal: false,
                 deleteSuppModal: null,
+                deleteFuelModal: null, // NEW
                 session: null, 
                 foodSearch: '', 
                 foodEntry: { cals: 0, protein: 0, carbs: 0, fat: 0 }, 
@@ -432,11 +447,14 @@
                     await Promise.all([this.fetchDailyLogs(), this.fetchRecentFoods()]);
                 }
             },
-            async deleteLog(id) {
-                if(confirm("Expunge entry?")) {
-                    await _client.from('food_logs').delete().eq('id', id);
-                    await this.fetchDailyLogs(); 
-                }
+            openDeleteFuelModal(log) {
+                this.deleteFuelModal = log;
+            },
+            async confirmDeleteLog() {
+                if(!this.deleteFuelModal) return;
+                await _client.from('food_logs').delete().eq('id', this.deleteFuelModal.id);
+                this.deleteFuelModal = null;
+                await this.fetchDailyLogs();
             },
             async saveNewSupplement() {
                 if (!this.newSupp.name || !this.newSupp.servings) return;
