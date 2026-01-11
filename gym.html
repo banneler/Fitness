@@ -33,9 +33,21 @@
         .custom-checkbox:checked { background-color: #3b82f6; border-color: #3b82f6; }
         .custom-checkbox:checked::before { transform: scale(1); }
 
-        /* Failure Checkbox (Red Skull) */
-        .failure-checkbox { appearance: none; width: 1.2rem; height: 1.2rem; display: flex; align-items: center; justify-content: center; opacity: 0.3; transition: all 0.2s; }
-        .failure-checkbox:checked { opacity: 1; color: #ef4444; filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)); }
+        /* Failure Checkbox (Red Skull) - UPDATED */
+        .failure-checkbox { 
+            appearance: none; 
+            width: 1.2rem; 
+            height: 1.2rem; 
+            background-color: #334155; /* Slate-700 */
+            -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain;
+            mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .failure-checkbox:checked { 
+            background-color: #ef4444; /* Red-500 */
+            filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.8)); 
+        }
 
         .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
@@ -50,6 +62,17 @@
             box-shadow: 0 0 15px rgba(234, 179, 8, 0.2);
             color: #eab308 !important;
             background: rgba(234, 179, 8, 0.05);
+        }
+
+        /* LOADING HISTORY STATE */
+        .input-loading {
+            border-color: #a855f7 !important; /* Purple-500 */
+            background-color: rgba(168, 85, 247, 0.1) !important;
+            animation: pulse-purple 1.5s infinite;
+        }
+        @keyframes pulse-purple {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
         }
 
         /* Focus Mode Styles */
@@ -354,6 +377,7 @@
         </div>
 
         <div class="flex-1 space-y-6 mb-24 overflow-y-auto" id="session-container">
+            
             <div v-for="(exercise, exIndex) in activeRoutine.data" 
                  :key="exIndex" 
                  @click="activeExerciseIdx = exIndex"
@@ -387,10 +411,16 @@
                                v-model="set.weight" 
                                @input="checkPR(exercise, set.weight)"
                                class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                               :class="{'pr-active': set.weight > (exercise.personalRecord || 0)}"
+                               :class="{'pr-active': set.weight > (exercise.personalRecord || 0), 'input-loading': exercise.loadingHistory}"
                                placeholder="-">
                     </div>
-                    <div class="col-span-4"><input type="number" v-model="set.reps" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none" placeholder="-"></div>
+                    <div class="col-span-4">
+                        <input type="number" 
+                               v-model="set.reps" 
+                               class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                               :class="{'input-loading': exercise.loadingHistory}"
+                               placeholder="-">
+                    </div>
                     <div class="col-span-2 flex justify-center"><input type="checkbox" v-model="set.done" class="custom-checkbox"></div>
                     <div class="col-span-1 flex justify-center"><input type="checkbox" v-model="set.failure" class="failure-checkbox"></div>
                 </div>
@@ -430,7 +460,7 @@
 
 <script>
     const { createApp } = Vue;
-    // Client configuration - make sure this matches your project
+    // Client configuration
     const _client = supabase.createClient(
         'https://mvoyrchefjcpjkdtezmz.supabase.co', 
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
@@ -448,7 +478,7 @@
                 builderTab: 'routine',
                 toast: { visible: false, title: '', message: '' },
                 logoutModal: false,
-                finishModal: false, // Phase 3.15
+                finishModal: false,
                 
                 // Data
                 routines: [], 
@@ -480,10 +510,10 @@
 
                 // Active Session
                 activeRoutine: { name: '', data: [] },
-                activeExerciseIdx: 0, // Phase 3.14
+                activeExerciseIdx: 0,
                 stackTaken: false,
                 sessionTimer: 0, 
-                sessionStartTime: null, // Phase 1.4: Date.now()
+                sessionStartTime: null,
                 sessionInterval: null,
                 restTimer: 0, 
                 restTimerRunning: false, 
@@ -512,8 +542,6 @@
             }
         },
         async mounted() {
-            // Phase 1.5: Protocol Race Condition Fix
-            // Ensure session is loaded before firing fetches
             const { data: { session }, error } = await _client.auth.getSession();
             if (error || !session) { 
                 window.location.href = 'index.html'; 
@@ -561,14 +589,12 @@
                 this.schedule = data || []; 
             },
             async fetchHistory() {
-                // Fetch recent logs
                 const { data: rawData } = await _client.from('workout_logs')
                     .select('*')
                     .order('created_at', { ascending: false })
                     .limit(300);
                 this.rawLogs = rawData || [];
 
-                // Calculate Personal Records locally (simple max logic)
                 this.rawLogs.forEach(log => {
                     if(log.sets_data) {
                         log.sets_data.forEach(s => {
@@ -585,7 +611,6 @@
                     return; 
                 }
                 
-                // Group logs into "Sessions"
                 const sessions = []; 
                 let currentSession = null;
                 
@@ -666,7 +691,6 @@
                     }
                 } catch (e) {
                     console.error(e);
-                    // Fallback
                     setTimeout(async () => {
                         const fillerExercises = this.libraryExercises.slice(0, 3).map(e => e.id);
                         if(fillerExercises.length) {
@@ -767,13 +791,19 @@
                 this.previewModal = { ...routine, exercises: routine.exercise_order || [] }; 
             },
 
-            // PHASE 2.9: Smart History Pre-population
             async startActiveSession(routine) {
                 this.previewModal = null; 
                 this.view = 'active_session';
-                this.activeExerciseIdx = 0; // Phase 3.14
+                this.activeExerciseIdx = 0; 
+
+                // FIX: Force scroll to top
+                this.$nextTick(() => {
+                    window.scrollTo(0,0);
+                    const container = document.getElementById('session-container');
+                    if(container) container.scrollTop = 0;
+                });
                 
-                // Construct exercise list wrapper
+                // Initialize exercises with loading state
                 const sessionExercises = (routine.exercise_order || []).map(id => {
                     const exDef = this.libraryExercises.find(e => e.id === id);
                     const pr = exDef ? (this.personalRecords[exDef.name] || 0) : 0;
@@ -783,14 +813,13 @@
                         icon: exDef ? exDef.icon_name : 'dumbbell', 
                         personalRecord: pr, 
                         isPR: false, 
-                        // Start with empty sets, will fill async
+                        loadingHistory: true, // Start in loading state
                         sets: [{weight:0, reps:0, done:false, failure:false}, {weight:0, reps:0, done:false, failure:false}, {weight:0, reps:0, done:false, failure:false}] 
                     };
                 });
                 
                 this.activeRoutine = { name: routine.name, data: sessionExercises };
 
-                // PHASE 1.4: Accurate Timer Logic
                 this.sessionTimer = 0;
                 this.sessionStartTime = Date.now();
                 this.sessionInterval = setInterval(() => { 
@@ -798,7 +827,7 @@
                     this.sessionTimer = Math.floor(delta / 1000);
                 }, 1000);
 
-                // Fetch Last Session Data for each exercise
+                // Asynchronous History Fetch
                 for (let ex of this.activeRoutine.data) {
                     const { data: lastLog } = await _client.from('workout_logs')
                         .select('sets_data')
@@ -808,18 +837,18 @@
                         .single();
 
                     if(lastLog && lastLog.sets_data && lastLog.sets_data.length > 0) {
-                        // Map previous sets to current sets
                         ex.sets = lastLog.sets_data.map(s => ({
                             weight: s.weight,
-                            reps: s.reps, // Auto-fill previous reps as target
+                            reps: s.reps, 
                             done: false,
-                            failure: false // reset failure status
+                            failure: false 
                         }));
-                        // Ensure at least 3 sets exist if history was short
                         while(ex.sets.length < 3) {
                             ex.sets.push({ weight: ex.sets[ex.sets.length-1]?.weight || 0, reps: 0, done: false, failure: false });
                         }
                     }
+                    // Remove loading state once data (or lack thereof) is processed
+                    ex.loadingHistory = false;
                 }
             },
 
@@ -858,7 +887,7 @@
                     exercise_name: ex.name, 
                     protocol_name: this.activeRoutine.name, 
                     sets_data: ex.sets.filter(s => s.done),
-                    duration_seconds: this.sessionTimer, // Log actual duration
+                    duration_seconds: this.sessionTimer,
                     created_at: new Date().toISOString() 
                 })).filter(l => l.sets_data.length);
 
@@ -866,7 +895,6 @@
                 
                 if(this.stackTaken) {
                     const { data: inv } = await _client.from('inventory').select('*');
-                    // Simple logic: decrement first item found for demo. Real app should match SKU.
                     if(inv && inv.length) {
                         const updates = inv.map(i => _client.from('inventory').update({servings_left: Math.max(0, i.servings_left - 1)}).eq('id', i.id));
                         await Promise.all(updates);
