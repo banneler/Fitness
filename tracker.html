@@ -28,6 +28,10 @@
             50% { filter: drop-shadow(0 0 15px #f97316); }
         }
         .streak-fire { animation: pulse-orange 2s infinite; }
+        
+        /* Bar Graph Animation */
+        .bar-grow { transform-origin: bottom; animation: grow 1s ease-out forwards; transform: scaleY(0); }
+        @keyframes grow { to { transform: scaleY(1); } }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -99,7 +103,7 @@
                 <section class="glass p-6 rounded-[2rem] shadow-2xl">
                     <div class="flex items-center gap-2 mb-6 opacity-60">
                         <i data-lucide="zap" class="w-4 h-4 text-purple-400"></i>
-                        <h3 class="text-xs font-black uppercase tracking-widest">Daily Pulse</h3>
+                        <h3 class="text-xs font-black uppercase tracking-widest">Today's Pulse</h3>
                     </div>
                     
                     <div class="grid grid-cols-4 gap-2 mb-4">
@@ -143,6 +147,38 @@
                     </div>
                 </section>
 
+                <section class="glass p-6 rounded-[2rem] shadow-2xl">
+                    <div class="flex justify-between items-end mb-4">
+                        <div class="flex items-center gap-2 opacity-60">
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-green-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest">7-Day Macro Composition</h3>
+                        </div>
+                        <div class="text-right">
+                             <span class="text-[8px] font-black uppercase tracking-widest text-slate-500">TARGET: 180g PRO</span>
+                        </div>
+                    </div>
+
+                    <div class="h-40 w-full relative">
+                        <svg class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
+                            <line x1="0" y1="37.5" x2="300" y2="37.5" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 2" />
+                            <line x1="0" y1="75" x2="300" y2="75" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 2" />
+                            <line x1="0" y1="112.5" x2="300" y2="112.5" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 2" />
+
+                            <line x1="0" y1="60" x2="300" y2="60" stroke="white" stroke-opacity="0.3" stroke-width="1" stroke-dasharray="4 2" />
+
+                            <g v-for="(day, index) in weeklyMacros" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
+                                <rect :y="150 - day.fatHeight" width="28" :height="day.fatHeight" fill="#ef4444" rx="4" class="bar-grow" style="animation-delay: 0.1s" />
+                                
+                                <rect :y="150 - day.fatHeight - day.carbHeight" width="28" :height="day.carbHeight" fill="#eab308" rx="4" class="bar-grow" style="animation-delay: 0.2s" />
+                                
+                                <rect :y="150 - day.fatHeight - day.carbHeight - day.protHeight" width="28" :height="day.protHeight" fill="#3b82f6" rx="4" class="bar-grow" style="animation-delay: 0.3s" />
+
+                                <text x="14" y="165" text-anchor="middle" font-size="8" fill="#64748b" font-weight="bold" class="uppercase">{{ day.label }}</text>
+                            </g>
+                        </svg>
+                    </div>
+                </section>
+
                 <section class="glass p-6 rounded-[2rem] shadow-2xl overflow-hidden relative">
                     <div class="flex justify-between items-end mb-4 relative z-10">
                         <div>
@@ -171,9 +207,7 @@
                             <line x1="0" y1="150" x2="300" y2="150" stroke="#1e293b" stroke-width="1" stroke-dasharray="4 4" />
 
                             <polygon :points="chartFillPath" fill="url(#chartGradient)" />
-
                             <polyline :points="chartPath" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-                            
                             <circle :cx="lastPoint.x" :cy="lastPoint.y" r="4" fill="#fff" stroke="#3b82f6" stroke-width="2" class="animate-pulse" />
                         </svg>
 
@@ -258,7 +292,7 @@
                 initialLoading: true,
                 session: null,
                 view: 'intel', 
-                dailyLogs: [],
+                weeklyLogs: [], // Stores 7 days of logs
                 weightHistory: [],
                 inventory: [],
                 rawWorkouts: [],
@@ -272,12 +306,45 @@
         },
         computed: {
             dailyTotals() {
-                return this.dailyLogs.reduce((acc, log) => ({
+                // Filter 'weeklyLogs' for just today
+                const today = new Date().toISOString().split('T')[0];
+                const todaysLogs = this.weeklyLogs.filter(l => l.created_at.startsWith(today));
+
+                return todaysLogs.reduce((acc, log) => ({
                     cals: acc.cals + (log.calories || 0),
                     protein: acc.protein + (log.protein || 0),
                     carbs: acc.carbs + (log.carbs || 0),
                     fat: acc.fat + (log.fat || 0)
                 }), { cals: 0, protein: 0, carbs: 0, fat: 0 });
+            },
+            weeklyMacros() {
+                // Generate last 7 dates
+                const days = [];
+                for(let i=6; i>=0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    days.push(d.toISOString().split('T')[0]);
+                }
+
+                // Map data to graph heights
+                return days.map(dateStr => {
+                    const daysLogs = this.weeklyLogs.filter(l => l.created_at.startsWith(dateStr));
+                    
+                    const p = daysLogs.reduce((sum, l) => sum + (l.protein || 0), 0);
+                    const c = daysLogs.reduce((sum, l) => sum + (l.carbs || 0), 0);
+                    const f = daysLogs.reduce((sum, l) => sum + (l.fat || 0), 0);
+                    
+                    // Simple Scaling: 150px height = ~300g Macro (approx visualization scale)
+                    const scale = 0.5; 
+                    
+                    return {
+                        date: dateStr,
+                        label: new Date(dateStr).toLocaleDateString('en-US', {weekday:'narrow'}),
+                        protHeight: p * scale,
+                        carbHeight: c * scale,
+                        fatHeight: f * scale
+                    };
+                });
             },
             todayMetrics() {
                 if(!this.weightHistory.length) return {};
@@ -316,7 +383,7 @@
             this.session = session;
             
             await Promise.all([
-                this.fetchDailyData(),
+                this.fetchWeeklyLogs(),
                 this.fetchWeight(),
                 this.fetchInventory(),
                 this.fetchWorkouts()
@@ -326,20 +393,18 @@
             this.$nextTick(() => lucide.createIcons());
         },
         methods: {
-            async fetchDailyData() {
-                const today = new Date().toISOString().split('T')[0];
-                const { data } = await _client.from('food_logs').select('*').gte('created_at', today);
-                this.dailyLogs = data || [];
+            async fetchWeeklyLogs() {
+                // Fetch last 7 days instead of just today
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                const { data } = await _client.from('food_logs').select('*').gte('created_at', sevenDaysAgo);
+                this.weeklyLogs = data || [];
             },
             async fetchWeight() {
                 // Fetch 30 days of metrics
                 const { data } = await _client.from('daily_metrics').select('*').order('created_at', { ascending: true }).limit(30);
                 
                 if (data && data.length) {
-                    // Sort descending for display logic (Current weight)
                     this.weightHistory = [...data].reverse();
-                    
-                    // Use ascending data for graph calculation
                     this.calculateGraph(data);
                 }
             },
@@ -353,24 +418,17 @@
                 const max = Math.max(...weights) + 2;
                 const range = max - min;
                 
-                // SVG Dimensions: 300w x 150h
                 const width = 300;
                 const height = 150;
 
                 const points = weights.map((w, i) => {
                     const x = (i / (weights.length - 1)) * width;
-                    // Invert Y because SVG 0 is at top
                     const y = height - ((w - min) / range) * height;
                     return { x, y };
                 });
 
-                // Create Polyline String "x,y x,y"
                 this.chartPath = points.map(p => `${p.x},${p.y}`).join(' ');
-                
-                // Create Gradient Fill (Add bottom corners)
                 this.chartFillPath = `0,${height} ${this.chartPath} ${width},${height}`;
-                
-                // Set Last Point
                 this.lastPoint = points[points.length - 1];
             },
             async fetchInventory() {
