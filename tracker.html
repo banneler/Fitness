@@ -76,6 +76,7 @@
         <div class="flex p-1 bg-slate-900 rounded-xl mb-8 border border-white/5">
             <button @click="view = 'intel'" :class="view === 'intel' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">Intelligence</button>
             <button @click="view = 'motion'" :class="view === 'motion' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">Motion</button>
+            <button @click="view = 'exercises'" :class="view === 'exercises' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">Analysis</button>
         </div>
 
         <main>
@@ -91,21 +92,10 @@
                             <span v-else class="animate-pulse">ANALYZING...</span>
                         </button>
                     </div>
-
                     <div v-if="analysis" class="space-y-4">
                         <div class="bg-slate-950/50 p-5 rounded-3xl border border-white/5">
                             <p class="text-[10px] text-purple-400 font-black uppercase mb-2 tracking-widest">Executive Briefing</p>
                             <p class="text-sm italic leading-relaxed text-slate-200">{{ analysis.summary }}</p>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                                <p class="text-[8px] text-orange-400 font-black uppercase mb-1">Prediction</p>
-                                <p class="text-[10px] font-bold text-slate-300 italic">{{ analysis.prediction }}</p>
-                            </div>
-                            <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                                <p class="text-[8px] text-emerald-400 font-black uppercase mb-1">Growth Vector</p>
-                                <p class="text-[10px] font-bold text-slate-300 italic">{{ analysis.advice }}</p>
-                            </div>
                         </div>
                     </div>
                 </section>
@@ -135,27 +125,7 @@
                     </div>
                 </section>
 
-                <section class="glass p-6 rounded-[2.5rem] shadow-xl">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex items-center gap-2 opacity-60">
-                            <i data-lucide="target" class="w-4 h-4 text-green-400"></i>
-                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Neural Targets</h3>
-                        </div>
-                        <button @click="showTargetModal = true" class="text-[8px] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white transition-colors">Adjust Goals</button>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein Goal</span>
-                            <span class="text-xl font-black italic">{{ targets.protein }}g</span>
-                        </div>
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calorie Goal</span>
-                            <span class="text-xl font-black italic">{{ targets.cals }}</span>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="glass p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                <section class="glass p-6 rounded-[2.5rem] shadow-xl relative overflow-hidden">
                     <div class="flex justify-between items-end mb-6">
                         <div class="flex items-center gap-2 opacity-60">
                             <i data-lucide="pie-chart" class="w-4 h-4 text-orange-400"></i>
@@ -173,9 +143,7 @@
                                   x1="0" :y1="150 - (targets.protein * chartScale)" 
                                   x2="300" :y2="150 - (targets.protein * chartScale)" 
                                   stroke="#22c55e" stroke-width="2" stroke-dasharray="6 3" />
-                            
                             <text v-if="targets.protein > 0" x="295" :y="145 - (targets.protein * chartScale)" text-anchor="end" font-size="6" fill="#22c55e" font-weight="black" class="uppercase">Goal: {{targets.protein}}g</text>
-
                             <g v-for="(day, index) in weeklyMacrosFull" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
                                 <rect :y="150 - day.p" width="28" :height="day.p" :fill="day.active ? '#3b82f6' : '#1e293b'" rx="2" class="bar-grow" />
                                 <rect :y="150 - day.p - day.c" width="28" :height="day.c" :fill="day.active ? '#10b981' : '#334155'" rx="2" class="bar-grow" style="animation-delay:0.1s" />
@@ -185,32 +153,6 @@
                             </g>
                         </svg>
                     </div>
-                </section>
-
-                <section class="glass p-6 rounded-[2.5rem] shadow-xl space-y-6">
-                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Growth Vectors</h3>
-                    <div v-for="metric in ['waist', 'chest', 'arms', 'thigh']" :key="metric" class="space-y-2">
-                        <div class="flex justify-between items-end px-1">
-                            <span class="text-xs font-black uppercase italic">{{ metric }}</span>
-                            <span class="text-[10px] font-bold text-blue-400">{{ getLatestMetric(metric) }} in</span>
-                        </div>
-                        <div class="h-12 w-full bg-slate-950/40 rounded-xl border border-white/5 overflow-hidden">
-                            <svg class="w-full h-full" viewBox="0 0 300 60" preserveAspectRatio="none">
-                                <polyline :points="getMetricPath(metric)" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" />
-                            </svg>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="glass p-6 rounded-[2.5rem] shadow-xl border-t-4 border-t-emerald-500">
-                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-300 mb-6">Archive Measurements</h3>
-                    <div class="grid grid-cols-2 gap-3 mb-6">
-                        <div v-for="m in ['waist', 'chest', 'arms', 'thigh']" :key="m" class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[7px] text-slate-500 font-black uppercase block mb-1">{{ m }} (in)</span>
-                            <input type="number" step="0.01" v-model="bodyMetrics[m]" class="bg-transparent border-none text-xl font-black w-full text-white p-0 focus:ring-0">
-                        </div>
-                    </div>
-                    <button @click="saveBodyMetrics" class="w-full py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase shadow-lg active:scale-95 transition-all">Submit to Registry</button>
                 </section>
             </div>
 
@@ -238,17 +180,64 @@
                                 <span class="text-[7px] font-black text-slate-600 uppercase tracking-widest">LBS Tonnage</span>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="timer" class="w-3 h-3 text-slate-500"></i>
-                                <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">{{ formatTUL(session.tul) }} Load</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="layers" class="w-3 h-3 text-slate-500"></i>
-                                <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">{{ session.setCount }} Sets</span>
-                            </div>
+                    </div>
+                </section>
+            </div>
+
+            <div v-if="view === 'exercises'" class="space-y-6">
+                <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
+                    <div class="flex items-center gap-2 mb-6">
+                        <i data-lucide="microscope" class="w-5 h-5 text-pink-500"></i>
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Movement Analysis</h3>
+                    </div>
+                    
+                    <div class="relative mb-6">
+                        <input type="text" v-model="mvmtSearch" @input="filterExercises" placeholder="Select Movement..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 px-6 outline-none font-bold text-sm placeholder-slate-600 focus:ring-1 focus:ring-pink-500/50 transition-all text-white">
+                        <div v-if="mvmtSearch && showMvmtList" class="absolute left-0 right-0 mt-2 bg-slate-900 border border-white/10 rounded-2xl overflow-hidden z-20 max-h-48 overflow-y-auto shadow-2xl">
+                            <button v-for="ex in filteredExercises" :key="ex.id" @click="selectMovement(ex)" class="w-full text-left px-6 py-4 border-b border-white/5 hover:bg-white/5 text-xs font-bold uppercase transition-colors">
+                                {{ ex.name }}
+                            </button>
                         </div>
                     </div>
+
+                    <div v-if="selectedMovement" class="space-y-6">
+                        <div class="flex justify-between items-center bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center text-pink-500 border border-pink-500/20">
+                                    <i :data-lucide="selectedMovement.icon_name || 'dumbbell'" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-black uppercase italic">{{ selectedMovement.name }}</div>
+                                    <div class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">{{ selectedMovement.muscle_group }}</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xl font-black italic text-white">{{ mvmtStats.max1RM }}<span class="text-xs text-slate-500 not-italic">lbs</span></div>
+                                <div class="text-[8px] font-black text-slate-500 uppercase tracking-widest">Est. 1RM</div>
+                            </div>
+                        </div>
+
+                        <div class="flex p-1 bg-slate-950 rounded-lg border border-white/5">
+                            <button @click="mvmtChartMode = 'strength'" :class="mvmtChartMode === 'strength' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-white'" class="flex-1 py-2 rounded-md text-[9px] font-black uppercase tracking-widest transition-all">Max Strength</button>
+                            <button @click="mvmtChartMode = 'volume'" :class="mvmtChartMode === 'volume' ? 'bg-orange-600 text-white' : 'text-slate-500 hover:text-white'" class="flex-1 py-2 rounded-md text-[9px] font-black uppercase tracking-widest transition-all">Volume Load</button>
+                        </div>
+
+                        <div class="h-48 w-full relative bg-slate-950/20 rounded-xl border border-white/5">
+                            <svg v-if="mvmtChartPath" class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="mvmtGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" :stop-color="mvmtChartMode==='strength'?'#3b82f6':'#f97316'" stop-opacity="0.4"/>
+                                        <stop offset="100%" :stop-color="mvmtChartMode==='strength'?'#3b82f6':'#f97316'" stop-opacity="0"/>
+                                    </linearGradient>
+                                </defs>
+                                <polygon :points="mvmtFillPath" fill="url(#mvmtGradient)" />
+                                <polyline :points="mvmtChartPath" fill="none" :stroke="mvmtChartMode==='strength'?'#3b82f6':'#f97316'" stroke-width="3" stroke-linecap="round" />
+                                <circle v-for="p in mvmtPoints" :key="p.x" :cx="p.x" :cy="p.y" r="3" fill="#020617" :stroke="mvmtChartMode==='strength'?'#3b82f6':'#f97316'" stroke-width="2" />
+                            </svg>
+                            <div v-else class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-600 uppercase font-bold italic">Insufficient Data</div>
+                        </div>
+                    </div>
+                    <div v-else class="text-center py-8 text-slate-600 text-xs italic">Select a movement to analyze data stream.</div>
                 </section>
             </div>
         </main>
@@ -309,7 +298,18 @@
                 targets: { protein: 180, cals: 2500 },
                 chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0}, startDate: '',
                 isAnalyzing: false,
-                analysis: null
+                analysis: null,
+                
+                // MOVEMENT ANALYSIS (Phase 4)
+                library: [],
+                mvmtSearch: '',
+                showMvmtList: false,
+                filteredExercises: [],
+                selectedMovement: null,
+                mvmtHistory: [],
+                mvmtChartMode: 'strength', // 'strength' or 'volume'
+                mvmtChartPath: '', mvmtFillPath: '', mvmtPoints: [],
+                mvmtStats: { max1RM: 0 }
             }
         },
         computed: {
@@ -318,17 +318,14 @@
                 const totals = [];
                 for(let i=6; i>=0; i--) {
                     const d = new Date(); d.setDate(d.getDate() - i);
-                    const ds = d.toLocaleDateString('en-CA'); // FIX: Local time for consistency
+                    const ds = d.toLocaleDateString('en-CA'); 
                     const logs = this.weeklyLogs.filter(l => l.created_at.startsWith(ds));
                     totals.push(logs.reduce((sum, l) => sum + (l.protein || 0) + (l.carbs || 0) + (l.fat || 0), 0));
                 }
                 return Math.max(...totals, 450); 
             },
             chartScale() { return 135 / this.globalMaxMacros; },
-            calculateProteinLineY() {
-                const h = this.targets.protein * this.chartScale;
-                return h + 'px';
-            },
+            calculateProteinLineY() { return (this.targets.protein * this.chartScale) + 'px'; },
             activityMatrix() {
                 const days = [];
                 const now = new Date();
@@ -362,7 +359,7 @@
                 const days = [];
                 for(let i=6; i>=0; i--) {
                     const d = new Date(); d.setDate(d.getDate() - i);
-                    const ds = d.toLocaleDateString('en-CA'); // FIX: Use local date
+                    const ds = d.toLocaleDateString('en-CA'); 
                     const logs = this.weeklyLogs.filter(l => l.created_at.startsWith(ds));
                     
                     const p = logs.reduce((sum, l) => sum + (l.protein || 0), 0);
@@ -376,18 +373,21 @@
                         c: c * this.chartScale, 
                         f: f * this.chartScale, 
                         active: p >= this.targets.protein, 
-                        isOver: totalCals > this.targets.cals, // New Red Alert logic
+                        isOver: totalCals > this.targets.cals, 
                         isToday: ds === new Date().toLocaleDateString('en-CA') 
                     });
                 }
                 return days;
             }
         },
+        watch: {
+            mvmtChartMode() { this.calculateMvmtChart(); }
+        },
         async mounted() {
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
-            await Promise.all([this.fetchWeight(), this.fetchWeeklyLogs(), this.fetchWorkouts(), this.fetchTargets(), this.fetchBodyHistory()]);
+            await Promise.all([this.fetchWeight(), this.fetchWeeklyLogs(), this.fetchWorkouts(), this.fetchTargets(), this.fetchBodyHistory(), this.fetchLibrary()]);
             
             if (this.bodyHistory.length) {
                 const last = this.bodyHistory[this.bodyHistory.length - 1];
@@ -400,6 +400,80 @@
         methods: {
             async handleLogout() { await _client.auth.signOut(); window.location.href = 'index.html'; },
             
+            async fetchLibrary() {
+                const { data } = await _client.from('exercises').select('*').order('name');
+                this.library = data || [];
+            },
+            filterExercises() {
+                if(this.mvmtSearch.length < 1) { this.showMvmtList = false; return; }
+                const s = this.mvmtSearch.toLowerCase();
+                this.filteredExercises = this.library.filter(e => e.name.toLowerCase().includes(s));
+                this.showMvmtList = true;
+            },
+            async selectMovement(ex) {
+                this.selectedMovement = ex;
+                this.mvmtSearch = ex.name;
+                this.showMvmtList = false;
+                
+                // Fetch specific history for chart
+                const { data } = await _client.from('workout_logs')
+                    .select('*')
+                    .eq('exercise_name', ex.name)
+                    .order('created_at', { ascending: true }) // Oldest first for chart left-to-right
+                    .limit(30); // Last 30 sessions
+                
+                this.mvmtHistory = data || [];
+                this.calculateMvmtChart();
+            },
+            calculateMvmtChart() {
+                if(!this.mvmtHistory.length) { 
+                    this.mvmtChartPath = ''; this.mvmtStats.max1RM = 0; return; 
+                }
+
+                const points = this.mvmtHistory.map(log => {
+                    let val = 0;
+                    if(this.mvmtChartMode === 'strength') {
+                        // Estimate 1RM: Weight * (1 + Reps/30)
+                        const maxEst = (log.sets_data || []).reduce((max, s) => {
+                             const w = parseFloat(s.weight||0);
+                             const r = parseInt(s.reps||0);
+                             if(w > 0 && r > 0) {
+                                 const est = w * (1 + r/30);
+                                 return est > max ? est : max;
+                             }
+                             return max;
+                        }, 0);
+                        val = maxEst;
+                    } else {
+                        // Volume: Weight * Reps
+                        val = (log.sets_data || []).reduce((acc, s) => acc + (parseFloat(s.weight||0) * parseInt(s.reps||0)), 0);
+                    }
+                    return val;
+                });
+
+                // Update Stats
+                this.mvmtStats.max1RM = Math.max(0, ...points).toFixed(1);
+
+                if(points.length < 2) { 
+                     // Handle single point
+                     this.mvmtChartPath = `0,75 300,75`; 
+                     return; 
+                }
+
+                const min = Math.min(...points) * 0.9;
+                const max = Math.max(...points) * 1.1;
+                const range = max - min || 1;
+                
+                const coords = points.map((val, i) => ({
+                    x: (i / (points.length - 1)) * 300,
+                    y: 150 - ((val - min) / range * 130) - 10 // Padding
+                }));
+
+                this.mvmtPoints = coords;
+                this.mvmtChartPath = coords.map(p => `${p.x},${p.y}`).join(' ');
+                this.mvmtFillPath = `0,150 ${this.mvmtChartPath} 300,150`;
+            },
+            
             async fetchTargets() {
                 const { data } = await _client.from('daily_metrics')
                     .select('target_protein, target_calories')
@@ -410,30 +484,15 @@
             },
             
             async saveTargets() {
-                // FIX: Use Local Date for query to match user perception
-                const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-                
-                // FIX: Order by created_at DESC to grab the LATEST row if duplicates exist
-                const { data: existing } = await _client.from('daily_metrics')
-                    .select('id')
-                    .gte('created_at', today)
-                    .order('created_at', { ascending: false }) 
-                    .limit(1);
+                const today = new Date().toLocaleDateString('en-CA'); 
+                const { data: existing } = await _client.from('daily_metrics').select('id').gte('created_at', today).order('created_at', { ascending: false }).limit(1);
 
                 let error;
                 if(existing && existing.length > 0) {
-                    const { error: err } = await _client.from('daily_metrics')
-                        .update({ target_protein: this.targets.protein, target_calories: this.targets.cals })
-                        .eq('id', existing[0].id);
+                    const { error: err } = await _client.from('daily_metrics').update({ target_protein: this.targets.protein, target_calories: this.targets.cals }).eq('id', existing[0].id);
                     error = err;
                 } else {
-                    const { error: err } = await _client.from('daily_metrics')
-                        .insert([{ 
-                            user_id: this.session.user.id, 
-                            target_protein: this.targets.protein, 
-                            target_calories: this.targets.cals, 
-                            weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null 
-                        }]);
+                    const { error: err } = await _client.from('daily_metrics').insert([{ user_id: this.session.user.id, target_protein: this.targets.protein, target_calories: this.targets.cals, weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null }]);
                     error = err;
                 }
 
