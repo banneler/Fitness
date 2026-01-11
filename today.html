@@ -101,10 +101,10 @@
 
                 <div>
                     <div class="flex justify-between mb-2">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sleep Quality</span>
-                        <span class="text-lg font-black text-blue-400">{{ metrics.sleep_quality }}<span class="text-xs text-slate-600">/10</span></span>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sleep Quantity</span>
+                        <span class="text-lg font-black text-blue-400">{{ metrics.sleep_quality }}<span class="text-xs text-slate-600 ml-1">hrs</span></span>
                     </div>
-                    <input type="range" v-model="metrics.sleep_quality" min="1" max="10" step="1">
+                    <input type="range" v-model="metrics.sleep_quality" min="0" max="12" step="1">
                 </div>
 
                 <div>
@@ -156,10 +156,10 @@
                 session: null,
                 reportSaved: false,
                 metrics: {
-                    id: null, // To store existing ID for updates
+                    id: null,
                     weight: null,
                     resting_hr: null,
-                    sleep_quality: 5,
+                    sleep_quality: 7, // Default 7 hours
                     energy_level: 5
                 },
                 proteinTarget: 180,
@@ -213,7 +213,7 @@
                         id: saved.id,
                         weight: saved.weight,
                         resting_hr: saved.resting_hr,
-                        sleep_quality: saved.sleep_quality || 5,
+                        sleep_quality: saved.sleep_quality || 7,
                         energy_level: saved.energy_level || 5
                     };
                     this.reportSaved = true;
