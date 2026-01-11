@@ -43,7 +43,7 @@
     <div v-if="initialLoading" class="loading-mask">
         <div class="animate-pulse flex flex-col items-center gap-4">
             <div class="w-10 h-10 rounded-full border-2 border-purple-500 border-t-transparent animate-spin"></div>
-            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Compiling Performance Data</p>
+            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Synchronizing Global Sector</p>
         </div>
     </div>
 
@@ -51,7 +51,7 @@
         <header class="flex justify-between items-center mb-8">
             <div>
                 <h1 class="text-3xl font-black italic text-purple-500 uppercase tracking-tighter">Tracker</h1>
-                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Intelligence & Progress</p>
+                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Performance Intelligence</p>
             </div>
             <div class="flex items-center gap-3">
                 <div v-if="streak > 0" class="glass px-3 py-1 rounded-full flex items-center gap-2 border-orange-500/20">
@@ -65,22 +65,12 @@
         </header>
 
         <div class="flex p-1 bg-slate-900 rounded-xl mb-8 border border-white/5">
-            <button @click="view = 'intel'" :class="view === 'intel' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest"> Intelligence </button>
-            <button @click="view = 'motion'" :class="view === 'motion' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest"> Motion </button>
+            <button @click="view = 'intel'" :class="view === 'intel' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">Intelligence</button>
+            <button @click="view = 'motion'" :class="view === 'motion' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">Motion</button>
         </div>
 
         <main>
             <div v-if="view === 'intel'" class="space-y-6">
-                
-                <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
-                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4 ml-1">Activity Matrix (30D)</h3>
-                    <div class="grid grid-cols-6 gap-2">
-                        <div v-for="day in activityMatrix" :key="day.date" class="matrix-cell" :class="{'matrix-active': day.active}">
-                            <i v-if="day.active" :data-lucide="day.icon" class="w-4 h-4"></i>
-                            <span v-else class="text-[6px] font-black text-slate-800">{{ day.dayNum }}</span>
-                        </div>
-                    </div>
-                </section>
                 
                 <section class="glass p-6 rounded-[2.5rem] shadow-2xl overflow-hidden relative border-t-4 border-t-blue-500">
                     <div class="flex justify-between items-end mb-4 relative z-10">
@@ -89,7 +79,7 @@
                             <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">30-Day Weight</h3>
                         </div>
                         <div class="text-right">
-                            <span class="block text-[8px] text-slate-500 uppercase font-black tracking-widest">CURRENT</span>
+                            <span class="block text-[8px] text-slate-500 uppercase font-black tracking-widest">LATEST</span>
                             <span class="text-2xl font-black italic text-white">{{ currentWeight }} <span class="text-sm text-slate-500 not-italic">lbs</span></span>
                         </div>
                     </div>
@@ -111,9 +101,9 @@
                     <div class="flex justify-between items-center mb-6">
                         <div class="flex items-center gap-2 opacity-60">
                             <i data-lucide="target" class="w-4 h-4 text-green-400"></i>
-                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Neural Targets</h3>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Neural Memory</h3>
                         </div>
-                        <button @click="showTargetModal = true" class="text-[8px] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400">Adjust</button>
+                        <button @click="showTargetModal = true" class="text-[8px] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white transition-colors">Sync Goals</button>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
@@ -139,7 +129,10 @@
                         </div>
                     </div>
                     <div class="h-44 w-full relative">
-                        <div class="absolute w-full border-t border-blue-500/50 border-dashed z-10 pointer-events-none" :style="{ bottom: (targets.protein * 0.7) + 'px' }"></div>
+                        <div v-if="targets.protein > 0" class="absolute w-full border-t border-blue-500/50 border-dashed z-10 pointer-events-none" 
+                             :style="{ bottom: calculateProteinLineY }">
+                             <span class="absolute right-0 -top-3 text-[6px] font-black text-blue-500/80 uppercase bg-[#020617] px-1">Goal: {{targets.protein}}g</span>
+                        </div>
                         
                         <svg class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
                             <g v-for="(day, index) in weeklyMacrosFull" :key="index" :transform="`translate(${index * 42 + 5}, 0)`">
@@ -153,11 +146,11 @@
                 </section>
 
                 <section class="glass p-6 rounded-[2.5rem] shadow-xl space-y-6">
-                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Growth Vectors</h3>
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Structural Growth Vectors</h3>
                     <div v-for="metric in ['waist', 'chest', 'arms', 'thigh']" :key="metric" class="space-y-2">
                         <div class="flex justify-between items-end px-1">
                             <span class="text-xs font-black uppercase italic">{{ metric }}</span>
-                            <span class="text-[10px] font-bold text-slate-500">{{ getLatestMetric(metric) }} in</span>
+                            <span class="text-[10px] font-bold text-blue-400">{{ getLatestMetric(metric) }} in</span>
                         </div>
                         <div class="h-12 w-full bg-slate-950/40 rounded-xl border border-white/5 overflow-hidden">
                             <svg class="w-full h-full" viewBox="0 0 300 60" preserveAspectRatio="none">
@@ -172,18 +165,29 @@
                     <div class="grid grid-cols-2 gap-3 mb-6">
                         <div v-for="m in ['waist', 'chest', 'arms', 'thigh']" :key="m" class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
                             <span class="text-[7px] text-slate-500 font-black uppercase block mb-1">{{ m }} (in)</span>
-                            <input type="number" step="0.1" v-model="bodyMetrics[m]" class="bg-transparent border-none text-xl font-black w-full text-white p-0 focus:ring-0">
+                            <input type="number" step="0.01" v-model="bodyMetrics[m]" class="bg-transparent border-none text-xl font-black w-full text-white p-0 focus:ring-0">
                         </div>
                     </div>
-                    <button @click="saveBodyMetrics" class="w-full py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase shadow-lg active:scale-95 transition-all">Archiving Registry</button>
+                    <button @click="saveBodyMetrics" class="w-full py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase shadow-lg active:scale-95 transition-all">Submit to Registry</button>
                 </section>
             </div>
 
-            <div v-if="view === 'motion'" class="space-y-4">
+            <div v-if="view === 'motion'" class="space-y-6">
+                
+                <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4 ml-1">Activity Spectrum (30D)</h3>
+                    <div class="grid grid-cols-6 gap-2">
+                        <div v-for="day in activityMatrix" :key="day.date" class="matrix-cell" :class="{'matrix-active': day.active}">
+                            <i v-if="day.active" :data-lucide="day.icon" class="w-4 h-4"></i>
+                            <span v-else class="text-[6px] font-black text-slate-800">{{ day.dayNum }}</span>
+                        </div>
+                    </div>
+                </section>
+
                 <section class="glass p-6 rounded-[2.5rem] border-t-4 border-t-orange-500 shadow-2xl">
-                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Workout Ledger</h3>
+                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Performance Ledger</h3>
                     <div v-for="session in recentWorkouts" :key="session.id" class="bg-slate-950/40 p-5 rounded-3xl border border-white/5 mb-4 relative overflow-hidden">
-                        <div class="flex justify-between items-start mb-4 relative z-10">
+                        <div class="flex justify-between items-start mb-4">
                             <div>
                                 <h4 class="text-lg font-black italic text-slate-200 uppercase leading-none mb-1">{{ session.protocol_name }}</h4>
                                 <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{{ session.date }}</p>
@@ -193,7 +197,7 @@
                                 <span class="text-[7px] font-black text-slate-600 uppercase tracking-widest">LBS Tonnage</span>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-4 border-t border-white/5 pt-4 relative z-10">
+                        <div class="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
                             <div class="flex items-center gap-2">
                                 <i data-lucide="timer" class="w-3 h-3 text-slate-500"></i>
                                 <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">{{ formatTUL(session.tul) }} Load</span>
@@ -215,18 +219,18 @@
             <div v-if="showTargetModal" class="fixed inset-0 z-[300] flex items-end justify-center p-4">
                 <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="showTargetModal = false"></div>
                 <div class="glass w-full max-w-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl">
-                    <h2 class="text-xl font-black italic uppercase text-white mb-6">Authorize Goals</h2>
+                    <h2 class="text-xl font-black italic uppercase text-white mb-6 tracking-tight">Sync Targets</h2>
                     <div class="space-y-4 mb-8">
                         <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein Goal (g)</span>
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein Target (g)</span>
                             <input type="number" v-model="targets.protein" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
                         </div>
                         <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calorie Goal</span>
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calorie Target</span>
                             <input type="number" v-model="targets.cals" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
                         </div>
                     </div>
-                    <button @click="saveTargets" class="w-full py-5 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Update Neural Memory</button>
+                    <button @click="saveTargets" class="w-full py-5 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Authorize Intelligence</button>
                 </div>
             </div>
         </transition>
@@ -235,10 +239,10 @@
             <div v-if="logoutModal" class="fixed inset-0 z-[300] flex items-end justify-center p-4">
                 <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="logoutModal = false"></div>
                 <div class="glass w-full max-w-sm rounded-3xl p-6 relative border border-white/10 shadow-2xl">
-                    <h2 class="text-xl font-black italic uppercase text-center mb-2">System Logout</h2>
-                    <div class="grid grid-cols-2 gap-3 mt-6">
-                        <button @click="logoutModal = false" class="py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase">Stay</button>
-                        <button @click="handleLogout" class="py-3 rounded-xl bg-red-600 text-white font-black text-xs uppercase">Disconnect</button>
+                    <h2 class="text-xl font-black italic uppercase text-center mb-2 text-white">System Logout</h2>
+                    <div class="grid grid-cols-2 gap-3 mt-8">
+                        <button @click="logoutModal = false" class="py-4 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase">Abort</button>
+                        <button @click="handleLogout" class="py-4 rounded-xl bg-red-600 text-white font-black text-xs uppercase shadow-lg">Disconnect</button>
                     </div>
                 </div>
             </div>
@@ -269,7 +273,16 @@
             }
         },
         computed: {
-            currentWeight() { return this.weightHistory.length ? this.weightHistory[this.weightHistory.length-1].weight : '--'; },
+            currentWeight() { 
+                return this.weightHistory.length ? this.weightHistory[this.weightHistory.length-1].weight : '--'; 
+            },
+            calculateProteinLineY() {
+                // Goal: Map protein target to SVG coordinate. 
+                // SVG height is 150. Scaling used in chart is: 140 / Math.max(total, 400).
+                // Let's use a standard 0.35 multiplier for coordinates (matches bar scaling roughly)
+                const yPos = 150 - (this.targets.protein * 0.35);
+                return yPos + 'px';
+            },
             activityMatrix() {
                 const days = [];
                 const now = new Date();
@@ -289,16 +302,16 @@
             recentWorkouts() {
                 const sessions = [];
                 let currentSession = null;
-                // Workouts are naturally ordered by created_at.desc from fetchWorkouts
-                this.rawWorkouts.forEach(log => {
+                // Group individual logs into 1-hour sessions
+                [...this.rawWorkouts].forEach(log => {
                     const logTime = new Date(log.created_at).getTime();
                     const tonnage = (log.sets_data || []).reduce((acc, s) => acc + (parseFloat(s.weight || 0) * parseInt(s.reps || 0)), 0);
                     const tul = (log.sets_data || []).reduce((acc, s) => acc + (parseInt(s.reps || 0) * 4), 0);
 
                     if(!currentSession || Math.abs(currentSession.startTime - logTime) > 3600000) {
                         currentSession = { 
-                            id: log.id, protocol_name: log.protocol_name || 'Generic Session', 
-                            startTime: logTime, date: new Date(log.created_at).toLocaleDateString(), 
+                            id: log.id, protocol_name: log.protocol_name || 'Training Session', 
+                            startTime: logTime, date: new Date(log.created_at).toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'}), 
                             setCount: 0, tonnage: 0, tul: 0, exercises: new Set() 
                         };
                         sessions.push(currentSession);
@@ -336,9 +349,23 @@
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
-            await Promise.all([this.fetchWeight(), this.fetchWeeklyLogs(), this.fetchWorkouts(), this.fetchTargets(), this.fetchBodyHistory()]);
+            
+            await Promise.all([
+                this.fetchWeight(), 
+                this.fetchWeeklyLogs(), 
+                this.fetchWorkouts(), 
+                this.fetchTargets(), 
+                this.fetchBodyHistory()
+            ]);
+
+            // Auto-populate measurement inputs with latest archived values
+            if (this.bodyHistory.length) {
+                const last = this.bodyHistory[this.bodyHistory.length - 1];
+                this.bodyMetrics = { waist: last.waist, chest: last.chest, arms: last.arms, thigh: last.thigh };
+            }
+
             this.initialLoading = false;
-            this.$nextTick(() => lucide.createIcons());
+            this.$nextTick(() => { lucide.createIcons(); });
         },
         updated() { lucide.createIcons(); },
         methods: {
@@ -354,7 +381,7 @@
                     target_calories: this.targets.cals,
                     weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null
                 }]);
-                if(!error) { this.showTargetModal = false; this.fetchTargets(); }
+                if(!error) { this.showTargetModal = false; await this.fetchTargets(); }
             },
             async fetchBodyHistory() {
                 const { data } = await _client.from('body_metrics').select('*').order('created_at', { ascending: true });
@@ -365,12 +392,13 @@
                 return valid.length ? valid[valid.length-1][m] : '--'; 
             },
             getMetricPath(m) {
-                const data = this.bodyHistory.filter(h => h[m]);
+                const data = this.bodyHistory.filter(h => h[m] !== null);
                 if(data.length < 2) return "";
                 const vals = data.map(d => d[m]);
                 const min = Math.min(...vals) - 0.2;
                 const max = Math.max(...vals) + 0.2;
-                return data.map((d, i) => `${(i/(data.length-1))*300},${60 - ((d[m]-min)/(max-min || 1)*60)}`).join(' ');
+                const range = max - min || 1;
+                return data.map((d, i) => `${(i/(data.length-1))*300},${60 - ((d[m]-min)/range*60)}`).join(' ');
             },
             async saveBodyMetrics() {
                 const { error } = await _client.from('body_metrics').insert([{
@@ -380,19 +408,19 @@
                     arms: parseFloat(this.bodyMetrics.arms),
                     thigh: parseFloat(this.bodyMetrics.thigh)
                 }]);
-                if(!error) { this.bodyMetrics = {waist:null, chest:null, arms:null, thigh:null}; this.fetchBodyHistory(); }
+                if(!error) { await this.fetchBodyHistory(); }
             },
             async fetchWeight() {
                 const { data } = await _client.from('daily_metrics').select('*').order('created_at', { ascending: true }).limit(30);
                 if (data?.length) { this.weightHistory = data; this.calculateGraph(data); }
             },
             calculateGraph(data) {
-                if (data.length < 2) return;
-                const weights = data.map(d => d.weight).filter(w => w !== null);
+                const weights = data.map(d => d.weight).filter(w => w);
+                if (weights.length < 2) return;
                 const min = Math.min(...weights) - 1;
                 const max = Math.max(...weights) + 1;
                 const range = max - min || 1;
-                const points = weights.map((w, i) => ({ x: (i / (weights.length - 1)) * 300, y: 150 - ((w - min) / range) * 150 }));
+                const points = weights.map((w, i) => ({ x: (i/(weights.length-1))*300, y: 150 - ((w-min)/range*150) }));
                 this.chartPath = points.map(p => `${p.x},${p.y}`).join(' ');
                 this.chartFillPath = `0,150 ${this.chartPath} 300,150`;
                 this.lastPoint = points[points.length-1];
@@ -408,19 +436,14 @@
                 this.calculateStreak(data);
             },
             calculateStreak(logs) {
-                if (!logs || !logs.length) return;
-                const uniqueDates = [...new Set(logs.map(l => l.created_at.split('T')[0]))].sort().reverse();
-                let streak = 0;
-                const today = new Date().toISOString().split('T')[0];
-                const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-                if (uniqueDates.includes(today) || uniqueDates.includes(yesterday)) {
-                    let checkDate = uniqueDates.includes(today) ? new Date() : new Date(Date.now() - 86400000);
-                    while (uniqueDates.includes(checkDate.toISOString().split('T')[0])) {
-                        streak++;
-                        checkDate.setDate(checkDate.getDate() - 1);
-                    }
+                const dates = [...new Set(logs.map(l => l.created_at.split('T')[0]))].sort().reverse();
+                let s = 0; let today = new Date().toISOString().split('T')[0];
+                let yesterday = new Date(Date.now()-86400000).toISOString().split('T')[0];
+                if(dates.includes(today) || dates.includes(yesterday)) {
+                    let d = dates.includes(today) ? new Date() : new Date(Date.now()-86400000);
+                    while(dates.includes(d.toISOString().split('T')[0])) { s++; d.setDate(d.getDate()-1); }
                 }
-                this.streak = streak;
+                this.streak = s;
             },
             formatTUL(s) { return `${Math.floor(s/60)}m ${s%60}s`; }
         }
