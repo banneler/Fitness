@@ -121,22 +121,26 @@
             </div>
             
             <div class="flex justify-around relative z-10 px-4">
-                <svg class="h-48 w-auto" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M50 10 C 55 10, 58 15, 58 20 C 58 25, 55 28, 52 28 L 52 35 L 48 35 L 48 28 C 45 28, 42 25, 42 20 C 42 15, 45 10, 50 10 Z" class="muscle-base" />
-                    <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" d="M 30 38 Q 40 35 50 38 Q 60 35 70 38 L 75 45 Q 70 50 65 55 L 35 55 Q 30 50 25 45 Z" />
-                    <path :class="['muscle-base', muscleHeatmap['chest'].color]" d="M 35 55 L 65 55 Q 60 75 50 80 Q 40 75 35 55" />
-                    <path :class="['muscle-base', muscleHeatmap['arms'].color]" d="M 25 45 L 20 70 L 15 90 L 25 95 L 30 75 L 35 55 Z M 75 45 L 80 70 L 85 90 L 75 95 L 70 75 L 65 55 Z" />
-                    <path :class="['muscle-base', muscleHeatmap['core'].color]" d="M 35 80 Q 50 85 65 80 L 62 110 Q 50 115 38 110 Z" />
-                    <path :class="['muscle-base', muscleHeatmap['legs'].color]" d="M 38 110 L 62 110 L 65 150 L 55 180 L 45 180 L 35 150 Z" />
-                </svg>
+           <svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="#475569" stroke-width="2" fill="none">
+        <path d="M100,30 C115,30 125,40 125,55 L125,65 C125,75 115,85 100,85 C85,85 75,75 75,65 L75,55 C75,40 85,30 100,30 Z" /> <path d="M100,85 L100,100 M75,65 L60,75 M125,65 L140,75" /> <path d="M60,75 C40,85 30,110 30,140 L30,220 L45,240" /> <path d="M140,75 C160,85 170,110 170,140 L170,220 L155,240" /> <path d="M60,100 C60,150 70,200 75,240 L70,300 L65,350 L55,380 L75,390 L85,380 L90,300" /> <path d="M140,100 C140,150 130,200 125,240 L130,300 L135,350 L145,380 L125,390 L115,380 L110,300" /> <path d="M75,240 C100,260 125,240 125,240" /> </g>
 
-                <svg class="h-48 w-auto" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M50 10 C 55 10, 58 15, 58 20 C 58 25, 55 28, 52 28 L 52 35 L 48 35 L 48 28 C 45 28, 42 25, 42 20 C 42 15, 45 10, 50 10 Z" class="muscle-base" />
-                    <path :class="['muscle-base', muscleHeatmap['back'].color]" d="M 35 35 L 65 35 L 75 50 L 50 70 L 25 50 Z M 28 65 L 72 65 L 65 100 L 50 110 L 35 100 Z" />
-                    <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" d="M 25 40 L 15 55 L 28 65 Z M 75 40 L 85 55 L 72 65 Z" />
-                    <path :class="['muscle-base', muscleHeatmap['arms'].color]" d="M 15 55 L 20 80 L 28 65 Z M 85 55 L 80 80 L 72 65 Z" />
-                    <path :class="['muscle-base', muscleHeatmap['legs'].color]" d="M 35 100 L 65 100 L 70 130 Q 50 140 30 130 Z M 30 130 Q 50 140 70 130 L 65 170 L 35 170 Z" />
-                </svg>
+    <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" d="M60,75 C50,80 40,95 40,120 C50,130 65,130 75,115 L60,75 Z M140,75 C150,80 160,95 160,120 C150,130 135,130 125,115 L140,75 Z" />
+    <path :class="['muscle-base', muscleHeatmap['chest'].color]" d="M75,115 C85,125 115,125 125,115 C130,140 120,155 100,160 C80,155 70,140 75,115 Z" />
+    <path :class="['muscle-base', muscleHeatmap['arms'].color]" d="M40,120 C35,150 35,190 45,240 L55,230 C50,190 50,150 60,130 C50,130 40,120 40,120 Z M160,120 C165,150 165,190 155,240 L145,230 C150,190 150,150 140,130 C150,130 160,120 160,120 Z" />
+    <path :class="['muscle-base', muscleHeatmap['core'].color]" d="M75,160 C85,165 115,165 125,160 C120,200 115,230 100,240 C85,230 80,200 75,160 Z" />
+    <path :class="['muscle-base', muscleHeatmap['legs'].color]" d="M75,240 C70,280 70,320 75,350 L90,340 C95,310 95,270 90,250 C85,250 80,245 75,240 Z M125,240 C130,280 130,320 125,350 L110,340 C105,310 105,270 110,250 C115,250 120,245 125,240 Z" />
+</svg>
+
+<svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="#475569" stroke-width="2" fill="none">
+        <path d="M100,30 C115,30 125,40 125,55 L125,65 C125,75 115,85 100,85 C85,85 75,75 75,65 L75,55 C75,40 85,30 100,30 Z" /> <path d="M100,85 L100,390" stroke-dasharray="4,4" opacity="0.5" /> <path d="M75,65 L50,80 C30,100 30,140 30,170 L45,240" /> <path d="M125,65 L150,80 C170,100 170,140 170,170 L155,240" /> <path d="M75,240 C65,280 65,330 70,390 L85,390 L90,320 L95,390" /> <path d="M125,240 C135,280 135,330 130,390 L115,390 L110,320 L105,390" /> </g>
+
+    <path :class="['muscle-base', muscleHeatmap['back'].color]" d="M100,85 L75,95 C65,120 70,160 85,200 C95,210 105,210 115,200 C130,160 135,120 125,95 L100,85 Z" />
+    <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" d="M75,95 C60,100 50,120 50,140 C60,150 75,140 85,125 L75,95 Z M125,95 C140,100 150,120 150,140 C140,150 125,140 115,125 L125,95 Z" />
+    <path :class="['muscle-base', muscleHeatmap['arms'].color]" d="M50,140 C45,170 45,210 50,240 L65,230 C60,190 60,160 75,140 C60,145 55,140 50,140 Z M150,140 C155,170 155,210 150,240 L135,230 C140,190 140,160 125,140 C140,145 145,140 150,140 Z" />
+    <path :class="['muscle-base', muscleHeatmap['legs'].color]" d="M85,200 C70,210 65,240 75,260 C70,300 70,340 75,380 L90,370 C95,330 95,290 85,260 C95,250 95,220 85,200 Z M115,200 C130,210 135,240 125,260 C130,300 130,340 125,380 L110,370 C105,330 105,290 115,260 C105,250 105,220 115,200 Z" />
+</svg>
             </div>
         </div>
 
