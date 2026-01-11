@@ -109,32 +109,38 @@
             </div>
         </div>
 
+        <div class="glass p-6 rounded-[2rem] border-t-4 border-t-blue-500 shadow-xl">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2 opacity-80">
+                    <i data-lucide="droplets" class="w-4 h-4 text-blue-400"></i>
+                    <h3 class="text-xs font-black uppercase tracking-widest">Hydration</h3>
+                </div>
+                <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">{{ (metrics.water_intake || 0) * 16 }}/128 oz</span>
+            </div>
+            
+            <div class="flex justify-between px-1">
+                <i v-for="n in 8" :key="n" 
+                   @click="saveWater(n)"
+                   data-lucide="droplet" 
+                   class="w-7 h-7 cursor-pointer droplet-fill transition-all active:scale-90"
+                   :class="n <= (metrics.water_intake || 0) ? 'droplet-active' : 'text-slate-700'">
+                </i>
+            </div>
+            <div class="text-center mt-3">
+                <span class="text-[8px] text-slate-600 font-bold uppercase tracking-[0.2em]">1 Drop = 16oz • Goal: 1 Gallon</span>
+            </div>
+        </div>
+
         <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
             <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center gap-2">
-                    <i data-lucide="sunrise" class="w-5 h-5 text-yellow-500"></i>
-                    <h3 class="text-lg font-black italic text-white uppercase">Morning Report</h3>
+                    <i data-lucide="sun" class="w-5 h-5 text-yellow-500"></i>
+                    <h3 class="text-lg font-black italic text-white uppercase">Daily Report</h3>
                 </div>
                 <span v-if="reportSaved" class="bg-green-500/10 text-green-500 px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest">Saved</span>
             </div>
 
             <div class="space-y-6">
-                
-                <div class="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Hydration</span>
-                        <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">{{ metrics.water_intake || 0 }}/8 Cups</span>
-                    </div>
-                    <div class="flex justify-between px-1">
-                        <i v-for="n in 8" :key="n" 
-                           @click="saveWater(n)"
-                           data-lucide="droplet" 
-                           class="w-6 h-6 cursor-pointer droplet-fill transition-all active:scale-90"
-                           :class="n <= (metrics.water_intake || 0) ? 'droplet-active' : 'text-slate-700'">
-                        </i>
-                    </div>
-                </div>
-
                 <div class="bg-slate-900/50 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
                     <div>
                         <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Weight (lbs)</span>
@@ -213,10 +219,10 @@
                     resting_hr: null,
                     sleep_quality: 7,
                     energy_level: 5,
-                    water_intake: 0 // New Field
+                    water_intake: 0 
                 },
-                previousWeight: null, // For trend calculation
-                todaysWorkout: null, // For mission briefing
+                previousWeight: null, 
+                todaysWorkout: null, 
                 proteinTarget: 180,
                 proteinCurrent: 0,
                 totalVolume: 0,
