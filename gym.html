@@ -8,15 +8,13 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Constellation">
     <link rel="manifest" href="manifest.json">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-
+    
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
@@ -25,60 +23,33 @@
         .tab-active i { stroke-width: 3px; filter: drop-shadow(0 0 8px #3b82f6); }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
         .loading-mask { position: fixed; inset: 0; background: #020617; z-index: 1000; display: flex; align-items: center; justify-content: center; }
-        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         /* Custom Checkbox */
         .custom-checkbox { appearance: none; background-color: #1e293b; width: 1.5rem; height: 1.5rem; border-radius: 0.5rem; display: grid; place-content: center; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1); }
-        .custom-checkbox::before { content: ""; width: 0.75rem; height: 0.75rem; transform: scale(0); transition: 120ms transform ease-in-out; box-shadow: inset 1em 1em white; transform-origin: center; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
+        .custom-checkbox::before { content: ""; width: 0.75rem; height: 0.75rem; transform: scale(0); transition: 120ms transform ease-in-out; box-shadow: inset 1em 1em white; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
         .custom-checkbox:checked { background-color: #3b82f6; border-color: #3b82f6; }
         .custom-checkbox:checked::before { transform: scale(1); }
 
-        /* Failure Checkbox (Red Skull) */
-        .failure-checkbox { 
-            appearance: none; 
-            width: 1.2rem; 
-            height: 1.2rem; 
-            background-color: #334155; 
-            -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain;
-            mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain;
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        .failure-checkbox:checked { 
-            background-color: #ef4444; 
-            filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.8)); 
-        }
+        /* Failure Checkbox */
+        .failure-checkbox { appearance: none; width: 1.2rem; height: 1.2rem; background-color: #334155; -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain; mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain; transition: all 0.2s; }
+        .failure-checkbox:checked { background-color: #ef4444; filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.8)); }
 
-        /* LOADING HISTORY STATE */
-        .input-loading {
-            border-color: #a855f7 !important;
-            background-color: rgba(168, 85, 247, 0.1) !important;
-            animation: pulse-purple 1.5s infinite;
-        }
-        @keyframes pulse-purple { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-
-        /* Focus Mode Styles */
         .exercise-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .exercise-blurred { opacity: 0.4; filter: grayscale(100%) blur(1px); transform: scale(0.98); pointer-events: none; }
         .exercise-active { opacity: 1; filter: none; transform: scale(1); border-color: rgba(59, 130, 246, 0.3); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); }
         .pr-active { border-color: #eab308 !important; box-shadow: 0 0 15px rgba(234, 179, 8, 0.2); color: #eab308 !important; background: rgba(234, 179, 8, 0.05); }
+        .input-loading { border-color: #a855f7 !important; background-color: rgba(168, 85, 247, 0.1) !important; animation: pulse-purple 1.5s infinite; }
+        @keyframes pulse-purple { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-        /* HEATMAP STYLES */
-        .muscle-base { fill: rgba(30, 41, 59, 0.1); stroke: rgba(255, 255, 255, 0.2); stroke-width: 1px; stroke-linecap: round; stroke-linejoin: round; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-        .fill-red-500 { fill: rgba(239, 68, 68, 0.4) !important; stroke: #ef4444 !important; stroke-width: 1.5px; filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.6)); }
-        .fill-orange-500 { fill: rgba(249, 115, 22, 0.3) !important; stroke: #f97316 !important; stroke-width: 1.2px; }
-        .fill-blue-500 { fill: rgba(59, 130, 246, 0.05) !important; stroke: rgba(255, 255, 255, 0.1) !important; }
-
-        /* Superset Link Line */
         .superset-link { position: absolute; left: 1.5rem; top: -1rem; bottom: 50%; width: 2px; background: #3b82f6; z-index: 0; }
         .superset-dot { position: absolute; left: 1.2rem; top: 50%; width: 0.75rem; height: 0.75rem; background: #020617; border: 2px solid #3b82f6; border-radius: 50%; z-index: 1; transform: translateY(-50%); }
 
-        /* Drag Handle */
-        .drag-handle { cursor: grab; touch-action: none; }
-        .drag-handle:active { cursor: grabbing; }
-        .sortable-ghost { opacity: 0.4; background: rgba(59, 130, 246, 0.1); border: 1px dashed #3b82f6; }
+        .muscle-base { fill: rgba(30, 41, 59, 0.1); stroke: rgba(255, 255, 255, 0.2); stroke-width: 1px; stroke-linecap: round; stroke-linejoin: round; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .fill-red-500 { fill: rgba(239, 68, 68, 0.4) !important; stroke: #ef4444 !important; }
+        .fill-orange-500 { fill: rgba(249, 115, 22, 0.3) !important; stroke: #f97316 !important; }
+        .fill-blue-500 { fill: rgba(59, 130, 246, 0.05) !important; stroke: rgba(255, 255, 255, 0.1) !important; }
 
         .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
@@ -135,7 +106,7 @@
             </div>
             <div class="flex gap-2">
                 <button @click="generateAIWorkout" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-purple-400 hover:text-purple-300 hover:border-purple-500/30"><i data-lucide="sparkles" class="w-5 h-5"></i></button>
-                <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30"><i data-lucide="log-out" class="w-5 h-5"></i></a>
+                <button @click="logout" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30"><i data-lucide="log-out" class="w-5 h-5"></i></button>
             </div>
         </header>
 
@@ -195,18 +166,18 @@
         <h3 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Protocols</h3>
         <div class="grid grid-cols-2 gap-4 mb-8">
             <button v-for="routine in routines" :key="routine.id" @click="previewRoutine(routine)" class="glass p-6 rounded-3xl text-left hover:border-blue-500/50 transition-all active:scale-95 group relative overflow-hidden">
-                <div @click.stop="editRoutine(routine)" class="absolute top-3 right-3 p-2 bg-slate-950/50 rounded-full text-slate-500 hover:text-white hover:bg-blue-600 transition-all z-10">
+                <a :href="'builder.html?edit=' + routine.id" @click.stop class="absolute top-3 right-3 p-2 bg-slate-950/50 rounded-full text-slate-500 hover:text-white hover:bg-blue-600 transition-all z-10">
                     <i data-lucide="pencil" class="w-3 h-3"></i>
-                </div>
+                </a>
                 <i :data-lucide="routine.icon_name" class="w-6 h-6 text-blue-500 mb-3 group-hover:scale-110 transition-transform"></i>
                 <div class="font-black text-xl italic truncate pr-4">{{ routine.name }}</div>
                 <div class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">{{ routine.exercise_order?.length || 0 }} Exercises</div>
             </button>
-            <button @click="resetBuilder" class="glass p-6 rounded-3xl text-left hover:border-green-500/50 transition-all active:scale-95 group border-dashed border-slate-700">
+            <a href="builder.html" class="glass p-6 rounded-3xl text-left hover:border-green-500/50 transition-all active:scale-95 group border-dashed border-slate-700">
                 <i data-lucide="plus-circle" class="w-6 h-6 text-green-500 mb-3 group-hover:scale-110 transition-transform"></i>
                 <div class="font-black text-xl italic text-slate-400">NEW</div>
                 <div class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Workout / Exercise</div>
-            </button>
+            </a>
         </div>
 
         <div class="glass rounded-[2.5rem] p-8 shadow-2xl mb-24">
@@ -222,139 +193,6 @@
                         <div class="text-[10px] text-slate-500 font-bold mt-1 tracking-wider">{{ session.date }} • {{ session.volume }} sets</div>
                     </div>
                     <div class="text-right"><span class="block font-black text-green-500 text-xs">COMPLETED</span></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div v-if="view === 'builder'" class="flex-1 flex flex-col">
-        <header class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-black italic uppercase">{{ newRoutine.id ? 'Edit Protocol' : 'Builder' }}</h2>
-            <button @click="view = 'dashboard'" class="text-slate-400 hover:text-white font-bold text-xs uppercase">Cancel</button>
-        </header>
-
-        <div class="flex p-1 bg-slate-900 rounded-xl mb-6 border border-white/5">
-            <button @click="builderTab = 'routine'" :class="builderTab === 'routine' ? 'bg-blue-600 text-white' : 'text-slate-500'" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">Routine Sequence</button>
-            <button @click="builderTab = 'exercise'" :class="builderTab === 'exercise' ? 'bg-blue-600 text-white' : 'text-slate-500'" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">Exercise Editor</button>
-        </div>
-
-        <div v-if="builderTab === 'routine'" class="space-y-4 flex-1 overflow-y-auto pb-32">
-            <input v-model="newRoutine.name" placeholder="Protocol Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none font-bold">
-            
-            <div class="grid grid-cols-6 gap-2 bg-slate-900/50 p-4 rounded-xl border border-white/5">
-                <button v-for="icon in iconLibrary" :key="icon" @click="newRoutine.icon = icon" :class="newRoutine.icon === icon ? 'text-blue-500 bg-blue-500/10' : 'text-slate-600'" class="p-2 rounded-lg flex justify-center hover:bg-white/5 transition-all">
-                    <i :data-lucide="icon" class="w-5 h-5"></i>
-                </button>
-            </div>
-
-            <div class="space-y-2">
-                <p class="text-[10px] font-bold uppercase text-slate-500 mb-1">Sequence Order</p>
-                <div v-if="newRoutine.exercises.length === 0" class="text-center py-8 text-slate-600 text-xs italic border border-dashed border-slate-800 rounded-xl">Sequence is empty. Add exercises below.</div>
-                
-                <div ref="sortableList" class="space-y-2">
-                    <div v-for="(exId, idx) in newRoutine.exercises" :key="exId + '-' + idx" :data-id="exId" class="flex items-center gap-2 bg-slate-950/50 p-3 rounded-xl border border-white/5 relative group">
-                        <div class="p-2 text-slate-600 drag-handle"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div>
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2">
-                                <span class="text-[10px] font-mono text-slate-600">0{{idx+1}}</span>
-                                <span class="text-xs font-bold text-slate-200">{{ getExerciseName(exId) }}</span>
-                            </div>
-                            <div v-if="idx > 0 && isSuperset(idx)" class="flex items-center gap-1 mt-1 text-[8px] text-blue-400 font-bold uppercase tracking-wider">
-                                <i data-lucide="link" class="w-3 h-3"></i> Linked to Above
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button v-if="idx > 0" @click="toggleSuperset(idx)" class="p-2 rounded-lg transition-colors" :class="isSuperset(idx) ? 'text-blue-500 bg-blue-500/10' : 'text-slate-600 hover:text-white'">
-                                <i data-lucide="link" class="w-3 h-3"></i>
-                            </button>
-                            <button @click="removeExercise(idx)" class="p-2 text-slate-600 hover:text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="space-y-2 mt-6">
-                <div class="flex justify-between items-center">
-                    <p class="text-[10px] font-bold uppercase text-slate-500">Library</p>
-                    <button @click="builderShowPicker = !builderShowPicker" class="text-[10px] font-black uppercase text-blue-500 flex items-center gap-1">{{ builderShowPicker ? 'Hide' : 'Show' }} Library</button>
-                </div>
-                
-                <div v-if="builderShowPicker" class="animate-slide-down">
-                    <input type="text" v-model="exerciseSearch" placeholder="Filter library..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none mb-3">
-                    <div class="space-y-2 max-h-60 overflow-y-auto">
-                        <button v-for="ex in filteredExercises" :key="ex.id" @click="addExercise(ex.id)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-900/50 flex justify-between items-center active:scale-95 transition-transform text-left group">
-                            <div class="flex items-center gap-3">
-                                <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4 text-slate-500"></i>
-                                <div>
-                                    <div class="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{{ ex.name }}</div>
-                                    <div class="text-[9px] text-slate-500 uppercase">{{ ex.muscle_group }}</div>
-                                </div>
-                            </div>
-                            <i data-lucide="plus" class="w-4 h-4 text-green-500"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <button @click="saveRoutine" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all mt-6">
-                {{ newRoutine.id ? 'Update Protocol' : 'Save Protocol' }}
-            </button>
-            <button v-if="newRoutine.id" @click="deleteRoutine" class="w-full bg-slate-900 border border-red-900/30 text-red-500 py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all mt-2">
-                Delete Protocol
-            </button>
-        </div>
-
-        <div v-if="builderTab === 'exercise'" class="space-y-4 flex-1 overflow-y-auto pb-32">
-            <div class="flex justify-between items-center">
-                <h3 class="text-sm font-black italic uppercase text-white">{{ newExercise.id ? 'Edit Exercise' : 'New Exercise' }}</h3>
-                <button v-if="newExercise.id" @click="clearExerciseForm" class="text-[10px] font-bold uppercase text-slate-500">Cancel Edit</button>
-            </div>
-
-            <input v-model="newExercise.name" placeholder="Exercise Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none font-bold">
-            
-            <div class="space-y-2">
-                <label class="text-[10px] font-bold uppercase text-slate-500">Target Muscle</label>
-                <select v-model="newExercise.group" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white outline-none appearance-none">
-                    <option value="" disabled>Select Primary Muscle</option>
-                    <option v-for="m in muscleGroups" :key="m" :value="m">{{ m }}</option>
-                </select>
-            </div>
-
-            <div class="flex gap-2">
-                <button @click="newExercise.weight_type = 'combined'" class="flex-1 p-4 rounded-xl border transition-all text-left" :class="newExercise.weight_type === 'combined' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-slate-900'">
-                    <span class="block text-[10px] font-black uppercase text-slate-400 mb-1">Standard</span>
-                    <span class="block text-xs font-bold text-white">Barbell / Machine</span>
-                    <span class="block text-[8px] text-slate-500 mt-1">Total Weight</span>
-                </button>
-                <button @click="newExercise.weight_type = 'per_side'" class="flex-1 p-4 rounded-xl border transition-all text-left" :class="newExercise.weight_type === 'per_side' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-slate-900'">
-                    <span class="block text-[10px] font-black uppercase text-slate-400 mb-1">Unilateral</span>
-                    <span class="block text-xs font-bold text-white">Dumbbell / Cable</span>
-                    <span class="block text-[8px] text-slate-500 mt-1">Weight Per Arm</span>
-                </button>
-            </div>
-
-            <p class="text-[10px] font-bold uppercase text-slate-500 mt-4">Visual Icon</p>
-            <div class="grid grid-cols-6 gap-2 bg-slate-900/50 p-4 rounded-xl border border-white/5">
-                <button v-for="icon in iconLibrary" :key="icon" @click="newExercise.icon = icon" :class="newExercise.icon === icon ? 'text-blue-500 bg-blue-500/10' : 'text-slate-600'" class="p-2 rounded-lg flex justify-center hover:bg-white/5 transition-all">
-                    <i :data-lucide="icon" class="w-5 h-5"></i>
-                </button>
-            </div>
-            
-            <button @click="saveExercise" class="w-full bg-green-600 py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all mt-6">
-                {{ newExercise.id ? 'Update Exercise' : 'Add to Library' }}
-            </button>
-            
-            <div class="mt-8 border-t border-white/10 pt-6">
-                <p class="text-[10px] font-bold uppercase text-slate-500 mb-3">Manage Library</p>
-                <input type="text" v-model="exerciseSearch" placeholder="Search to edit..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none mb-3">
-                <div class="space-y-2">
-                    <button v-for="ex in filteredExercises" :key="ex.id" @click="editExercise(ex)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-900/50 flex justify-between items-center active:scale-95 transition-transform text-left group hover:border-blue-500/30">
-                        <div class="flex items-center gap-3">
-                            <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4 text-slate-500 group-hover:text-blue-500"></i>
-                            <div class="text-xs font-bold text-white">{{ ex.name }}</div>
-                        </div>
-                        <i data-lucide="pencil" class="w-3 h-3 text-slate-600 group-hover:text-white"></i>
-                    </button>
                 </div>
             </div>
         </div>
@@ -420,12 +258,7 @@
         </div>
 
         <div class="flex-1 space-y-6 mb-24 overflow-y-auto" id="session-container">
-            
-            <div v-for="(exercise, exIndex) in activeRoutine.data" 
-                 :key="exIndex" 
-                 @click="activeExerciseIdx = exIndex"
-                 class="glass p-5 rounded-3xl border border-white/10 exercise-card relative"
-                 :class="activeExerciseIdx === exIndex ? 'exercise-active' : 'exercise-blurred'">
+            <div v-for="(exercise, exIndex) in activeRoutine.data" :key="exIndex" @click="activeExerciseIdx = exIndex" class="glass p-5 rounded-3xl border border-white/10 exercise-card relative" :class="activeExerciseIdx === exIndex ? 'exercise-active' : 'exercise-blurred'">
                  
                  <div v-if="exercise.isSuperset" class="superset-link"></div>
                  <div v-if="exercise.isSuperset" class="superset-dot"></div>
@@ -456,19 +289,10 @@
                         <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">{{ setIndex + 1 }}</div>
                     </div>
                     <div class="col-span-4">
-                        <input type="number" 
-                               v-model="set.weight" 
-                               @input="checkPR(exercise, set.weight)"
-                               class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600"
-                               :class="{'pr-active': set.weight > (exercise.personalRecord || 0), 'input-loading': exercise.loadingHistory}"
-                               :placeholder="set.prevWeight || '-'">
+                        <input type="number" v-model="set.weight" @input="checkPR(exercise, set.weight)" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :class="{'pr-active': set.weight > (exercise.personalRecord || 0), 'input-loading': exercise.loadingHistory}" :placeholder="set.prevWeight || '-'">
                     </div>
                     <div class="col-span-4">
-                        <input type="number" 
-                               v-model="set.reps" 
-                               class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600"
-                               :class="{'input-loading': exercise.loadingHistory}"
-                               :placeholder="set.prevReps || '-'">
+                        <input type="number" v-model="set.reps" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :class="{'input-loading': exercise.loadingHistory}" :placeholder="set.prevReps || '-'">
                     </div>
                     <div class="col-span-2 flex justify-center"><input type="checkbox" v-model="set.done" class="custom-checkbox"></div>
                     <div class="col-span-1 flex justify-center"><input type="checkbox" v-model="set.failure" class="failure-checkbox"></div>
@@ -514,9 +338,6 @@
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
     );
 
-    const ICONS = ['dumbbell', 'biceps-flexed', 'weight', 'disc', 'anchor', 'sword', 'shield', 'arrow-up-circle', 'arrow-down-circle', 'move', 'layers', 'columns-2', 'footprints', 'bike', 'waves', 'zap', 'activity', 'trophy'];
-    const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Cardio'];
-
     createApp({
         data() { 
             return { 
@@ -524,8 +345,6 @@
                 loadingText: 'Syncing Protocols',
                 session: null,
                 view: 'dashboard', 
-                builderTab: 'routine',
-                builderShowPicker: false, 
                 toast: { visible: false, title: '', message: '' },
                 logoutModal: false,
                 finishModal: false,
@@ -536,28 +355,12 @@
                 schedule: [], 
                 recentSessions: [],
                 rawLogs: [], 
-                iconLibrary: ICONS,
-                muscleGroups: MUSCLES,
-                daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                 
                 // Heatmap Data
-                muscleHeatmap: { 
-                    'chest': {color: 'fill-blue-500', lastTrained: null}, 
-                    'back': {color: 'fill-blue-500', lastTrained: null}, 
-                    'legs': {color: 'fill-blue-500', lastTrained: null}, 
-                    'arms': {color: 'fill-blue-500', lastTrained: null}, 
-                    'shoulders': {color: 'fill-blue-500', lastTrained: null},
-                    'core': {color: 'fill-blue-500', lastTrained: null}
-                },
+                muscleHeatmap: { 'chest': {color: 'fill-blue-500'}, 'back': {color: 'fill-blue-500'}, 'legs': {color: 'fill-blue-500'}, 'arms': {color: 'fill-blue-500'}, 'shoulders': {color: 'fill-blue-500'}, 'core': {color: 'fill-blue-500'} },
 
-                // Modals
                 scheduleModal: null, 
                 previewModal: null,
-
-                // Builder State
-                newRoutine: { id: null, name: '', icon: 'activity', exercises: [], supersets: [] }, 
-                newExercise: { id: null, name: '', group: '', icon: 'dumbbell', weight_type: 'combined' }, 
-                exerciseSearch: '',
 
                 // Active Session
                 activeRoutine: { name: '', data: [] },
@@ -572,51 +375,27 @@
                 personalRecords: {} 
             } 
         },
-        watch: {
-            // Re-init sortable whenever builder tab switches to routine or items change
-            builderTab(val) {
-                if(val === 'routine') this.$nextTick(() => this.initSortable());
-            }
-        },
         computed: {
             upcomingDays() {
                 const days = [];
                 for(let i=0; i<7; i++) {
                     const d = new Date(); 
                     d.setDate(d.getDate() + i);
-                    days.push({ 
-                        dateNum: d.getDate(), 
-                        dayName: d.toLocaleDateString('en-US', {weekday:'short'}), 
-                        fullDate: d.toISOString().split('T')[0] 
-                    });
+                    days.push({ dateNum: d.getDate(), dayName: d.toLocaleDateString('en-US', {weekday:'short'}), fullDate: d.toISOString().split('T')[0] });
                 }
                 return days;
-            },
-            filteredExercises() {
-                if (!this.exerciseSearch) return this.libraryExercises;
-                const search = this.exerciseSearch.toLowerCase();
-                return this.libraryExercises.filter(ex => ex.name.toLowerCase().includes(search));
             }
         },
         async mounted() {
             const { data: { session }, error } = await _client.auth.getSession();
-            if (error || !session) { 
-                window.location.href = 'index.html'; 
-                return; 
-            }
+            if (error || !session) { window.location.href = 'index.html'; return; }
             this.session = session;
             
             try {
-                await Promise.all([
-                    this.fetchRoutines(), 
-                    this.fetchExercises(), 
-                    this.fetchSchedule(), 
-                    this.fetchHistory()
-                ]);
+                await Promise.all([this.fetchRoutines(), this.fetchExercises(), this.fetchSchedule(), this.fetchHistory()]);
                 this.calculateHeatmap();
             } catch (err) {
-                console.error("Initialization error:", err);
-                this.showToast("Sync Error", "Could not load data. Pull to refresh.");
+                this.showToast("Sync Error", "Could not load data.");
             } finally {
                 this.loading = false;
                 this.$nextTick(() => lucide.createIcons());
@@ -624,78 +403,32 @@
         },
         updated() { this.$nextTick(() => lucide.createIcons()); },
         methods: {
-            async confirmLogout() { 
-                await _client.auth.signOut(); 
-                window.location.href = 'index.html'; 
-            },
-            showToast(title, message) { 
-                this.toast = { visible: true, title, message }; 
-                setTimeout(() => this.toast.visible = false, 3000); 
-            },
+            async confirmLogout() { await _client.auth.signOut(); window.location.href = 'index.html'; },
+            showToast(title, message) { this.toast = { visible: true, title, message }; setTimeout(() => this.toast.visible = false, 3000); },
             
-            async fetchRoutines() { 
-                const { data } = await _client.from('routines').select('*').order('created_at'); 
-                this.routines = data || []; 
-            },
-            async fetchExercises() { 
-                const { data } = await _client.from('exercises').select('*').order('name'); 
-                this.libraryExercises = data || []; 
-            },
-            async fetchSchedule() { 
-                const { data } = await _client.from('schedule').select('*, routines(name, icon_name)'); 
-                this.schedule = data || []; 
-            },
+            async fetchRoutines() { const { data } = await _client.from('routines').select('*').order('created_at'); this.routines = data || []; },
+            async fetchExercises() { const { data } = await _client.from('exercises').select('*').order('name'); this.libraryExercises = data || []; },
+            async fetchSchedule() { const { data } = await _client.from('schedule').select('*, routines(name, icon_name)'); this.schedule = data || []; },
             async fetchHistory() {
-                const { data: rawData } = await _client.from('workout_logs')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(300);
+                const { data: rawData } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false }).limit(300);
                 this.rawLogs = rawData || [];
-
+                // PR Logic
                 this.rawLogs.forEach(log => {
                     if(log.sets_data) {
                         log.sets_data.forEach(s => {
                             const w = parseFloat(s.weight) || 0;
-                            if(w > (this.personalRecords[log.exercise_name] || 0)) {
-                                this.personalRecords[log.exercise_name] = w;
-                            }
+                            if(w > (this.personalRecords[log.exercise_name] || 0)) this.personalRecords[log.exercise_name] = w;
                         });
                     }
                 });
-
-                if (!this.rawLogs.length) { 
-                    this.recentSessions = []; 
-                    return; 
-                }
-                
-                const sessions = []; 
-                let currentSession = null;
-                
+                // Session Logic
+                const sessions = []; let currentSession = null;
                 this.rawLogs.forEach((log) => {
                     const logTime = new Date(log.created_at).getTime();
-                    
-                    if (!currentSession) {
-                        currentSession = { 
-                            id: log.id, 
-                            startTime: logTime, 
-                            name: log.protocol_name || 'Training Session', 
-                            date: new Date(log.created_at).toLocaleDateString(), 
-                            volume: 1 
-                        };
-                    } else {
+                    if (!currentSession) { currentSession = { id: log.id, startTime: logTime, name: log.protocol_name || 'Training Session', date: new Date(log.created_at).toLocaleDateString(), volume: 1 }; } 
+                    else {
                         const diffMins = Math.abs(currentSession.startTime - logTime) / (1000 * 60);
-                        if (diffMins < 60) {
-                            currentSession.volume++;
-                        } else { 
-                            sessions.push(currentSession); 
-                            currentSession = { 
-                                id: log.id, 
-                                startTime: logTime, 
-                                name: log.protocol_name || 'Training Session', 
-                                date: new Date(log.created_at).toLocaleDateString(), 
-                                volume: 1 
-                            }; 
-                        }
+                        if (diffMins < 60) { currentSession.volume++; } else { sessions.push(currentSession); currentSession = { id: log.id, startTime: logTime, name: log.protocol_name || 'Training Session', date: new Date(log.created_at).toLocaleDateString(), volume: 1 }; }
                     }
                 });
                 if (currentSession) sessions.push(currentSession);
@@ -703,10 +436,8 @@
             },
 
             calculateHeatmap() {
-                const now = new Date().getTime();
-                const oneDay = 1000 * 60 * 60 * 24;
+                const now = new Date().getTime(); const oneDay = 1000 * 60 * 60 * 24;
                 for(let m in this.muscleHeatmap) this.muscleHeatmap[m].lastTrained = null;
-
                 this.rawLogs.forEach(log => {
                     const exDef = this.libraryExercises.find(e => e.name === log.exercise_name);
                     if(exDef && exDef.muscle_group) {
@@ -714,31 +445,23 @@
                         if(['quads', 'hamstrings', 'glutes', 'calves'].includes(groupKey)) groupKey = 'legs';
                         if(['lats', 'traps', 'lower back'].includes(groupKey)) groupKey = 'back';
                         if(['biceps', 'triceps', 'forearms'].includes(groupKey)) groupKey = 'arms';
-
-                        if(this.muscleHeatmap[groupKey]) {
-                             const logTime = new Date(log.created_at).getTime();
-                             if(!this.muscleHeatmap[groupKey].lastTrained || logTime > this.muscleHeatmap[groupKey].lastTrained) {
-                                 this.muscleHeatmap[groupKey].lastTrained = logTime;
-                             }
+                        if(this.muscleHeatmap[groupKey] && (!this.muscleHeatmap[groupKey].lastTrained || new Date(log.created_at).getTime() > this.muscleHeatmap[groupKey].lastTrained)) {
+                             this.muscleHeatmap[groupKey].lastTrained = new Date(log.created_at).getTime();
                         }
                     }
                 });
-
                 for(let m in this.muscleHeatmap) {
                     if(this.muscleHeatmap[m].lastTrained) {
                         const daysSince = (now - this.muscleHeatmap[m].lastTrained) / oneDay;
                         if(daysSince < 2) this.muscleHeatmap[m].color = 'fill-red-500 animate-pulse'; 
                         else if(daysSince < 4) this.muscleHeatmap[m].color = 'fill-orange-500';
                         else this.muscleHeatmap[m].color = 'fill-blue-500';
-                    } else {
-                         this.muscleHeatmap[m].color = 'fill-blue-500';
-                    }
+                    } else { this.muscleHeatmap[m].color = 'fill-blue-500'; }
                 }
             },
 
             async generateAIWorkout() {
-                this.loading = true;
-                this.loadingText = "Analyzing Biometrics...";
+                this.loading = true; this.loadingText = "Analyzing Biometrics...";
                 try {
                     const { data, error } = await _client.functions.invoke('ai-workout-generator');
                     if(error) throw error;
@@ -747,7 +470,6 @@
                         await this.fetchRoutines();
                     }
                 } catch (e) {
-                    console.error(e);
                     setTimeout(async () => {
                         const fillerExercises = this.libraryExercises.slice(0, 3).map(e => e.id);
                         if(fillerExercises.length) {
@@ -762,176 +484,25 @@
                 this.loading = false;
             },
 
-            getScheduleForDay(dayName) { 
-                const entry = this.schedule.find(s => s.day_of_week === dayName); 
-                return entry ? { name: entry.routines.name, icon_name: entry.routines.icon_name } : null; 
-            },
+            getScheduleForDay(dayName) { const entry = this.schedule.find(s => s.day_of_week === dayName); return entry ? { name: entry.routines.name, icon_name: entry.routines.icon_name } : null; },
             openScheduleModal(dayObj) { this.scheduleModal = dayObj; },
             async saveSchedule(routine) {
                 if (!this.scheduleModal) return;
                 const day = this.scheduleModal.dayName; 
                 if (routine) await _client.from('schedule').upsert({ user_id: this.session.user.id, day_of_week: day, routine_id: routine.id }, { onConflict: 'user_id, day_of_week' });
                 else await _client.from('schedule').delete().eq('user_id', this.session.user.id).eq('day_of_week', day);
-                this.scheduleModal = null; 
-                this.fetchSchedule(); 
-                this.showToast('Schedule Updated', routine ? `${routine.name} set` : 'Rest day assigned');
+                this.scheduleModal = null; this.fetchSchedule(); this.showToast('Schedule Updated', routine ? `${routine.name} set` : 'Rest day assigned');
             },
 
-            resetBuilder() { 
-                this.newRoutine = { id: null, name: '', icon: 'activity', exercises: [], supersets: [] }; 
-                this.builderTab = 'routine'; 
-                this.exerciseSearch = ''; 
-                this.view = 'builder'; 
-                this.$nextTick(() => this.initSortable());
-            },
-            editRoutine(routine) { 
-                this.newRoutine = { 
-                    id: routine.id, 
-                    name: routine.name, 
-                    icon: routine.icon_name, 
-                    exercises: [...(routine.exercise_order || [])],
-                    supersets: [...(routine.supersets || [])] 
-                }; 
-                this.builderTab = 'routine'; 
-                this.exerciseSearch = ''; 
-                this.view = 'builder'; 
-                this.$nextTick(() => this.initSortable());
-            },
-            
-            // --- SORTABLE JS INIT ---
-            initSortable() {
-                const el = this.$refs.sortableList;
-                if(!el) return;
-                
-                Sortable.create(el, {
-                    handle: '.drag-handle',
-                    animation: 150,
-                    ghostClass: 'sortable-ghost',
-                    onEnd: (evt) => {
-                        const item = this.newRoutine.exercises.splice(evt.oldIndex, 1)[0];
-                        this.newRoutine.exercises.splice(evt.newIndex, 0, item);
-                        
-                        // Handle superset index shifts (basic logic: reset for simplicity or advanced logic needed)
-                        // For MVP: We will reset supersets if order changes aggressively to prevent logic errors
-                        // Advanced: Would require mapping oldIndex -> newIndex for every item in array
-                        // this.newRoutine.supersets = []; // Safety reset or keep existing logic?
-                        // Let's try to preserve:
-                        // Actually, simple array move doesn't preserve index-based pointers well.
-                        // Ideally, supersets should be defined by ID pairs, not indices.
-                        // For now, let's keep it simple: If you drag, check links.
-                        
-                        // FIX: Remove superset links that break order logic
-                        const ss = this.newRoutine.supersets || [];
-                        const movedIdx = evt.oldIndex;
-                        const targetIdx = evt.newIndex;
-                        if(ss.includes(movedIdx) || ss.includes(targetIdx)) {
-                             // If a linked item moved, remove the link to avoid confusion
-                             const sIdx = ss.indexOf(movedIdx);
-                             if (sIdx > -1) ss.splice(sIdx, 1);
-                        }
-                    }
-                });
-            },
+            previewRoutine(routine) { this.previewModal = { ...routine, exercises: routine.exercise_order || [] }; },
+            getExerciseName(id) { const ex = this.libraryExercises.find(e => e.id === id); return ex ? ex.name : 'Unknown Exercise'; },
 
-            // Reordering (Manual Fallback)
-            moveExercise(idx, direction) {
-                const arr = this.newRoutine.exercises;
-                const newIdx = idx + direction;
-                if(newIdx < 0 || newIdx >= arr.length) return;
-                [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-                const ss = this.newRoutine.supersets || [];
-                if(ss.includes(idx)) ss.splice(ss.indexOf(idx), 1);
-            },
-            removeExercise(idx) {
-                this.newRoutine.exercises.splice(idx, 1);
-                this.newRoutine.supersets = (this.newRoutine.supersets || []).filter(i => i !== idx).map(i => i > idx ? i - 1 : i);
-            },
-            addExercise(id) {
-                this.newRoutine.exercises.push(id);
-                this.builderShowPicker = false;
-            },
-            
-            // Superset Linking
-            isSuperset(idx) { return (this.newRoutine.supersets || []).includes(idx); },
-            toggleSuperset(idx) {
-                if(!this.newRoutine.supersets) this.newRoutine.supersets = [];
-                const ss = this.newRoutine.supersets;
-                if(ss.includes(idx)) ss.splice(ss.indexOf(idx), 1);
-                else ss.push(idx);
-            },
-
-            // --- EXERCISE EDITOR ---
-            editExercise(ex) {
-                this.newExercise = { ...ex };
-                window.scrollTo(0,0);
-            },
-            clearExerciseForm() {
-                this.newExercise = { id: null, name: '', group: '', icon: 'dumbbell', weight_type: 'combined' };
-            },
-            async saveExercise() {
-                if(!this.newExercise.name || !this.newExercise.group) return;
-                const payload = { 
-                    name: this.newExercise.name, 
-                    muscle_group: this.newExercise.group, 
-                    icon_name: this.newExercise.icon, 
-                    weight_type: this.newExercise.weight_type, 
-                    user_id: this.session.user.id 
-                };
-                
-                if (this.newExercise.id) {
-                    await _client.from('exercises').update(payload).eq('id', this.newExercise.id);
-                    this.showToast("Library Updated", "Exercise modified.");
-                } else {
-                    await _client.from('exercises').insert([payload]);
-                    this.showToast("Library Updated", "Exercise added.");
-                }
-                
-                this.newExercise = { id: null, name: '', group: '', icon: 'dumbbell', weight_type: 'combined' }; 
-                await this.fetchExercises();
-            },
-
-            async saveRoutine() {
-                if(!this.newRoutine.name) return;
-                const payload = { 
-                    name: this.newRoutine.name, 
-                    icon_name: this.newRoutine.icon, 
-                    exercise_order: this.newRoutine.exercises, 
-                    supersets: this.newRoutine.supersets, 
-                    user_id: this.session.user.id 
-                };
-                if (this.newRoutine.id) { await _client.from('routines').update(payload).eq('id', this.newRoutine.id); } 
-                else { await _client.from('routines').insert([payload]); }
-                this.showToast('Protocol Saved', 'Routine updated'); 
-                this.fetchRoutines(); 
-                this.view = 'dashboard';
-            },
-            async deleteRoutine() {
-                if(confirm("Delete this protocol?")) {
-                    await _client.from('routines').delete().eq('id', this.newRoutine.id);
-                    this.fetchRoutines();
-                    this.view = 'dashboard';
-                    this.showToast('Deleted', 'Protocol removed');
-                }
-            },
-
-            getExerciseName(id) { 
-                const ex = this.libraryExercises.find(e => e.id === id); 
-                return ex ? ex.name : 'Unknown Exercise'; 
-            },
-            previewRoutine(routine) { 
-                this.previewModal = { ...routine, exercises: routine.exercise_order || [] }; 
-            },
-
+            // --- ACTIVE SESSION ENGINE ---
             async startActiveSession(routine) {
                 this.previewModal = null; 
                 this.view = 'active_session';
                 this.activeExerciseIdx = 0; 
-
-                this.$nextTick(() => {
-                    window.scrollTo(0,0);
-                    const container = document.getElementById('session-container');
-                    if(container) container.scrollTop = 0;
-                });
+                this.$nextTick(() => { window.scrollTo(0,0); const c = document.getElementById('session-container'); if(c) c.scrollTop = 0; });
                 
                 const sessionExercises = (routine.exercise_order || []).map((id, index) => {
                     const exDef = this.libraryExercises.find(e => e.id === id);
@@ -941,77 +512,46 @@
                         name: exDef ? exDef.name : 'Exercise', 
                         icon: exDef ? exDef.icon_name : 'dumbbell', 
                         weightType: exDef ? exDef.weight_type : 'combined',
-                        personalRecord: pr, 
-                        isPR: false, 
-                        loadingHistory: true, 
+                        personalRecord: pr, isPR: false, loadingHistory: true, 
                         isSuperset: (routine.supersets || []).includes(index),
                         sets: [{weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}] 
                     };
                 });
-                
                 this.activeRoutine = { name: routine.name, data: sessionExercises };
-
                 this.sessionTimer = 0;
                 this.sessionStartTime = Date.now();
-                this.sessionInterval = setInterval(() => { 
-                    const delta = Date.now() - this.sessionStartTime;
-                    this.sessionTimer = Math.floor(delta / 1000);
-                }, 1000);
+                this.sessionInterval = setInterval(() => { const delta = Date.now() - this.sessionStartTime; this.sessionTimer = Math.floor(delta / 1000); }, 1000);
 
                 for (let ex of this.activeRoutine.data) {
-                    const { data: lastLog } = await _client.from('workout_logs')
-                        .select('sets_data')
-                        .eq('exercise_name', ex.name)
-                        .order('created_at', { ascending: false })
-                        .limit(1)
-                        .single();
-
+                    const { data: lastLog } = await _client.from('workout_logs').select('sets_data').eq('exercise_name', ex.name).order('created_at', { ascending: false }).limit(1).single();
                     if(lastLog && lastLog.sets_data && lastLog.sets_data.length > 0) {
                         ex.sets = lastLog.sets_data.map(s => ({
-                            weight: '', // Empty for user entry
-                            prevWeight: s.weight, // Ghost value
-                            reps: '', // Empty for user entry
-                            prevReps: s.reps, // Ghost value
-                            done: false,
-                            failure: false 
+                            weight: '', prevWeight: s.weight,
+                            reps: '', prevReps: s.reps,
+                            done: false, failure: false 
                         }));
-                        while(ex.sets.length < 3) {
-                            ex.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
-                        }
+                        while(ex.sets.length < 3) { ex.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false }); }
                     }
                     ex.loadingHistory = false;
                 }
             },
 
-            checkPR(exercise, weight) {
-                if(weight > exercise.personalRecord) exercise.isPR = true;
-                else exercise.isPR = false;
-            },
+            checkPR(exercise, weight) { if(weight > exercise.personalRecord) exercise.isPR = true; else exercise.isPR = false; },
             addSet(exIndex) { 
                 const prev = this.activeRoutine.data[exIndex].sets.slice(-1)[0]; 
                 this.activeRoutine.data[exIndex].sets.push({ weight: '', prevWeight: prev?.prevWeight||'', reps: '', prevReps: prev?.prevReps||'', done: false, failure: false }); 
             },
             toggleRestTimer() { 
                 this.restTimerRunning = !this.restTimerRunning; 
-                if(this.restTimerRunning) { 
-                    this.restTimer = 0; 
-                    this.restInterval = setInterval(() => this.restTimer++, 1000); 
-                } else clearInterval(this.restInterval); 
+                if(this.restTimerRunning) { this.restTimer = 0; this.restInterval = setInterval(() => this.restTimer++, 1000); } 
+                else clearInterval(this.restInterval); 
             },
-            formatTimer(s) { 
-                if(s < 0) s = 0;
-                return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; 
-            },
+            formatTimer(s) { if(s < 0) s = 0; return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
             
-            openFinishModal() {
-                this.finishModal = true;
-            },
-
+            openFinishModal() { this.finishModal = true; },
             async confirmFinishSession() {
                 clearInterval(this.sessionInterval);
-                this.finishModal = false;
-                this.loading = true;
-                this.loadingText = "Analyzing Performance...";
+                this.finishModal = false; this.loading = true; this.loadingText = "Analyzing Performance...";
                 
                 const logs = this.activeRoutine.data.map(ex => ({ 
                     user_id: this.session.user.id, 
@@ -1031,12 +571,8 @@
                         await Promise.all(updates);
                     }
                 }
-
-                await this.fetchHistory(); 
-                this.calculateHeatmap(); 
-                this.view = 'dashboard'; 
-                this.loading = false;
-                this.showToast("Victory", "Session archived.");
+                await this.fetchHistory(); this.calculateHeatmap(); 
+                this.view = 'dashboard'; this.loading = false; this.showToast("Victory", "Session archived.");
             }
         }
     }).mount('#app');
