@@ -30,8 +30,8 @@
         .bar-grow { transform-origin: bottom; animation: grow 1s ease-out forwards; transform: scaleY(0); }
         @keyframes grow { to { transform: scaleY(1); } }
 
-        .matrix-cell { aspect-ratio: 1/1; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.01); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
-        .matrix-active { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); color: #3b82f6; box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.1); }
+        .matrix-cell { aspect-ratio: 1/1; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.01); display: flex; align-items: center; justify-content: center; }
+        .matrix-active { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); color: #3b82f6; }
 
         .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
@@ -51,7 +51,7 @@
         <header class="flex justify-between items-center mb-8">
             <div>
                 <h1 class="text-3xl font-black italic text-purple-500 uppercase tracking-tighter">Tracker</h1>
-                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Intelligence & Progress</p>
+                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Performance Intelligence</p>
             </div>
             <div class="flex items-center gap-3">
                 <div v-if="streak > 0" class="glass px-3 py-1 rounded-full flex items-center gap-2 border-orange-500/20">
@@ -94,6 +94,9 @@
                             <polyline :points="chartPath" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" />
                             <circle :cx="lastPoint.x" :cy="lastPoint.y" r="4" fill="#fff" stroke="#3b82f6" stroke-width="2" />
                         </svg>
+                        <div v-else class="w-full h-full flex items-center justify-center border border-white/5 rounded-xl bg-slate-950/20">
+                            <span class="text-[10px] text-slate-500 italic uppercase">Insufficient Data</span>
+                        </div>
                     </div>
                 </section>
 
@@ -147,7 +150,7 @@
                 </section>
 
                 <section class="glass p-6 rounded-[2.5rem] shadow-xl space-y-6">
-                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Growth Vectors</h3>
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Structural Growth Vectors</h3>
                     <div v-for="metric in ['waist', 'chest', 'arms', 'thigh']" :key="metric" class="space-y-2">
                         <div class="flex justify-between items-end px-1">
                             <span class="text-xs font-black uppercase italic">{{ metric }}</span>
@@ -162,14 +165,14 @@
                 </section>
 
                 <section class="glass p-6 rounded-[2.5rem] shadow-xl border-t-4 border-t-emerald-500">
-                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-300 mb-6">Registry Entry</h3>
+                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-300 mb-6">Archive Measurements</h3>
                     <div class="grid grid-cols-2 gap-3 mb-6">
                         <div v-for="m in ['waist', 'chest', 'arms', 'thigh']" :key="m" class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
                             <span class="text-[7px] text-slate-500 font-black uppercase block mb-1">{{ m }} (in)</span>
                             <input type="number" step="0.01" v-model="bodyMetrics[m]" class="bg-transparent border-none text-xl font-black w-full text-white p-0 focus:ring-0">
                         </div>
                     </div>
-                    <button @click="saveBodyMetrics" class="w-full py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase shadow-lg active:scale-95 transition-all">Submit to Archive</button>
+                    <button @click="saveBodyMetrics" class="w-full py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase shadow-lg active:scale-95 transition-all">Submit to Registry</button>
                 </section>
             </div>
 
@@ -242,8 +245,8 @@
                 <div class="glass w-full max-w-sm rounded-3xl p-6 relative border border-white/10 shadow-2xl">
                     <h2 class="text-xl font-black italic uppercase text-center mb-2 text-white">System Logout</h2>
                     <div class="grid grid-cols-2 gap-3 mt-8">
-                        <button @click="logoutModal = false" class="py-4 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase">Abort</button>
-                        <button @click="handleLogout" class="py-4 rounded-xl bg-red-600 text-white font-black text-xs uppercase">Disconnect</button>
+                        <button @click="logoutModal = false" class="py-4 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase">Stay</button>
+                        <button @click="handleLogout" class="py-4 rounded-xl bg-red-600 text-white font-black text-xs uppercase shadow-lg">Disconnect</button>
                     </div>
                 </div>
             </div>
@@ -274,7 +277,9 @@
             }
         },
         computed: {
-            currentWeight() { return this.weightHistory.length ? this.weightHistory[this.weightHistory.length-1].weight : '--'; },
+            currentWeight() { 
+                return this.weightHistory.length ? this.weightHistory[this.weightHistory.length-1].weight : '--'; 
+            },
             globalMaxMacros() {
                 const totals = [];
                 for(let i=6; i>=0; i--) {
@@ -297,11 +302,7 @@
                     const d = new Date(); d.setDate(now.getDate() - i);
                     const ds = d.toISOString().split('T')[0];
                     const workout = this.rawWorkouts.find(w => w.created_at.startsWith(ds));
-                    days.push({
-                        date: ds, dayNum: d.getDate(),
-                        active: !!workout,
-                        icon: workout?.protocol_icon || 'zap'
-                    });
+                    days.push({ date: ds, dayNum: d.getDate(), active: !!workout, icon: workout?.protocol_icon || 'zap' });
                 }
                 return days;
             },
@@ -344,12 +345,13 @@
             this.session = session;
             await Promise.all([this.fetchWeight(), this.fetchWeeklyLogs(), this.fetchWorkouts(), this.fetchTargets(), this.fetchBodyHistory()]);
             
+            // PRE-POPULATE ARCHIVE INPUTS
             if (this.bodyHistory.length) {
                 const last = this.bodyHistory[this.bodyHistory.length - 1];
                 this.bodyMetrics = { waist: last.waist, chest: last.chest, arms: last.arms, thigh: last.thigh };
             }
             this.initialLoading = false;
-            this.$nextTick(() => { lucide.createIcons(); });
+            this.$nextTick(() => lucide.createIcons());
         },
         updated() { lucide.createIcons(); },
         methods: {
@@ -381,7 +383,7 @@
             },
             async saveBodyMetrics() {
                 const { error } = await _client.from('body_metrics').insert([{ user_id: this.session.user.id, waist: parseFloat(this.bodyMetrics.waist), chest: parseFloat(this.bodyMetrics.chest), arms: parseFloat(this.bodyMetrics.arms), thigh: parseFloat(this.bodyMetrics.thigh) }]);
-                if(!error) { await this.fetchBodyHistory(); }
+                if(!error) { await this.fetchBodyHistory(); alert("Biometrics registry updated."); }
             },
             async fetchWeight() {
                 const { data } = await _client.from('daily_metrics').select('*').order('created_at', { ascending: true }).limit(30);
@@ -399,7 +401,8 @@
                 this.lastPoint = points[points.length-1];
             },
             async fetchWeeklyLogs() {
-                const { data } = await _client.from('food_logs').select('*').gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]);
+                const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+                const { data } = await _client.from('food_logs').select('*').gte('created_at', sevenDaysAgo);
                 this.weeklyLogs = data || [];
             },
             async fetchWorkouts() {
