@@ -21,9 +21,14 @@
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #3b82f6; cursor: pointer; margin-top: -8px; box-shadow: 0 0 10px rgba(59,130,246,0.5); }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #1e293b; border-radius: 2px; }
         
-        /* Toast Animation */
+        /* Animations */
         .toast-enter-active, .toast-leave-active { transition: all 0.5s ease; }
         .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(20px); }
+        .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
+        .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
+        
+        .droplet-fill { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .droplet-active { fill: #3b82f6; stroke: #3b82f6; filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.5)); transform: scale(1.1); }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -41,15 +46,40 @@
         </div>
     </transition>
 
+    <transition name="modal">
+        <div v-if="logoutModal" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
+            <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="logoutModal = false"></div>
+            <div class="glass w-full max-w-sm rounded-3xl p-6 relative border border-white/10 shadow-2xl">
+                <h2 class="text-xl font-black italic uppercase text-center mb-2 text-white">System Logout</h2>
+                <p class="text-xs text-slate-500 font-bold text-center mb-6">End current session?</p>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <button @click="logoutModal = false" class="py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">
+                        Cancel
+                    </button>
+                    <button @click="confirmLogout" class="py-3 rounded-xl bg-red-600 text-white font-black text-xs uppercase shadow-lg shadow-red-900/20 hover:bg-red-500 transition-colors">
+                        Disconnect
+                    </button>
+                </div>
+            </div>
+        </div>
+    </transition>
+
     <header class="flex justify-between items-center mb-8">
         <div>
             <h1 class="text-3xl font-black italic text-white uppercase">Today</h1>
-            <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">{{ currentDate }}</p>
+            <div class="flex flex-col">
+                <span class="text-[10px] text-slate-500 font-black uppercase tracking-widest">{{ currentDate }}</span>
+                <a href="gym.html" v-if="todaysWorkout" class="text-[10px] font-bold text-blue-400 uppercase tracking-wider mt-1 flex items-center gap-1 hover:text-blue-300">
+                    <i data-lucide="crosshair" class="w-3 h-3"></i> Protocol: {{ todaysWorkout }}
+                </a>
+                <span v-else class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mt-1">Rest Day Protocol</span>
+            </div>
         </div>
-       <button @click="handleLogout" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
-        <i data-lucide="log-out" class="w-5 h-5"></i>
-    </button>
-</header>
+        <button @click="logoutModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
+            <i data-lucide="log-out" class="w-5 h-5"></i>
+        </button>
+    </header>
 
     <main class="space-y-6">
         
@@ -89,8 +119,29 @@
             </div>
 
             <div class="space-y-6">
+                
+                <div class="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Hydration</span>
+                        <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">{{ metrics.water_intake || 0 }}/8 Cups</span>
+                    </div>
+                    <div class="flex justify-between px-1">
+                        <i v-for="n in 8" :key="n" 
+                           @click="saveWater(n)"
+                           data-lucide="droplet" 
+                           class="w-6 h-6 cursor-pointer droplet-fill transition-all active:scale-90"
+                           :class="n <= (metrics.water_intake || 0) ? 'droplet-active' : 'text-slate-700'">
+                        </i>
+                    </div>
+                </div>
+
                 <div class="bg-slate-900/50 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Weight (lbs)</span>
+                    <div>
+                        <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Weight (lbs)</span>
+                        <span v-if="weightDelta" class="text-[9px] font-black uppercase tracking-widest" :class="weightDelta.color">
+                            {{ weightDelta.icon }} {{ weightDelta.val }} lbs
+                        </span>
+                    </div>
                     <input type="number" v-model="metrics.weight" class="bg-transparent text-right font-black text-xl text-white outline-none w-24 placeholder-slate-700" placeholder="0.0">
                 </div>
 
@@ -155,13 +206,17 @@
             return { 
                 session: null,
                 reportSaved: false,
+                logoutModal: false,
                 metrics: {
                     id: null,
                     weight: null,
                     resting_hr: null,
-                    sleep_quality: 7, // Default 7 hours
-                    energy_level: 5
+                    sleep_quality: 7,
+                    energy_level: 5,
+                    water_intake: 0 // New Field
                 },
+                previousWeight: null, // For trend calculation
+                todaysWorkout: null, // For mission briefing
                 proteinTarget: 180,
                 proteinCurrent: 0,
                 totalVolume: 0,
@@ -174,6 +229,16 @@
             },
             proteinLeft() {
                 return Math.max(0, this.proteinTarget - this.proteinCurrent);
+            },
+            weightDelta() {
+                if (!this.metrics.weight || !this.previousWeight) return null;
+                const diff = this.metrics.weight - this.previousWeight;
+                if (diff === 0) return { val: '0.0', color: 'text-slate-500', icon: '-' };
+                return {
+                    val: Math.abs(diff).toFixed(1),
+                    color: diff > 0 ? 'text-red-400' : 'text-green-400',
+                    icon: diff > 0 ? '🔺' : '🔻'
+                };
             }
         },
         async mounted() {
@@ -184,12 +249,18 @@
             await Promise.all([
                 this.fetchMetrics(),
                 this.fetchProtein(),
-                this.fetchVolume()
+                this.fetchVolume(),
+                this.fetchSchedule()
             ]);
             
             this.$nextTick(() => lucide.createIcons());
         },
+        updated() { this.$nextTick(() => lucide.createIcons()); },
         methods: {
+            async confirmLogout() {
+                await _client.auth.signOut();
+                window.location.href = 'index.html';
+            },
             showToast(title, message) {
                 this.toast = { visible: true, title, message };
                 setTimeout(() => this.toast.visible = false, 3000);
@@ -197,26 +268,47 @@
             formatNumber(num) {
                 return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             },
+            async fetchSchedule() {
+                const dayName = new Date().toLocaleDateString('en-US', {weekday:'short'}); // 'Sat'
+                const { data } = await _client.from('schedule').select('*, routines(name)').eq('day_of_week', dayName).single();
+                if (data && data.routines) {
+                    this.todaysWorkout = data.routines.name;
+                }
+            },
             async fetchMetrics() {
-                // Check if metrics exist for today
                 const today = new Date().toISOString().split('T')[0];
-                const { data } = await _client
+                
+                // 1. Fetch Today's Data
+                const { data: todayData } = await _client
                     .from('daily_metrics')
                     .select('*')
                     .gte('created_at', today)
                     .order('created_at', {ascending: false})
                     .limit(1);
 
-                if (data && data.length > 0) {
-                    const saved = data[0];
+                if (todayData && todayData.length > 0) {
+                    const saved = todayData[0];
                     this.metrics = {
                         id: saved.id,
                         weight: saved.weight,
                         resting_hr: saved.resting_hr,
                         sleep_quality: saved.sleep_quality || 7,
-                        energy_level: saved.energy_level || 5
+                        energy_level: saved.energy_level || 5,
+                        water_intake: saved.water_intake || 0
                     };
                     this.reportSaved = true;
+                }
+
+                // 2. Fetch Previous Weight (for Trend)
+                const { data: prevData } = await _client
+                    .from('daily_metrics')
+                    .select('weight')
+                    .lt('created_at', today) // Strictly before today
+                    .order('created_at', {ascending: false})
+                    .limit(1);
+                
+                if (prevData && prevData.length > 0) {
+                    this.previousWeight = prevData[0].weight;
                 }
             },
             async fetchProtein() {
@@ -229,63 +321,51 @@
             async fetchVolume() {
                 const today = new Date().toISOString().split('T')[0];
                 const { data } = await _client.from('workout_logs').select('sets_data').gte('created_at', today);
-                
                 if (data) {
                     let vol = 0;
                     data.forEach(log => {
                         if (log.sets_data) {
                             log.sets_data.forEach(set => {
-                                // Volume = Reps * Weight (Ignore bodyweight/0 weight for volume calculation)
-                                if (set.weight > 0 && set.reps > 0) {
-                                    vol += (set.weight * set.reps);
-                                }
+                                if (set.weight > 0 && set.reps > 0) vol += (set.weight * set.reps);
                             });
                         }
                     });
                     this.totalVolume = vol;
                 }
             },
-            async handleLogout() {
-    if(confirm("Log out of Constellation?")) {
-        await _client.auth.signOut();
-        window.location.href = 'index.html';
-    }
-},
-            async saveMetrics() {
+            async saveWater(level) {
+                // Toggle logic: If clicking the current level, clear it. Else, set it.
+                const newVal = this.metrics.water_intake === level ? 0 : level;
+                this.metrics.water_intake = newVal;
+                await this.saveMetrics(true); // Silent save
+            },
+            async saveMetrics(silent = false) {
                 const payload = {
                     user_id: this.session.user.id,
                     weight: this.metrics.weight,
                     resting_hr: this.metrics.resting_hr,
                     sleep_quality: parseInt(this.metrics.sleep_quality),
-                    energy_level: parseInt(this.metrics.energy_level)
+                    energy_level: parseInt(this.metrics.energy_level),
+                    water_intake: parseInt(this.metrics.water_intake)
                 };
 
                 let error = null;
 
                 if (this.metrics.id) {
-                    // Update existing
-                    const { error: updateError } = await _client
-                        .from('daily_metrics')
-                        .update(payload)
-                        .eq('id', this.metrics.id);
+                    const { error: updateError } = await _client.from('daily_metrics').update(payload).eq('id', this.metrics.id);
                     error = updateError;
                 } else {
-                    // Insert new
-                    const { data, error: insertError } = await _client
-                        .from('daily_metrics')
-                        .insert([payload])
-                        .select(); // Select back to get the new ID
-                    
+                    const { data, error: insertError } = await _client.from('daily_metrics').insert([payload]).select();
                     if (data) this.metrics.id = data[0].id;
                     error = insertError;
                 }
 
                 if (error) {
                     console.error(error);
-                    alert("Error saving metrics.");
+                    this.showToast("Error", "Could not save.");
                 } else {
                     this.reportSaved = true;
-                    this.showToast("Report Logged", "Readiness data saved successfully.");
+                    if(!silent) this.showToast("Report Logged", "Readiness data saved successfully.");
                 }
             }
         }
