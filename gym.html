@@ -62,10 +62,10 @@
                 <h1 class="text-3xl font-black italic text-slate-200 uppercase">Performance</h1>
                 <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Progressive Overload</p>
             </div>
-            <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all">
-                <i data-lucide="layout-grid" class="w-5 h-5 text-slate-400"></i>
-            </a>
-        </header>
+       <button @click="handleLogout" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
+        <i data-lucide="log-out" class="w-5 h-5"></i>
+    </button>
+</header>
 
         <div class="mb-8">
             <h3 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">This Week</h3>
@@ -470,6 +470,12 @@
                 this.fetchSchedule();
                 this.showToast('Schedule Updated', routine ? `${routine.name} set for ${day}` : 'Rest day assigned');
             },
+            async handleLogout() {
+    if(confirm("Log out of Constellation?")) {
+        await _client.auth.signOut();
+        window.location.href = 'index.html';
+    }
+},
 
             // Builder
             resetBuilder() {
