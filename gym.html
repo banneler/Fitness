@@ -128,8 +128,14 @@
 
             <div class="space-y-2">
                 <p class="text-[10px] font-bold uppercase text-slate-500">Select Exercises</p>
+                <div v-if="libraryExercises.length === 0" class="text-center py-4 text-slate-600 text-xs italic">
+                    No exercises found. Create one in the "Exercise" tab.
+                </div>
                 <div v-for="ex in libraryExercises" :key="ex.id" @click="toggleExerciseInRoutine(ex.id)" :class="newRoutine.exercises.includes(ex.id) ? 'border-blue-500 bg-blue-500/10' : 'border-white/5 bg-slate-900/50'" class="p-3 rounded-xl border flex justify-between items-center transition-all cursor-pointer">
-                    <span class="text-xs font-bold text-white">{{ ex.name }}</span>
+                    <div class="flex items-center gap-3">
+                        <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4 text-slate-500"></i>
+                        <span class="text-xs font-bold text-white">{{ ex.name }}</span>
+                    </div>
                     <i v-if="newRoutine.exercises.includes(ex.id)" data-lucide="check" class="w-4 h-4 text-blue-500"></i>
                 </div>
             </div>
@@ -141,6 +147,7 @@
             <input v-model="newExercise.name" placeholder="Exercise Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none">
             <input v-model="newExercise.group" placeholder="Muscle Group (e.g. Chest)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none">
             
+            <p class="text-[10px] font-bold uppercase text-slate-500 mt-4">Select Category Icon</p>
             <div class="grid grid-cols-6 gap-2 bg-slate-900/50 p-4 rounded-xl border border-white/5">
                 <button v-for="icon in iconLibrary" :key="icon" @click="newExercise.icon = icon" :class="newExercise.icon === icon ? 'text-blue-500 bg-blue-500/10' : 'text-slate-600'" class="p-2 rounded-lg flex justify-center hover:bg-white/5 transition-all">
                     <i :data-lucide="icon" class="w-5 h-5"></i>
@@ -195,7 +202,10 @@
         <div class="flex-1 space-y-6 mb-24 overflow-y-auto">
             <div v-for="(exercise, exIndex) in activeRoutine.data" :key="exIndex" class="glass p-5 rounded-3xl border border-white/10">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-black text-lg italic text-blue-400">{{ exercise.name }}</h3>
+                    <div class="flex items-center gap-2">
+                        <i :data-lucide="exercise.icon || 'dumbbell'" class="w-5 h-5 text-blue-500"></i>
+                        <h3 class="font-black text-lg italic text-blue-400">{{ exercise.name }}</h3>
+                    </div>
                 </div>
                 
                 <div class="grid grid-cols-12 gap-2 text-[8px] text-slate-500 font-black uppercase tracking-widest mb-2 text-center">
@@ -250,14 +260,32 @@
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
     );
 
-    const ICONS = ['dumbbell', 'activity', 'arrow-up-circle', 'arrow-down-circle', 'move', 'zap', 'flame', 'heart', 'anchor', 'biceps-flexed', 'bike', 'footprints', 'hammer', 'mountain', 'timer', 'trophy', 'user', 'watch', 'waves'];
+    // EXPANDED BODY PART ICONS
+    const ICONS = [
+        'dumbbell',       // Generic / Weights
+        'biceps-flexed',  // Arms / Biceps
+        'arrow-up-circle',// Shoulders / Pressing
+        'arrow-down-circle', // Back / Pulling
+        'move',           // Legs / Squats
+        'footprints',     // Cardio / Running
+        'anchor',         // Heavy Pulls / Deadlifts
+        'activity',       // HIIT / Generic
+        'zap',            // Power / Speed
+        'heart',          // Cardio
+        'bike',           // Cycling
+        'waves',          // Swimming
+        'trophy',         // PRs
+        'target',         // Precision / Core
+        'timer',          // Timed
+        'hammer'          // Strength / Sledge
+    ];
 
     createApp({
         data() { 
             return { 
                 loading: true,
                 session: null,
-                view: 'dashboard', // dashboard, builder, active_session
+                view: 'dashboard', 
                 builderTab: 'routine',
                 
                 // Data
@@ -307,23 +335,19 @@
                 this.schedule = data || [];
             },
             async fetchHistory() {
-                // Aggregating logic: group logs by created_at (within 10 mins) to fake sessions
                 const { data } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false }).limit(50);
                 if (!data) return;
                 
-                // Simple grouping by date string
                 const sessions = [];
                 const processedDates = new Set();
                 
                 data.forEach(log => {
                     const date = new Date(log.created_at).toLocaleDateString();
-                    const key = date + log.exercise_name; // Fallback uniqueness
                     if (!processedDates.has(date)) {
-                        // Count exercises on this date
                         const count = data.filter(d => new Date(d.created_at).toLocaleDateString() === date).length;
                         sessions.push({
                             id: log.id,
-                            name: log.exercise_name.includes('Recovery') ? 'Recovery Session' : 'Training Session', // Generic name since we don't store session names in logs yet
+                            name: log.exercise_name.includes('Recovery') ? 'Recovery Session' : 'Training Session', 
                             date: date,
                             volume: count
                         });
@@ -333,13 +357,11 @@
                 this.recentSessions = sessions.slice(0, 5);
             },
             
-            // Scheduling
             getScheduleForDay(day) {
                 const entry = this.schedule.find(s => s.day_of_week === day);
                 return entry ? { name: entry.routines.name, icon_name: entry.routines.icon_name } : null;
             },
             async assignSchedule(day) {
-                // Simple cycle through routines for now (Improvement: Modal Picker)
                 if (this.routines.length === 0) return;
                 const currentEntry = this.schedule.find(s => s.day_of_week === day);
                 
@@ -351,7 +373,6 @@
 
                 const nextRoutine = this.routines[nextIndex];
                 
-                // Upsert logic
                 await _client.from('schedule').upsert({ 
                     user_id: this.session.user.id, 
                     day_of_week: day, 
@@ -361,7 +382,6 @@
                 this.fetchSchedule();
             },
 
-            // Builder
             toggleExerciseInRoutine(id) {
                 const idx = this.newRoutine.exercises.indexOf(id);
                 if (idx > -1) this.newRoutine.exercises.splice(idx, 1);
@@ -369,9 +389,16 @@
             },
             async saveExercise() {
                 if(!this.newExercise.name) return;
+                
+                // 1. SAVE to DB
                 await _client.from('exercises').insert([{ ...this.newExercise, user_id: this.session.user.id }]);
+                
+                // 2. RESET Form
                 this.newExercise = { name: '', group: '', icon: 'dumbbell' };
-                this.fetchExercises();
+                
+                // 3. REFRESH Library immediately
+                await this.fetchExercises(); 
+                
                 alert('Exercise Added');
             },
             async saveRoutine() {
@@ -387,7 +414,6 @@
                 this.view = 'dashboard';
             },
 
-            // Active Session
             getExerciseName(id) {
                 const ex = this.libraryExercises.find(e => e.id === id);
                 return ex ? ex.name : 'Unknown Exercise';
@@ -399,11 +425,11 @@
                 this.previewModal = null;
                 this.view = 'active_session';
                 
-                // Hydrate exercises
                 const exercises = (routine.exercise_order || []).map(id => {
                     const exDef = this.libraryExercises.find(e => e.id === id);
                     return {
                         name: exDef ? exDef.name : 'Exercise',
+                        icon: exDef ? exDef.icon_name : 'dumbbell',
                         sets: [{weight:0, reps:0, done:false}, {weight:0, reps:0, done:false}, {weight:0, reps:0, done:false}]
                     };
                 });
