@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Gym | Constellation</title>
+    <title>Performance | Constellation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -34,14 +34,14 @@
     <div v-if="loading" class="loading-mask">
         <div class="animate-pulse flex flex-col items-center gap-4">
             <div class="w-10 h-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
-            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Connecting to Iron Temple</p>
+            <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Syncing Protocols</p>
         </div>
     </div>
 
     <div v-if="!activeSession">
         <header class="flex justify-between items-center mb-10">
             <div>
-                <h1 class="text-3xl font-black italic text-slate-200 uppercase">Iron Temple</h1>
+                <h1 class="text-3xl font-black italic text-slate-200 uppercase">Performance</h1>
                 <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Progressive Overload</p>
             </div>
             <a href="index.html" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all">
@@ -322,16 +322,15 @@
                 this.loading = true;
 
                 // 1. SAVE WORKOUT LOGS
-                // We save each exercise as a separate row to match the Tracker's "Motion" feed expectation
                 const timestamp = new Date().toISOString();
                 const user_id = this.session.user.id;
                 
                 const logsToInsert = this.exercises.map(ex => ({
                     user_id: user_id,
                     exercise_name: ex.name,
-                    sets_data: ex.sets.filter(s => s.done || s.weight > 0), // Only save relevant sets
+                    sets_data: ex.sets.filter(s => s.done || s.weight > 0), 
                     created_at: timestamp
-                })).filter(log => log.sets_data.length > 0); // Don't save empty exercises
+                })).filter(log => log.sets_data.length > 0); 
 
                 if (logsToInsert.length > 0) {
                     const { error } = await _client.from('workout_logs').insert(logsToInsert);
@@ -340,11 +339,9 @@
 
                 // 2. HANDLE INVENTORY STACK
                 if (this.stackTaken) {
-                    // Fetch all inventory
                     const { data: inventoryData } = await _client.from('inventory').select('*');
                     
                     if (inventoryData) {
-                        // Loop through and decrement
                         const updates = inventoryData.map(item => {
                             const newAmount = Math.max(0, item.servings_left - (item.dose_per_workout || 1));
                             return _client.from('inventory').update({ servings_left: newAmount }).eq('id', item.id);
