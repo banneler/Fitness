@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Performance | Constellation</title>
 
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -28,10 +28,14 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         /* Custom Checkbox */
-        .custom-checkbox { appearance: none; background-color: #1e293b; width: 1.5rem; height: 1.5rem; border-radius: 0.5rem; display: grid; place-content: center; transition: all 0.2s; }
+        .custom-checkbox { appearance: none; background-color: #1e293b; width: 1.5rem; height: 1.5rem; border-radius: 0.5rem; display: grid; place-content: center; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1); }
         .custom-checkbox::before { content: ""; width: 0.75rem; height: 0.75rem; transform: scale(0); transition: 120ms transform ease-in-out; box-shadow: inset 1em 1em white; transform-origin: center; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
-        .custom-checkbox:checked { background-color: #3b82f6; }
+        .custom-checkbox:checked { background-color: #3b82f6; border-color: #3b82f6; }
         .custom-checkbox:checked::before { transform: scale(1); }
+
+        /* Failure Checkbox (Red Skull) */
+        .failure-checkbox { appearance: none; width: 1.2rem; height: 1.2rem; display: flex; align-items: center; justify-content: center; opacity: 0.3; transition: all 0.2s; }
+        .failure-checkbox:checked { opacity: 1; color: #ef4444; filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)); }
 
         .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
@@ -43,36 +47,29 @@
         /* PR GLOW EFFECT */
         .pr-active { 
             border-color: #eab308 !important; 
-            box-shadow: 0 0 15px rgba(234, 179, 8, 0.4);
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.2);
             color: #eab308 !important;
+            background: rgba(234, 179, 8, 0.05);
         }
 
-/* HEATMAP STYLES */
-.muscle-base { 
-    fill: rgba(30, 41, 59, 0.1); 
-    stroke: rgba(255, 255, 255, 0.2); 
-    stroke-width: 1px;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
-}
+        /* Focus Mode Styles */
+        .exercise-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .exercise-blurred { opacity: 0.4; filter: grayscale(100%) blur(1px); transform: scale(0.98); pointer-events: none; }
+        .exercise-active { opacity: 1; filter: none; transform: scale(1); border-color: rgba(59, 130, 246, 0.3); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); }
 
-/* Dynamic States with "Ink" Glow */
-.fill-red-500 { 
-    fill: rgba(239, 68, 68, 0.4) !important; 
-    stroke: #ef4444 !important; 
-    stroke-width: 1.5px;
-    filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.6)); 
-}
-.fill-orange-500 { 
-    fill: rgba(249, 115, 22, 0.3) !important;
-    stroke: #f97316 !important;
-    stroke-width: 1.2px;
-}
-.fill-blue-500 { 
-    fill: rgba(59, 130, 246, 0.05) !important;
-    stroke: rgba(255, 255, 255, 0.1) !important;
-}
+        /* HEATMAP STYLES */
+        .muscle-base { 
+            fill: rgba(30, 41, 59, 0.1); 
+            stroke: rgba(255, 255, 255, 0.2); 
+            stroke-width: 1px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+
+        .fill-red-500 { fill: rgba(239, 68, 68, 0.4) !important; stroke: #ef4444 !important; stroke-width: 1.5px; filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.6)); }
+        .fill-orange-500 { fill: rgba(249, 115, 22, 0.3) !important; stroke: #f97316 !important; stroke-width: 1.2px; }
+        .fill-blue-500 { fill: rgba(59, 130, 246, 0.05) !important; stroke: rgba(255, 255, 255, 0.1) !important; }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -104,11 +101,31 @@
                 <h2 class="text-xl font-black italic uppercase text-center mb-2 text-white">System Logout</h2>
                 <p class="text-xs text-slate-500 font-bold text-center mb-6">End current session?</p>
                 <div class="grid grid-cols-2 gap-3">
-                    <button @click="logoutModal = false" class="py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">
-                        Cancel
+                    <button @click="logoutModal = false" class="py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">Cancel</button>
+                    <button @click="confirmLogout" class="py-3 rounded-xl bg-red-600 text-white font-black text-xs uppercase shadow-lg shadow-red-900/20 hover:bg-red-500 transition-colors">Disconnect</button>
+                </div>
+            </div>
+        </div>
+    </transition>
+
+    <transition name="modal">
+        <div v-if="finishModal" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
+            <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="finishModal = false"></div>
+            <div class="glass w-full max-w-sm rounded-3xl p-6 relative border border-green-500/20 shadow-2xl">
+                <div class="flex flex-col items-center mb-6">
+                    <div class="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20 mb-4 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
+                        <i data-lucide="trophy" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-2xl font-black italic uppercase text-center text-white">Session Complete</h2>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{{ activeRoutine.name }} • {{ formatTimer(sessionTimer) }}</p>
+                </div>
+                
+                <div class="space-y-3">
+                    <button @click="confirmFinishSession" class="w-full py-4 rounded-xl bg-green-600 text-white font-black text-sm uppercase shadow-lg shadow-green-900/20 hover:bg-green-500 transition-all active:scale-95">
+                        Save Workout
                     </button>
-                    <button @click="confirmLogout" class="py-3 rounded-xl bg-red-600 text-white font-black text-xs uppercase shadow-lg shadow-red-900/20 hover:bg-red-500 transition-colors">
-                        Disconnect
+                    <button @click="finishModal = false" class="w-full py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">
+                        Resume Training
                     </button>
                 </div>
             </div>
@@ -146,63 +163,39 @@
                 </div>
             </div>
             
-<div class="flex justify-around relative z-10 px-2">
-    <svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
-        <g fill="none">
-            <path d="M100,25 C112,25 118,35 118,50 C118,60 112,70 100,70 C88,70 82,60 82,50 C82,35 88,25 100,25" class="muscle-base" />
-            
-            <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" 
-                  d="M62,75 C50,80 42,95 42,115 C52,125 68,125 78,110 L62,75 Z M138,75 C150,80 158,95 158,115 C148,125 132,125 122,110 L138,75 Z" />
-
-            <path :class="['muscle-base', muscleHeatmap['chest'].color]" 
-                  d="M78,110 C88,120 112,120 122,110 C130,135 115,145 100,150 C85,145 70,135 78,110 Z" />
-
-            <path :class="['muscle-base', muscleHeatmap['core'].color]" 
-                  d="M72,130 L128,130 L118,190 L100,205 L82,190 Z" />
-
-            <path :class="['muscle-base', muscleHeatmap['arms'].color]" 
-                  d="M42,115 C38,145 35,185 45,235 L58,225 C52,185 52,145 62,125 Z M158,115 C162,145 165,185 155,235 L142,225 C148,185 148,145 138,125 Z" />
-
-            <path :class="['muscle-base', muscleHeatmap['legs'].color]" 
-                  d="M82,205 L62,240 C58,280 65,330 75,385 L95,385 L100,205 Z M118,205 L138,240 C142,280 135,330 125,385 L105,385 L100,205 Z" />
-        </g>
-    </svg>
-
-    <svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
-        <g fill="none">
-            <path d="M100,25 C112,25 118,35 118,50 C118,60 112,70 100,70 C88,70 82,60 82,50 C82,35 88,25 100,25" class="muscle-base" />
-
-            <path :class="['muscle-base', muscleHeatmap['back'].color]" 
-                  d="M100,70 L75,85 L52,140 L100,200 L148,140 L125,85 Z" />
-
-            <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" 
-                  d="M62,75 L42,90 L48,125 L65,115 Z M138,75 L158,90 L152,125 L135,115 Z" />
-
-            <path :class="['muscle-base', muscleHeatmap['arms'].color]" 
-                  d="M42,90 L32,220 L48,230 L52,160 Z M158,90 L168,220 L152,230 L148,160 Z" />
-
-            <path :class="['muscle-base', muscleHeatmap['legs'].color]" 
-                  d="M70,200 L100,215 L130,200 L135,245 C120,265 80,265 65,245 Z M70,245 C65,290 70,335 75,385 L95,385 L100,245 Z M130,245 C135,290 130,335 125,385 L105,385 L100,245 Z" />
-        </g>
-    </svg>
-</div>
-</div>
+            <div class="flex justify-around relative z-10 px-2">
+                <svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+                    <g fill="none">
+                        <path d="M100,25 C112,25 118,35 118,50 C118,60 112,70 100,70 C88,70 82,60 82,50 C82,35 88,25 100,25" class="muscle-base" />
+                        <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" d="M62,75 C50,80 42,95 42,115 C52,125 68,125 78,110 L62,75 Z M138,75 C150,80 158,95 158,115 C148,125 132,125 122,110 L138,75 Z" />
+                        <path :class="['muscle-base', muscleHeatmap['chest'].color]" d="M78,110 C88,120 112,120 122,110 C130,135 115,145 100,150 C85,145 70,135 78,110 Z" />
+                        <path :class="['muscle-base', muscleHeatmap['core'].color]" d="M72,130 L128,130 L118,190 L100,205 L82,190 Z" />
+                        <path :class="['muscle-base', muscleHeatmap['arms'].color]" d="M42,115 C38,145 35,185 45,235 L58,225 C52,185 52,145 62,125 Z M158,115 C162,145 165,185 155,235 L142,225 C148,185 148,145 138,125 Z" />
+                        <path :class="['muscle-base', muscleHeatmap['legs'].color]" d="M82,205 L62,240 C58,280 65,330 75,385 L95,385 L100,205 Z M118,205 L138,240 C142,280 135,330 125,385 L105,385 L100,205 Z" />
+                    </g>
+                </svg>
+                <svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+                    <g fill="none">
+                        <path d="M100,25 C112,25 118,35 118,50 C118,60 112,70 100,70 C88,70 82,60 82,50 C82,35 88,25 100,25" class="muscle-base" />
+                        <path :class="['muscle-base', muscleHeatmap['back'].color]" d="M100,70 L75,85 L52,140 L100,200 L148,140 L125,85 Z" />
+                        <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" d="M62,75 L42,90 L48,125 L65,115 Z M138,75 L158,90 L152,125 L135,115 Z" />
+                        <path :class="['muscle-base', muscleHeatmap['arms'].color]" d="M42,90 L32,220 L48,230 L52,160 Z M158,90 L168,220 L152,230 L148,160 Z" />
+                        <path :class="['muscle-base', muscleHeatmap['legs'].color]" d="M70,200 L100,215 L130,200 L135,245 C120,265 80,265 65,245 Z M70,245 C65,290 70,335 75,385 L95,385 L100,245 Z M130,245 C135,290 130,335 125,385 L105,385 L100,245 Z" />
+                    </g>
+                </svg>
+            </div>
+        </div>
 
         <div class="mb-8">
             <h3 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">This Week</h3>
             <div class="flex gap-2 overflow-x-auto no-scrollbar snap-x">
-                <div v-for="dayObj in upcomingDays" :key="dayObj.fullDate" 
-                     @click="openScheduleModal(dayObj)"
-                     class="snap-start flex-shrink-0 w-20 glass rounded-2xl p-3 flex flex-col items-center border border-white/5 relative group active:scale-95 transition-transform">
-                    
+                <div v-for="dayObj in upcomingDays" :key="dayObj.fullDate" @click="openScheduleModal(dayObj)" class="snap-start flex-shrink-0 w-20 glass rounded-2xl p-3 flex flex-col items-center border border-white/5 relative group active:scale-95 transition-transform">
                     <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">{{ dayObj.dayName }}</span>
                     <span class="text-xs font-bold text-slate-300 mb-2">{{ dayObj.dateNum }}</span>
-                    
                     <div v-if="getScheduleForDay(dayObj.dayName)" class="flex flex-col items-center">
                         <i :data-lucide="getScheduleForDay(dayObj.dayName).icon_name" class="w-5 h-5 text-blue-400 mb-1"></i>
                         <span class="text-[8px] font-bold text-center leading-tight truncate w-full text-blue-400">{{ getScheduleForDay(dayObj.dayName).name }}</span>
                     </div>
-                    
                     <div v-else class="w-8 h-8 rounded-full border border-dashed border-slate-700 flex items-center justify-center">
                         <i data-lucide="plus" class="w-3 h-3 text-slate-600"></i>
                     </div>
@@ -216,12 +209,10 @@
                 <div @click.stop="editRoutine(routine)" class="absolute top-3 right-3 p-2 bg-slate-950/50 rounded-full text-slate-500 hover:text-white hover:bg-blue-600 transition-all z-10">
                     <i data-lucide="pencil" class="w-3 h-3"></i>
                 </div>
-
                 <i :data-lucide="routine.icon_name" class="w-6 h-6 text-blue-500 mb-3 group-hover:scale-110 transition-transform"></i>
                 <div class="font-black text-xl italic truncate pr-4">{{ routine.name }}</div>
                 <div class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">{{ routine.exercise_order?.length || 0 }} Exercises</div>
             </button>
-            
             <button @click="resetBuilder" class="glass p-6 rounded-3xl text-left hover:border-green-500/50 transition-all active:scale-95 group border-dashed border-slate-700">
                 <i data-lucide="plus-circle" class="w-6 h-6 text-green-500 mb-3 group-hover:scale-110 transition-transform"></i>
                 <div class="font-black text-xl italic text-slate-400">NEW</div>
@@ -229,25 +220,19 @@
             </button>
         </div>
 
-        <div class="glass rounded-[2.5rem] p-8 shadow-2xl">
+        <div class="glass rounded-[2.5rem] p-8 shadow-2xl mb-24">
             <div class="flex items-center gap-2 mb-6 opacity-60">
                 <i data-lucide="history" class="w-4 h-4 text-slate-400"></i>
                 <h3 class="text-xs font-black uppercase tracking-widest">Recent Sessions</h3>
             </div>
-            
-            <div v-if="recentSessions.length === 0" class="text-center py-4 text-slate-600 text-xs italic">
-                No recent activity found.
-            </div>
-
+            <div v-if="recentSessions.length === 0" class="text-center py-4 text-slate-600 text-xs italic">No recent activity found.</div>
             <div class="space-y-4">
                 <div v-for="session in recentSessions" :key="session.id" class="flex justify-between items-center border-b border-white/5 pb-4 last:border-0">
                     <div>
                         <div class="font-black text-sm uppercase italic text-slate-200">{{ session.name }}</div>
                         <div class="text-[10px] text-slate-500 font-bold mt-1 tracking-wider">{{ session.date }} • {{ session.volume }} sets</div>
                     </div>
-                    <div class="text-right">
-                        <span class="block font-black text-green-500 text-xs">COMPLETED</span>
-                    </div>
+                    <div class="text-right"><span class="block font-black text-green-500 text-xs">COMPLETED</span></div>
                 </div>
             </div>
         </div>
@@ -275,12 +260,10 @@
 
             <div class="space-y-2">
                 <p class="text-[10px] font-bold uppercase text-slate-500">Select Exercises</p>
-                
                 <input type="text" v-model="exerciseSearch" placeholder="Filter exercises..." class="w-full bg-slate-950/50 border border-white/5 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-blue-500 mb-2 placeholder-slate-600">
-
-                <div v-if="filteredExercises.length === 0" class="text-center py-4 text-slate-600 text-xs italic">
-                    No matching exercises found.
-                </div>
+                
+                <div v-if="filteredExercises.length === 0" class="text-center py-4 text-slate-600 text-xs italic">No matching exercises found.</div>
+                
                 <div v-for="ex in filteredExercises" :key="ex.id" @click="toggleExerciseInRoutine(ex.id)" :class="newRoutine.exercises.includes(ex.id) ? 'border-blue-500 bg-blue-500/10' : 'border-white/5 bg-slate-900/50'" class="p-3 rounded-xl border flex justify-between items-center transition-all cursor-pointer">
                     <div class="flex items-center gap-3">
                         <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4 text-slate-500"></i>
@@ -293,7 +276,6 @@
             <button @click="saveRoutine" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all mt-6">
                 {{ newRoutine.id ? 'Update Protocol' : 'Save Protocol' }}
             </button>
-            
             <button v-if="newRoutine.id" @click="deleteRoutine" class="w-full bg-slate-900 border border-red-900/30 text-red-500 py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all mt-2">
                 Delete Protocol
             </button>
@@ -302,14 +284,12 @@
         <div v-if="builderTab === 'exercise'" class="space-y-4">
             <input v-model="newExercise.name" placeholder="Exercise Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none">
             <input v-model="newExercise.group" placeholder="Muscle Group (e.g. Chest)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none">
-            
             <p class="text-[10px] font-bold uppercase text-slate-500 mt-4">Select Category Icon</p>
             <div class="grid grid-cols-6 gap-2 bg-slate-900/50 p-4 rounded-xl border border-white/5">
                 <button v-for="icon in iconLibrary" :key="icon" @click="newExercise.icon = icon" :class="newExercise.icon === icon ? 'text-blue-500 bg-blue-500/10' : 'text-slate-600'" class="p-2 rounded-lg flex justify-center hover:bg-white/5 transition-all">
                     <i :data-lucide="icon" class="w-5 h-5"></i>
                 </button>
             </div>
-
             <button @click="saveExercise" class="w-full bg-green-600 py-4 rounded-2xl font-black text-sm uppercase shadow-lg active:scale-95 transition-all mt-6">Add to Library</button>
         </div>
     </div>
@@ -327,14 +307,12 @@
                         <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{{ previewModal.exercises.length }} Movements</p>
                     </div>
                 </div>
-
                 <div class="space-y-2 mb-8 max-h-64 overflow-y-auto">
                     <div v-for="(exId, idx) in previewModal.exercise_order" :key="idx" class="flex items-center gap-3 p-3 bg-slate-950/50 rounded-xl border border-white/5">
                         <span class="text-xs font-mono text-slate-600">0{{idx+1}}</span>
                         <span class="text-sm font-bold text-slate-300">{{ getExerciseName(exId) }}</span>
                     </div>
                 </div>
-
                 <div class="grid grid-cols-2 gap-4">
                     <button @click="previewModal = null" class="py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase">Cancel</button>
                     <button @click="startActiveSession(previewModal)" class="py-3 rounded-xl bg-blue-600 text-white font-black text-xs uppercase shadow-lg shadow-blue-900/20">Start Session</button>
@@ -349,7 +327,6 @@
             <div class="glass w-full max-w-md rounded-3xl p-6 relative border border-blue-500/20 shadow-2xl">
                 <h2 class="text-xl font-black italic uppercase mb-2">Schedule Protocol</h2>
                 <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mb-6">For {{ scheduleModal.dayName }} {{ scheduleModal.dateNum }}</p>
-
                 <div class="space-y-2 max-h-64 overflow-y-auto mb-6">
                     <button @click="saveSchedule(null)" class="w-full text-left p-4 rounded-xl border border-white/5 bg-slate-900/50 text-slate-500 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">
                         Rest Day (Clear)
@@ -359,7 +336,6 @@
                         <span class="text-white font-bold text-sm uppercase italic">{{ routine.name }}</span>
                     </button>
                 </div>
-                
                 <button @click="scheduleModal = null" class="w-full py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase">Close</button>
             </div>
         </div>
@@ -377,25 +353,33 @@
             <div class="font-mono text-xl font-bold text-slate-400">{{ formatTimer(sessionTimer) }}</div>
         </div>
 
-        <div class="flex-1 space-y-6 mb-24 overflow-y-auto">
-            <div v-for="(exercise, exIndex) in activeRoutine.data" :key="exIndex" class="glass p-5 rounded-3xl border border-white/10">
+        <div class="flex-1 space-y-6 mb-24 overflow-y-auto" id="session-container">
+            <div v-for="(exercise, exIndex) in activeRoutine.data" 
+                 :key="exIndex" 
+                 @click="activeExerciseIdx = exIndex"
+                 class="glass p-5 rounded-3xl border border-white/10 exercise-card"
+                 :class="activeExerciseIdx === exIndex ? 'exercise-active' : 'exercise-blurred'">
+                 
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex items-center gap-2">
                         <i :data-lucide="exercise.icon || 'dumbbell'" class="w-5 h-5 text-blue-500"></i>
                         <h3 class="font-black text-lg italic text-blue-400">{{ exercise.name }}</h3>
                     </div>
-                    <span v-if="exercise.isPR" class="bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest border border-yellow-500/50 animate-pulse">NEW PR!</span>
+                    <div class="flex gap-2">
+                         <span v-if="exercise.isPR" class="bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest border border-yellow-500/50 animate-pulse">NEW PR!</span>
+                    </div>
                 </div>
                 
                 <div class="grid grid-cols-12 gap-2 text-[8px] text-slate-500 font-black uppercase tracking-widest mb-2 text-center">
-                    <div class="col-span-2">Set</div>
+                    <div class="col-span-1">Set</div>
                     <div class="col-span-4">lbs</div>
                     <div class="col-span-4">Reps</div>
                     <div class="col-span-2">Done</div>
+                    <div class="col-span-1"><i data-lucide="skull" class="w-3 h-3 mx-auto"></i></div>
                 </div>
 
                 <div v-for="(set, setIndex) in exercise.sets" :key="setIndex" class="grid grid-cols-12 gap-2 mb-2 items-center">
-                    <div class="col-span-2 flex justify-center">
+                    <div class="col-span-1 flex justify-center">
                         <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">{{ setIndex + 1 }}</div>
                     </div>
                     <div class="col-span-4">
@@ -408,8 +392,13 @@
                     </div>
                     <div class="col-span-4"><input type="number" v-model="set.reps" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none" placeholder="-"></div>
                     <div class="col-span-2 flex justify-center"><input type="checkbox" v-model="set.done" class="custom-checkbox"></div>
+                    <div class="col-span-1 flex justify-center"><input type="checkbox" v-model="set.failure" class="failure-checkbox"></div>
                 </div>
-                <button @click="addSet(exIndex)" class="w-full py-2 mt-2 border border-dashed border-slate-700 rounded-xl text-[10px] text-slate-500 font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-500">+ Add Set</button>
+                
+                <div class="flex gap-2 mt-3">
+                     <button @click.stop="addSet(exIndex)" class="flex-1 py-2 border border-dashed border-slate-700 rounded-xl text-[10px] text-slate-500 font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-500">+ Set</button>
+                     <button v-if="activeExerciseIdx === exIndex && exIndex < activeRoutine.data.length - 1" @click.stop="activeExerciseIdx++" class="flex-1 py-2 bg-slate-800 rounded-xl text-[10px] text-white font-black uppercase tracking-widest hover:bg-slate-700">Next Exercise &darr;</button>
+                </div>
             </div>
         </div>
 
@@ -426,7 +415,7 @@
                     <div class="relative"><input type="checkbox" v-model="stackTaken" class="sr-only peer"><div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div></div>
                 </label>
             </div>
-            <button @click="finishSession" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-all">FINISH WORKOUT</button>
+            <button @click="openFinishModal" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-all">FINISH WORKOUT</button>
         </div>
     </div>
 
@@ -441,6 +430,7 @@
 
 <script>
     const { createApp } = Vue;
+    // Client configuration - make sure this matches your project
     const _client = supabase.createClient(
         'https://mvoyrchefjcpjkdtezmz.supabase.co', 
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
@@ -458,6 +448,7 @@
                 builderTab: 'routine',
                 toast: { visible: false, title: '', message: '' },
                 logoutModal: false,
+                finishModal: false, // Phase 3.15
                 
                 // Data
                 routines: [], 
@@ -468,7 +459,7 @@
                 iconLibrary: ICONS,
                 daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                 
-                // Heatmap Data (Status keys mapped to SVG paths)
+                // Heatmap Data
                 muscleHeatmap: { 
                     'chest': {color: 'fill-blue-500', lastTrained: null}, 
                     'back': {color: 'fill-blue-500', lastTrained: null}, 
@@ -489,8 +480,10 @@
 
                 // Active Session
                 activeRoutine: { name: '', data: [] },
+                activeExerciseIdx: 0, // Phase 3.14
                 stackTaken: false,
                 sessionTimer: 0, 
+                sessionStartTime: null, // Phase 1.4: Date.now()
                 sessionInterval: null,
                 restTimer: 0, 
                 restTimerRunning: false, 
@@ -519,20 +512,30 @@
             }
         },
         async mounted() {
-            const { data: { session } } = await _client.auth.getSession();
-            if (!session) { window.location.href = 'index.html'; return; }
+            // Phase 1.5: Protocol Race Condition Fix
+            // Ensure session is loaded before firing fetches
+            const { data: { session }, error } = await _client.auth.getSession();
+            if (error || !session) { 
+                window.location.href = 'index.html'; 
+                return; 
+            }
             this.session = session;
             
-            await Promise.all([
-                this.fetchRoutines(), 
-                this.fetchExercises(), 
-                this.fetchSchedule(), 
-                this.fetchHistory()
-            ]);
-            
-            this.calculateHeatmap();
-            this.loading = false;
-            this.$nextTick(() => lucide.createIcons());
+            try {
+                await Promise.all([
+                    this.fetchRoutines(), 
+                    this.fetchExercises(), 
+                    this.fetchSchedule(), 
+                    this.fetchHistory()
+                ]);
+                this.calculateHeatmap();
+            } catch (err) {
+                console.error("Initialization error:", err);
+                this.showToast("Sync Error", "Could not load data. Pull to refresh.");
+            } finally {
+                this.loading = false;
+                this.$nextTick(() => lucide.createIcons());
+            }
         },
         updated() { this.$nextTick(() => lucide.createIcons()); },
         methods: {
@@ -558,33 +561,42 @@
                 this.schedule = data || []; 
             },
             async fetchHistory() {
-                const { data: rawData } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false }).limit(300);
+                // Fetch recent logs
+                const { data: rawData } = await _client.from('workout_logs')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(300);
                 this.rawLogs = rawData || [];
+
+                // Calculate Personal Records locally (simple max logic)
+                this.rawLogs.forEach(log => {
+                    if(log.sets_data) {
+                        log.sets_data.forEach(s => {
+                            const w = parseFloat(s.weight) || 0;
+                            if(w > (this.personalRecords[log.exercise_name] || 0)) {
+                                this.personalRecords[log.exercise_name] = w;
+                            }
+                        });
+                    }
+                });
 
                 if (!this.rawLogs.length) { 
                     this.recentSessions = []; 
                     return; 
                 }
                 
+                // Group logs into "Sessions"
                 const sessions = []; 
                 let currentSession = null;
                 
                 this.rawLogs.forEach((log) => {
                     const logTime = new Date(log.created_at).getTime();
                     
-                    if(log.sets_data) {
-                        log.sets_data.forEach(s => {
-                            if(s.weight > (this.personalRecords[log.exercise_name] || 0)) {
-                                this.personalRecords[log.exercise_name] = s.weight;
-                            }
-                        });
-                    }
-
                     if (!currentSession) {
                         currentSession = { 
                             id: log.id, 
                             startTime: logTime, 
-                            name: log.protocol_name || (log.exercise_name.includes('Recovery') ? 'Recovery Session' : 'Training Session'), 
+                            name: log.protocol_name || 'Training Session', 
                             date: new Date(log.created_at).toLocaleDateString(), 
                             volume: 1 
                         };
@@ -597,14 +609,13 @@
                             currentSession = { 
                                 id: log.id, 
                                 startTime: logTime, 
-                                name: log.protocol_name || (log.exercise_name.includes('Recovery') ? 'Recovery Session' : 'Training Session'), 
+                                name: log.protocol_name || 'Training Session', 
                                 date: new Date(log.created_at).toLocaleDateString(), 
                                 volume: 1 
                             }; 
                         }
                     }
                 });
-                
                 if (currentSession) sessions.push(currentSession);
                 this.recentSessions = sessions.slice(0, 5);
             },
@@ -612,7 +623,6 @@
             calculateHeatmap() {
                 const now = new Date().getTime();
                 const oneDay = 1000 * 60 * 60 * 24;
-
                 for(let m in this.muscleHeatmap) this.muscleHeatmap[m].lastTrained = null;
 
                 this.rawLogs.forEach(log => {
@@ -647,11 +657,9 @@
             async generateAIWorkout() {
                 this.loading = true;
                 this.loadingText = "Analyzing Biometrics...";
-                
                 try {
                     const { data, error } = await _client.functions.invoke('ai-workout-generator');
                     if(error) throw error;
-                    
                     if(data && data.routine) {
                         this.showToast("AI Generated", "Gap Filler Protocol Created");
                         await this.fetchRoutines();
@@ -665,11 +673,9 @@
                             await _client.from('routines').insert([{ name: 'AI Gap Filler', icon_name: 'zap', exercise_order: fillerExercises, user_id: this.session.user.id }]);
                             await this.fetchRoutines();
                             this.showToast("AI Generated", "Gap Filler Protocol Created");
-                        } else {
-                            this.showToast("Error", "Create exercises first");
                         }
                         this.loading = false;
-                    }, 1500);
+                    }, 1000);
                     return; 
                 }
                 this.loading = false;
@@ -712,21 +718,20 @@
                 if (idx > -1) this.newRoutine.exercises.splice(idx, 1); 
                 else this.newRoutine.exercises.push(id); 
             },
-            
             async saveExercise() {
-    if(!this.newExercise.name) return;
-    const muscleGroup = this.newExercise.group.toLowerCase();
-    const payload = { 
-        name: this.newExercise.name, 
-        muscle_group: muscleGroup, 
-        icon_name: this.newExercise.icon || 'dumbbell', 
-        user_id: this.session.user.id 
-    };
-    await _client.from('exercises').insert([payload]);
-    this.newExercise = { name: '', group: '', icon: 'dumbbell' }; 
-    await this.fetchExercises();
-    this.showToast("Library Updated", "Exercise added.");
-},
+                if(!this.newExercise.name) return;
+                const muscleGroup = this.newExercise.group.toLowerCase();
+                const payload = { 
+                    name: this.newExercise.name, 
+                    muscle_group: muscleGroup, 
+                    icon_name: this.newExercise.icon || 'dumbbell', 
+                    user_id: this.session.user.id 
+                };
+                await _client.from('exercises').insert([payload]);
+                this.newExercise = { name: '', group: '', icon: 'dumbbell' }; 
+                await this.fetchExercises();
+                this.showToast("Library Updated", "Exercise added.");
+            },
             async saveRoutine() {
                 if(!this.newRoutine.name) return;
                 const payload = { 
@@ -761,33 +766,70 @@
             previewRoutine(routine) { 
                 this.previewModal = { ...routine, exercises: routine.exercise_order || [] }; 
             },
-            startActiveSession(routine) {
+
+            // PHASE 2.9: Smart History Pre-population
+            async startActiveSession(routine) {
                 this.previewModal = null; 
                 this.view = 'active_session';
+                this.activeExerciseIdx = 0; // Phase 3.14
                 
-                const exercises = (routine.exercise_order || []).map(id => {
+                // Construct exercise list wrapper
+                const sessionExercises = (routine.exercise_order || []).map(id => {
                     const exDef = this.libraryExercises.find(e => e.id === id);
                     const pr = exDef ? (this.personalRecords[exDef.name] || 0) : 0;
                     return { 
+                        id: id,
                         name: exDef ? exDef.name : 'Exercise', 
                         icon: exDef ? exDef.icon_name : 'dumbbell', 
                         personalRecord: pr, 
                         isPR: false, 
-                        sets: [{weight:0, reps:0, done:false}, {weight:0, reps:0, done:false}, {weight:0, reps:0, done:false}] 
+                        // Start with empty sets, will fill async
+                        sets: [{weight:0, reps:0, done:false, failure:false}, {weight:0, reps:0, done:false, failure:false}, {weight:0, reps:0, done:false, failure:false}] 
                     };
                 });
                 
-                this.activeRoutine = { name: routine.name, data: exercises };
-                this.sessionTimer = 0; 
-                this.sessionInterval = setInterval(() => { this.sessionTimer++ }, 1000);
+                this.activeRoutine = { name: routine.name, data: sessionExercises };
+
+                // PHASE 1.4: Accurate Timer Logic
+                this.sessionTimer = 0;
+                this.sessionStartTime = Date.now();
+                this.sessionInterval = setInterval(() => { 
+                    const delta = Date.now() - this.sessionStartTime;
+                    this.sessionTimer = Math.floor(delta / 1000);
+                }, 1000);
+
+                // Fetch Last Session Data for each exercise
+                for (let ex of this.activeRoutine.data) {
+                    const { data: lastLog } = await _client.from('workout_logs')
+                        .select('sets_data')
+                        .eq('exercise_name', ex.name)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single();
+
+                    if(lastLog && lastLog.sets_data && lastLog.sets_data.length > 0) {
+                        // Map previous sets to current sets
+                        ex.sets = lastLog.sets_data.map(s => ({
+                            weight: s.weight,
+                            reps: s.reps, // Auto-fill previous reps as target
+                            done: false,
+                            failure: false // reset failure status
+                        }));
+                        // Ensure at least 3 sets exist if history was short
+                        while(ex.sets.length < 3) {
+                            ex.sets.push({ weight: ex.sets[ex.sets.length-1]?.weight || 0, reps: 0, done: false, failure: false });
+                        }
+                    }
+                }
             },
+
             checkPR(exercise, weight) {
                 if(weight > exercise.personalRecord) exercise.isPR = true;
                 else exercise.isPR = false;
             },
             addSet(exIndex) { 
                 const prev = this.activeRoutine.data[exIndex].sets.slice(-1)[0]; 
-                this.activeRoutine.data[exIndex].sets.push({ weight: prev?.weight||0, reps: prev?.reps||0, done: false }); 
+                this.activeRoutine.data[exIndex].sets.push({ weight: prev?.weight||0, reps: prev?.reps||0, done: false, failure: false }); 
             },
             toggleRestTimer() { 
                 this.restTimerRunning = !this.restTimerRunning; 
@@ -797,38 +839,46 @@
                 } else clearInterval(this.restInterval); 
             },
             formatTimer(s) { 
+                if(s < 0) s = 0;
                 return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; 
             },
             
-            async finishSession() {
-    if(!confirm("Finish Workout?")) return;
-    clearInterval(this.sessionInterval);
-    this.loading = true;
-    this.loadingText = "Analyzing Performance...";
-    
-    const logs = this.activeRoutine.data.map(ex => ({ 
-        user_id: this.session.user.id, 
-        exercise_name: ex.name, 
-        protocol_name: this.activeRoutine.name, 
-        sets_data: ex.sets.filter(s => s.done), 
-        created_at: new Date().toISOString() 
-    })).filter(l => l.sets_data.length);
+            openFinishModal() {
+                this.finishModal = true;
+            },
 
-    if(logs.length) await _client.from('workout_logs').insert(logs);
-    
-    // Auto-update serving inventory if stack was taken
-    if(this.stackTaken) {
-        const { data: inv } = await _client.from('inventory').select('*');
-        const updates = inv.map(i => _client.from('inventory').update({servings_left: Math.max(0, i.servings_left - 1)}).eq('id', i.id));
-        await Promise.all(updates);
-    }
+            async confirmFinishSession() {
+                clearInterval(this.sessionInterval);
+                this.finishModal = false;
+                this.loading = true;
+                this.loadingText = "Analyzing Performance...";
+                
+                const logs = this.activeRoutine.data.map(ex => ({ 
+                    user_id: this.session.user.id, 
+                    exercise_name: ex.name, 
+                    protocol_name: this.activeRoutine.name, 
+                    sets_data: ex.sets.filter(s => s.done),
+                    duration_seconds: this.sessionTimer, // Log actual duration
+                    created_at: new Date().toISOString() 
+                })).filter(l => l.sets_data.length);
 
-    await this.fetchHistory(); 
-    this.calculateHeatmap(); 
-    this.view = 'dashboard'; 
-    this.loading = false;
-    this.showToast("Victory", "Session archived.");
-}
+                if(logs.length) await _client.from('workout_logs').insert(logs);
+                
+                if(this.stackTaken) {
+                    const { data: inv } = await _client.from('inventory').select('*');
+                    // Simple logic: decrement first item found for demo. Real app should match SKU.
+                    if(inv && inv.length) {
+                        const updates = inv.map(i => _client.from('inventory').update({servings_left: Math.max(0, i.servings_left - 1)}).eq('id', i.id));
+                        await Promise.all(updates);
+                    }
+                }
+
+                await this.fetchHistory(); 
+                this.calculateHeatmap(); 
+                this.view = 'dashboard'; 
+                this.loading = false;
+                this.showToast("Victory", "Session archived.");
+            }
         }
     }).mount('#app');
 </script>
