@@ -102,7 +102,7 @@
             <div class="space-y-5">
                 <div>
                     <div class="flex justify-between text-[10px] font-black uppercase mb-2 tracking-widest">
-                        <span class="text-slate-200">Total Calories</span>
+                        <span class="text-slate-300">Calories</span>
                         <span class="text-white">{{ dailyTotals.cals }} / {{ targets.cals }}</span>
                     </div>
                     <div class="progress-container">
@@ -285,7 +285,6 @@
                 showMemory: false,
                 dailyLogs: [],
                 inventory: [],
-                // Dynamic targets (will be overwritten by database fetch)
                 targets: { cals: 2500, protein: 180, carbs: 250, fat: 80 },
                 toast: { visible: false, message: '' }
             } 
@@ -310,7 +309,7 @@
                 this.fetchDailyLogs(), 
                 this.fetchRecentFoods(),
                 this.fetchInventory(),
-                this.fetchTargets() // Pull goals from metrics table
+                this.fetchTargets() 
             ]);
             this.initialLoading = false;
             this.$nextTick(() => lucide.createIcons());
@@ -330,17 +329,16 @@
                 setTimeout(() => { this.toast.visible = false; }, 3000);
             },
             async fetchTargets() {
-                // Pull targets from the most recent metrics entry
                 const { data } = await _client.from('daily_metrics')
-                    .select('weight')
+                    .select('target_calories, target_protein, target_carbs, target_fat')
                     .order('created_at', { ascending: false })
                     .limit(1);
                 
                 if (data && data[0]) {
-                    // Simple logic: 1g protein per lb of bodyweight if entry exists
-                    const weight = data[0].weight || 180;
-                    this.targets.protein = Math.round(weight);
-                    this.targets.cals = Math.round(weight * 15); // Rough maintenance estimate
+                    this.targets.cals = data[0].target_calories || 2500;
+                    this.targets.protein = data[0].target_protein || 180;
+                    this.targets.carbs = data[0].target_carbs || 250;
+                    this.targets.fat = data[0].target_fat || 80;
                 }
             },
             async initMemory() {
