@@ -137,26 +137,44 @@
             </div>
             
   <div class="flex justify-around relative z-10 px-2">
-    <svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
-        <g fill="none">
-            <path d="M100,20 Q115,20 115,45 Q115,70 100,70 Q85,70 85,45 Q85,20 100,20" class="muscle-base" />
-            <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" d="M65,70 L45,85 C35,100 35,120 45,140 L65,130 Z M135,70 L155,85 C165,100 165,120 155,140 L135,130 Z" />
-            <path :class="['muscle-base', muscleHeatmap['chest'].color]" d="M65,85 L100,95 L135,85 L130,135 C115,150 100,155 100,155 C100,155 85,150 70,135 Z" />
-            <path :class="['muscle-base', muscleHeatmap['core'].color]" d="M70,135 L130,135 L120,200 L100,215 L80,200 Z" />
-            <path :class="['muscle-base', muscleHeatmap['arms'].color]" d="M45,140 L30,220 L40,240 L55,220 L65,130 Z M155,140 L170,220 L160,240 L145,220 L135,130 Z" />
-            <path :class="['muscle-base', muscleHeatmap['legs'].color]" d="M80,215 L60,260 C55,300 65,340 75,385 L95,385 L100,215 Z M120,215 L140,260 C145,300 135,340 125,385 L105,385 L100,215 Z" />
-        </g>
-    </svg>
+<svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+    <g fill="none">
+        <path d="M100,20 Q115,20 115,45 Q115,70 100,70 Q85,70 85,45 Q85,20 100,20" class="muscle-base" />
+        
+        <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" 
+              d="M65,70 L45,85 C35,100 35,120 45,140 L65,130 Z M135,70 L155,85 C165,100 165,120 155,140 L135,130 Z" />
 
-    <svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
-        <g fill="none">
-            <path d="M100,20 Q115,20 115,45 Q115,70 100,70 Q85,70 85,45 Q85,20 100,20" class="muscle-base" />
-            <path :class="['muscle-base', muscleHeatmap['back'].color]" d="M100,70 L65,85 L50,140 L100,200 L150,140 L135,85 Z" />
-            <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" d="M65,70 L45,85 L50,120 L65,110 Z M135,70 L155,85 L150,120 L135,110 Z" />
-            <path :class="['muscle-base', muscleHeatmap['arms'].color]" d="M45,120 L30,220 L45,235 L55,160 Z M155,120 L170,220 L155,235 L145,160 Z" />
-            <path :class="['muscle-base', muscleHeatmap['legs'].color]" d="M65,200 L100,215 L135,200 L140,260 C120,280 80,280 60,260 Z M65,260 L75,385 L95,385 L100,260 Z M135,260 L125,385 L105,385 L100,260 Z" />
-        </g>
-    </svg>
+        <path :class="['muscle-base', muscleHeatmap['chest'].color]" 
+              d="M65,85 L100,95 L135,85 L130,135 C115,150 100,155 100,155 C100,155 85,150 70,135 Z" />
+
+        <path :class="['muscle-base', muscleHeatmap['core'].color]" 
+              d="M70,135 L130,135 L120,200 L100,215 L80,200 Z" />
+
+        <path :class="['muscle-base', muscleHeatmap['arms'].color]" 
+              d="M45,140 L30,220 L40,240 L55,220 L65,130 Z M155,140 L170,220 L160,240 L145,220 L135,130 Z" />
+
+        <path :class="['muscle-base', muscleHeatmap['legs'].color]" 
+              d="M80,215 L60,260 C55,300 65,340 75,385 L95,385 L100,215 Z M120,215 L140,260 C145,300 135,340 125,385 L105,385 L100,215 Z" />
+    </g>
+</svg>
+
+<svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+    <g fill="none">
+        <path d="M100,20 Q115,20 115,45 Q115,70 100,70 Q85,70 85,45 Q85,20 100,20" class="muscle-base" />
+
+        <path :class="['muscle-base', muscleHeatmap['back'].color]" 
+              d="M100,70 L65,85 L50,140 L100,200 L150,140 L135,85 Z" />
+
+        <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" 
+              d="M65,70 L45,85 L50,120 L65,110 Z M135,70 L155,85 L150,120 L135,110 Z" />
+
+        <path :class="['muscle-base', muscleHeatmap['arms'].color]" 
+              d="M45,120 L30,220 L45,235 L55,160 Z M155,120 L170,220 L155,235 L145,160 Z" />
+
+        <path :class="['muscle-base', muscleHeatmap['legs'].color]" 
+              d="M65,200 L100,215 L135,200 L140,260 C120,280 80,280 60,260 Z M65,260 L75,385 L95,385 L100,260 Z M135,260 L125,385 L105,385 L100,260 Z" />
+    </g>
+</svg>
 </div>
 
         <div class="mb-8">
