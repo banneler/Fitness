@@ -29,9 +29,12 @@
         
         .bar-grow { transform-origin: bottom; animation: grow 1s ease-out forwards; transform: scaleY(0); }
         @keyframes grow { to { transform: scaleY(1); } }
+
+        .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
+        .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
     </style>
 </head>
-<body class="font-sans antialiased">
+<body class="font-sans antialiased text-slate-200">
 <div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32">
     
     <div v-if="initialLoading" class="loading-mask">
@@ -44,144 +47,37 @@
     <div v-else>
         <header class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-3xl font-black italic text-purple-500 uppercase">Tracker</h1>
-                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Intelligence & Supply</p>
+                <h1 class="text-3xl font-black italic text-purple-500 uppercase tracking-tighter">Tracker</h1>
+                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Intelligence & Progress</p>
             </div>
             <div class="flex items-center gap-3">
                 <div v-if="streak > 0" class="glass px-3 py-1 rounded-full flex items-center gap-2 border-orange-500/20">
                     <i data-lucide="flame" class="w-4 h-4 text-orange-500 streak-fire fill-orange-500"></i>
                     <span class="text-lg font-black text-white italic">{{ streak }}</span>
                 </div>
-            <button @click="handleLogout" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
-        <i data-lucide="log-out" class="w-5 h-5"></i>
-    </button>
-</header>
+                <button @click="logoutModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </header>
 
         <div class="flex p-1 bg-slate-900 rounded-xl mb-8 border border-white/5">
             <button @click="view = 'intel'" :class="view === 'intel' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">
                 Intelligence
             </button>
-            <button @click="view = 'supply'" :class="view === 'supply' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">
-                Supply Chain
+            <button @click="view = 'motion'" :class="view === 'motion' ? 'toggle-active' : 'toggle-inactive'" class="toggle-btn flex-1 py-3 rounded-lg text-xs font-black uppercase italic tracking-widest">
+                Motion
             </button>
         </div>
 
         <main>
             <div v-if="view === 'intel'" class="space-y-6">
                 
-                <section class="glass p-6 rounded-[2rem] border-t-4 border-t-orange-500 shadow-2xl">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex items-center gap-2 opacity-60">
-                            <i data-lucide="activity" class="w-4 h-4 text-orange-400"></i>
-                            <h3 class="text-xs font-black uppercase tracking-widest">Motion</h3>
-                        </div>
-                        <button @click="logActivity" class="bg-orange-500/10 px-3 py-1.5 rounded-lg border border-orange-500/20 text-[9px] font-black uppercase text-orange-500 active:scale-95 transition-transform">
-                            + Recovery
-                        </button>
-                    </div>
-                    <div v-if="!recentActivities.length" class="text-center py-4 text-slate-600 italic text-xs">
-                        No recent activity recorded.
-                    </div>
-                    <div v-else class="space-y-4">
-                        <div v-for="act in recentActivities" :key="act.id" class="flex justify-between items-center text-xs border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                            <div class="flex items-center gap-3">
-                                <div class="w-1 h-8 rounded-full" :class="act.isRecovery ? 'bg-orange-500' : 'bg-blue-500'"></div>
-                                <div>
-                                    <span class="block font-black text-slate-200 uppercase italic">{{ act.name }}</span>
-                                    <span class="text-[9px] text-slate-500">{{ act.date }}</span>
-                                </div>
-                            </div>
-                            <span class="font-bold text-slate-400 bg-slate-900 px-2 py-1 rounded-md">{{ act.detail }}</span>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="glass p-6 rounded-[2rem] shadow-2xl">
-                    <div class="flex items-center gap-2 mb-6 opacity-60">
-                        <i data-lucide="zap" class="w-4 h-4 text-purple-400"></i>
-                        <h3 class="text-xs font-black uppercase tracking-widest">Today's Pulse</h3>
-                    </div>
-                    
-                    <div class="grid grid-cols-4 gap-2 mb-4">
-                        <div class="bg-slate-950/50 rounded-xl p-2 text-center border-l-2 border-blue-500">
-                            <span class="block text-[6px] text-blue-500 font-black uppercase tracking-widest mb-1">PROTEIN</span>
-                            <span class="text-xs font-black text-white">{{ dailyTotals.protein }}g</span>
-                        </div>
-                        <div class="bg-slate-950/50 rounded-xl p-2 text-center border-l-2 border-white">
-                            <span class="block text-[6px] text-slate-400 font-black uppercase tracking-widest mb-1">CALORIES</span>
-                            <span class="text-xs font-black text-white">{{ dailyTotals.cals }}</span>
-                        </div>
-                        <div class="bg-slate-950/50 rounded-xl p-2 text-center border-l-2 border-yellow-500">
-                            <span class="block text-[6px] text-yellow-500 font-black uppercase tracking-widest mb-1">CARBS</span>
-                            <span class="text-xs font-black text-white">{{ dailyTotals.carbs }}g</span>
-                        </div>
-                        <div class="bg-slate-950/50 rounded-xl p-2 text-center border-l-2 border-red-500">
-                            <span class="block text-[6px] text-red-500 font-black uppercase tracking-widest mb-1">FAT</span>
-                            <span class="text-xs font-black text-white">{{ dailyTotals.fat }}g</span>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-3 border-t border-white/5 pt-4">
-                        <div class="text-center">
-                            <span class="text-[8px] text-slate-500 font-black uppercase tracking-widest block mb-1">SLEEP</span>
-                            <span class="text-xl font-black italic" :class="todayMetrics.sleep >= 7 ? 'text-green-400' : 'text-slate-200'">
-                                {{ todayMetrics.sleep || '-' }}<span class="text-[9px] text-slate-600 align-top">/10</span>
-                            </span>
-                        </div>
-                        <div class="text-center border-l border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black uppercase tracking-widest block mb-1">ENERGY</span>
-                            <span class="text-xl font-black italic" :class="todayMetrics.energy >= 7 ? 'text-green-400' : 'text-slate-200'">
-                                {{ todayMetrics.energy || '-' }}<span class="text-[9px] text-slate-600 align-top">/10</span>
-                            </span>
-                        </div>
-                         <div class="text-center border-l border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black uppercase tracking-widest block mb-1">R-HR</span>
-                            <span class="text-xl font-black italic text-slate-200">
-                                {{ todayMetrics.hr || '-' }} <span class="text-[9px] text-slate-600 align-top">BPM</span>
-                            </span>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="glass p-6 rounded-[2rem] shadow-2xl">
-                    <div class="flex justify-between items-end mb-4">
-                        <div class="flex items-center gap-2 opacity-60">
-                            <i data-lucide="pie-chart" class="w-4 h-4 text-green-400"></i>
-                            <h3 class="text-xs font-black uppercase tracking-widest">7-Day Macro Composition</h3>
-                        </div>
-                        <div class="text-right">
-                             <span class="text-[8px] font-black uppercase tracking-widest text-slate-500">TARGET: 180g PRO</span>
-                        </div>
-                    </div>
-
-                    <div class="h-40 w-full relative">
-                        <svg class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
-                            <line x1="0" y1="37.5" x2="300" y2="37.5" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 2" />
-                            <line x1="0" y1="75" x2="300" y2="75" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 2" />
-                            <line x1="0" y1="112.5" x2="300" y2="112.5" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 2" />
-
-                            <g v-for="(day, index) in weeklyMacros" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
-                                <rect :y="150 - day.protHeight" width="28" :height="day.protHeight" :fill="day.colors.p" rx="2" class="bar-grow" style="animation-delay: 0.1s" />
-
-                                <rect :y="150 - day.protHeight - day.fatHeight" width="28" :height="day.fatHeight" :fill="day.colors.f" rx="2" class="bar-grow" style="animation-delay: 0.2s" />
-                                
-                                <rect :y="150 - day.protHeight - day.fatHeight - day.carbHeight" width="28" :height="day.carbHeight" :fill="day.colors.c" rx="2" class="bar-grow" style="animation-delay: 0.3s" />
-                                
-                                <text x="14" y="165" text-anchor="middle" font-size="8" fill="#64748b" font-weight="bold" class="uppercase">{{ day.label }}</text>
-                            </g>
-
-                            <line v-if="macroScale > 0" x1="0" :y1="150 - (180 * macroScale)" x2="300" :y2="150 - (180 * macroScale)" stroke="#22c55e" stroke-opacity="0.8" stroke-width="1" stroke-dasharray="4 2" />
-                        </svg>
-                    </div>
-                </section>
-
-                <section class="glass p-6 rounded-[2rem] shadow-2xl overflow-hidden relative">
+                <section class="glass p-6 rounded-[2.5rem] shadow-2xl overflow-hidden relative border-t-4 border-t-blue-500">
                     <div class="flex justify-between items-end mb-4 relative z-10">
-                        <div>
-                            <div class="flex items-center gap-2 opacity-60">
-                                <i data-lucide="trending-up" class="w-4 h-4 text-blue-400"></i>
-                                <h3 class="text-xs font-black uppercase tracking-widest">30-Day Trend</h3>
-                            </div>
+                        <div class="flex items-center gap-2 opacity-60">
+                            <i data-lucide="trending-up" class="w-4 h-4 text-blue-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest">30-Day Weight</h3>
                         </div>
                         <div class="text-right">
                             <span class="block text-[8px] text-slate-500 uppercase font-black tracking-widest">CURRENT</span>
@@ -189,7 +85,7 @@
                         </div>
                     </div>
                     
-                    <div class="h-48 w-full relative">
+                    <div class="h-40 w-full relative">
                         <svg v-if="chartPath" class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
                             <defs>
                                 <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -197,243 +93,225 @@
                                     <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
                                 </linearGradient>
                             </defs>
-                            
-                            <line x1="0" y1="0" x2="300" y2="0" stroke="#1e293b" stroke-width="1" stroke-dasharray="4 4" />
-                            <line x1="0" y1="75" x2="300" y2="75" stroke="#1e293b" stroke-width="1" stroke-dasharray="4 4" />
-                            <line x1="0" y1="150" x2="300" y2="150" stroke="#1e293b" stroke-width="1" stroke-dasharray="4 4" />
-
                             <polygon :points="chartFillPath" fill="url(#chartGradient)" />
-                            <polyline :points="chartPath" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-                            <circle :cx="lastPoint.x" :cy="lastPoint.y" r="4" fill="#fff" stroke="#3b82f6" stroke-width="2" class="animate-pulse" />
+                            <polyline :points="chartPath" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" />
+                            <circle :cx="lastPoint.x" :cy="lastPoint.y" r="4" fill="#fff" stroke="#3b82f6" stroke-width="2" />
                         </svg>
-
                         <div v-else class="w-full h-full flex items-center justify-center border border-white/5 rounded-xl bg-slate-950/20">
-                            <span class="text-[10px] text-slate-500 italic">Insufficient Data to Graph</span>
+                            <span class="text-[10px] text-slate-500 italic uppercase">Insufficient Data</span>
                         </div>
                     </div>
-                    
-                    <div class="flex justify-between mt-2 text-[8px] text-slate-600 font-bold uppercase tracking-widest">
-                        <span>{{ startDate }}</span>
-                        <span>Today</span>
+                </section>
+
+                <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-2 opacity-60">
+                            <i data-lucide="target" class="w-4 h-4 text-green-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Neural Targets</h3>
+                        </div>
+                        <button @click="showTargetModal = true" class="text-[8px] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400">Edit Goals</button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1">PROTEIN</span>
+                            <span class="text-xl font-black italic">{{ targets.protein }}g</span>
+                        </div>
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1">CALORIES</span>
+                            <span class="text-xl font-black italic">{{ targets.cals }}</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
+                    <div class="flex items-center gap-2 mb-6 opacity-60">
+                        <i data-lucide="pie-chart" class="w-4 h-4 text-orange-400"></i>
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Daily Fuel Consistency</h3>
+                    </div>
+                    <div class="h-40 w-full">
+                        <svg class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
+                            <g v-for="(day, index) in weeklyMacros" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
+                                <rect :y="150 - day.protHeight" width="28" :height="day.protHeight" :fill="day.hit ? '#3b82f6' : '#1e293b'" rx="2" class="bar-grow" />
+                                <text x="14" y="165" text-anchor="middle" font-size="8" fill="#64748b" font-weight="bold" class="uppercase">{{ day.label }}</text>
+                            </g>
+                        </svg>
                     </div>
                 </section>
             </div>
 
-            <div v-if="view === 'supply'" class="space-y-4">
-                <button @click="addItem" class="w-full py-4 border border-dashed border-slate-700 rounded-2xl text-slate-500 font-black text-xs uppercase tracking-widest hover:border-purple-500 hover:text-purple-500 transition-all active:scale-95">
-                    + Add Inventory
-                </button>
-
-                <div v-if="inventory.length === 0" class="text-center py-12">
-                    <i data-lucide="package-open" class="w-8 h-8 text-slate-700 mx-auto mb-2"></i>
-                    <p class="text-slate-600 text-xs italic">Inventory is empty.</p>
-                </div>
-
-                <div v-for="item in inventory" :key="item.id" class="glass p-5 rounded-2xl border-l-4 border-l-purple-500 shadow-lg relative overflow-hidden group">
-                    <div class="relative z-10">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="font-black text-slate-200 uppercase text-sm italic">{{ item.item_name }}</span>
-                            <div class="text-right">
-                                 <span class="block font-black text-xl">{{ Math.floor(item.servings_left) }}</span>
-                                 <span class="text-[8px] text-slate-500 uppercase tracking-widest">SERVINGS</span>
-                            </div>
-                        </div>
-                        <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden mb-4 border border-white/5">
-                            <div class="bg-gradient-to-r from-purple-600 to-blue-500 h-full transition-all duration-500" :style="{ width: (item.servings_left / item.total_servings * 100) + '%' }"></div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button @click="updateStock(item, -1)" class="flex-1 bg-slate-900/80 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-red-500/20 hover:text-red-400 transition-colors border border-white/5">
-                                Use 1 Serving
-                            </button>
-                            <button @click="deleteItem(item.id)" class="px-3 bg-slate-900/80 rounded-lg text-slate-600 hover:text-red-500 hover:bg-red-500/20 border border-white/5 transition-colors">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
+            <div v-if="view === 'motion'" class="space-y-4">
+                <section class="glass p-6 rounded-[2.5rem] border-t-4 border-t-orange-500 shadow-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-2 opacity-60">
+                            <i data-lucide="activity" class="w-4 h-4 text-orange-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest">Performance Ledger</h3>
                         </div>
                     </div>
-                </div>
+                    
+                    <div v-if="!recentWorkouts.length" class="text-center py-8 text-slate-600 italic text-xs">No activity sequence found.</div>
+                    
+                    <div v-else class="space-y-4">
+                        <div v-for="workout in recentWorkouts" :key="workout.id" class="bg-slate-950/40 p-4 rounded-2xl border border-white/5">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <span class="block font-black text-slate-200 uppercase italic">{{ workout.protocol_name }}</span>
+                                    <span class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">{{ workout.date }}</span>
+                                </div>
+                                <div class="bg-blue-600/20 px-2 py-1 rounded text-[8px] font-black text-blue-400 border border-blue-500/20">
+                                    {{ workout.setCount }} SETS
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
         </main>
 
+        <transition name="modal">
+            <div v-if="logoutModal" class="fixed inset-0 z-[300] flex items-end justify-center p-4">
+                <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="logoutModal = false"></div>
+                <div class="glass w-full max-w-sm rounded-3xl p-6 relative border border-white/10">
+                    <h2 class="text-xl font-black italic uppercase text-center mb-2">System Logout</h2>
+                    <div class="grid grid-cols-2 gap-3 mt-6">
+                        <button @click="logoutModal = false" class="py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs">Cancel</button>
+                        <button @click="handleLogout" class="py-3 rounded-xl bg-red-600 text-white font-black text-xs">Disconnect</button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <transition name="modal">
+            <div v-if="showTargetModal" class="fixed inset-0 z-[300] flex items-end justify-center p-4">
+                <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="showTargetModal = false"></div>
+                <div class="glass w-full max-w-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl">
+                    <h2 class="text-xl font-black italic uppercase text-white mb-6">Update Targets</h2>
+                    <div class="space-y-4 mb-8">
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1">PROTEIN GOAL (g)</span>
+                            <input type="number" v-model="targets.protein" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
+                        </div>
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1">CALORIE GOAL</span>
+                            <input type="number" v-model="targets.cals" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
+                        </div>
+                    </div>
+                    <button @click="saveTargets" class="w-full py-4 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase shadow-lg shadow-blue-900/20">Update Intelligence</button>
+                </div>
+            </div>
+        </transition>
+
         <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-between px-6 py-4 safe-area-bottom z-[100]">
-            <a href="today.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
-                <i data-lucide="calendar" class="w-6 h-6 mb-1"></i>
-                <span class="text-[8px] font-black uppercase italic tracking-widest">Today</span>
-            </a>
-            <a href="gym.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
-                <i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i>
-                <span class="text-[8px] font-black uppercase italic tracking-widest">Gym</span>
-            </a>
-            <a href="kitchen.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
-                <i data-lucide="utensils" class="w-6 h-6 mb-1"></i>
-                <span class="text-[8px] font-black uppercase italic tracking-widest">Kitchen</span>
-            </a>
-            <a href="#" class="flex flex-col items-center tab-active text-purple-500">
-                <i data-lucide="line-chart" class="w-6 h-6 mb-1"></i>
-                <span class="text-[8px] font-black uppercase italic tracking-widest">Tracker</span>
-            </a>
+            <a href="today.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="calendar" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Today</span></a>
+            <a href="gym.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Gym</span></a>
+            <a href="kitchen.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="utensils" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Kitchen</span></a>
+            <a href="#" class="flex flex-col items-center tab-active text-blue-500"><i data-lucide="line-chart" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Tracker</span></a>
         </nav>
     </div>
 </div>
 
 <script>
     const { createApp } = Vue;
-    const _client = supabase.createClient(
-        'https://mvoyrchefjcpjkdtezmz.supabase.co', 
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
-    );
+    const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
 
     createApp({
         data() {
             return {
-                initialLoading: true,
-                session: null,
-                view: 'intel', 
-                weeklyLogs: [],
-                weightHistory: [],
-                inventory: [],
-                rawWorkouts: [],
-                streak: 0,
-                chartPath: '',
-                chartFillPath: '',
-                lastPoint: {x: 0, y: 0},
-                startDate: '',
-                macroScale: 0 
+                initialLoading: true, logoutModal: false, showTargetModal: false,
+                view: 'intel', session: null, streak: 0,
+                weightHistory: [], weeklyLogs: [], rawWorkouts: [],
+                targets: { protein: 180, cals: 2500, carbs: 250, fat: 80 },
+                chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0}, startDate: ''
             }
         },
         computed: {
-            dailyTotals() {
-                const today = new Date().toISOString().split('T')[0];
-                const todaysLogs = this.weeklyLogs.filter(l => l.created_at.startsWith(today));
-
-                return todaysLogs.reduce((acc, log) => ({
-                    cals: acc.cals + (log.calories || 0),
-                    protein: acc.protein + (log.protein || 0),
-                    carbs: acc.carbs + (log.carbs || 0),
-                    fat: acc.fat + (log.fat || 0)
-                }), { cals: 0, protein: 0, carbs: 0, fat: 0 });
+            currentWeight() { return this.weightHistory.length ? this.weightHistory[this.weightHistory.length-1].weight : '--'; },
+            recentWorkouts() {
+                // Groups logs by timestamp (session)
+                const sessions = [];
+                let currentSession = null;
+                this.rawWorkouts.forEach(log => {
+                    const logTime = new Date(log.created_at).getTime();
+                    if(!currentSession || Math.abs(currentSession.startTime - logTime) > 60000 * 60) {
+                        currentSession = { id: log.id, protocol_name: log.protocol_name || 'Training', startTime: logTime, date: new Date(log.created_at).toLocaleDateString(), setCount: 0 };
+                        sessions.push(currentSession);
+                    }
+                    currentSession.setCount += (log.sets_data?.length || 0);
+                });
+                return sessions.slice(0, 10);
             },
             weeklyMacros() {
                 const days = [];
                 for(let i=6; i>=0; i--) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
-                    days.push(d.toISOString().split('T')[0]);
+                    const d = new Date(); d.setDate(d.getDate() - i);
+                    const dateStr = d.toISOString().split('T')[0];
+                    const logs = this.weeklyLogs.filter(l => l.created_at.startsWith(dateStr));
+                    const p = logs.reduce((sum, l) => sum + (l.protein || 0), 0);
+                    days.push({
+                        label: d.toLocaleDateString('en-US', {weekday:'narrow'}),
+                        protHeight: Math.min(135, p * 0.6),
+                        hit: p >= this.targets.protein
+                    });
                 }
-
-                const rawData = days.map(dateStr => {
-                    const daysLogs = this.weeklyLogs.filter(l => l.created_at.startsWith(dateStr));
-                    return {
-                        date: dateStr,
-                        p: daysLogs.reduce((sum, l) => sum + (l.protein || 0), 0),
-                        c: daysLogs.reduce((sum, l) => sum + (l.carbs || 0), 0),
-                        f: daysLogs.reduce((sum, l) => sum + (l.fat || 0), 0)
-                    };
-                });
-
-                const maxTotal = Math.max(...rawData.map(d => d.p + d.c + d.f));
-                const safeMax = maxTotal > 0 ? maxTotal : 100;
-                this.macroScale = 135 / safeMax; 
-
-                return rawData.map(d => {
-                    // Logic: If Protein >= 180, use colors. Else, use Gray.
-                    const hitTarget = d.p >= 180;
-                    
-                    return {
-                        label: new Date(d.date).toLocaleDateString('en-US', {weekday:'narrow'}),
-                        protHeight: d.p * this.macroScale,
-                        carbHeight: d.c * this.macroScale,
-                        fatHeight: d.f * this.macroScale,
-                        colors: hitTarget ? 
-                            { p: '#3b82f6', f: '#ef4444', c: '#eab308' } : 
-                            { p: '#1e293b', f: '#334155', c: '#475569' } // Grays
-                    };
-                });
-            },
-            todayMetrics() {
-                if(!this.weightHistory.length) return {};
-                return {
-                    sleep: this.weightHistory[0].sleep_quality,
-                    energy: this.weightHistory[0].energy_level,
-                    hr: this.weightHistory[0].resting_hr
-                };
-            },
-            currentWeight() {
-                return this.weightHistory.length ? this.weightHistory[0].weight : '--';
-            },
-            recentActivities() {
-                return this.rawWorkouts.slice(0, 5).map(w => {
-                    const isRecovery = w.exercise_name.startsWith('Recovery:');
-                    const name = isRecovery ? w.exercise_name.replace('Recovery: ', '') : w.exercise_name;
-                    let detail = "Session";
-                    if(isRecovery && w.sets_data && w.sets_data[0]) {
-                        detail = w.sets_data[0].reps + " mins";
-                    } else if (w.sets_data) {
-                        detail = w.sets_data.length + " sets";
-                    }
-                    return {
-                        id: w.id,
-                        name: name,
-                        date: new Date(w.created_at).toLocaleDateString(undefined, {weekday:'short', month:'numeric', day:'numeric'}),
-                        isRecovery: isRecovery,
-                        detail: detail
-                    };
-                });
+                return days;
             }
         },
         async mounted() {
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
-            
-            await Promise.all([
-                this.fetchWeeklyLogs(),
-                this.fetchWeight(),
-                this.fetchInventory(),
-                this.fetchWorkouts()
-            ]);
-
+            await Promise.all([this.fetchWeight(), this.fetchWeeklyLogs(), this.fetchWorkouts(), this.fetchTargets()]);
             this.initialLoading = false;
             this.$nextTick(() => lucide.createIcons());
         },
         methods: {
-            async fetchWeeklyLogs() {
-                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                const { data } = await _client.from('food_logs').select('*').gte('created_at', sevenDaysAgo);
-                this.weeklyLogs = data || [];
+            async handleLogout() { await _client.auth.signOut(); window.location.href = 'index.html'; },
+            async fetchTargets() {
+                const { data } = await _client.from('daily_metrics').select('target_protein, target_calories').order('created_at', { ascending: false }).limit(1);
+                if(data?.[0]) {
+                    this.targets.protein = data[0].target_protein || 180;
+                    this.targets.cals = data[0].target_calories || 2500;
+                }
+            },
+            async saveTargets() {
+                const { error } = await _client.from('daily_metrics').insert([{
+                    user_id: this.session.user.id,
+                    target_protein: this.targets.protein,
+                    target_calories: this.targets.cals,
+                    weight: this.currentWeight // Keep current weight for this row
+                }]);
+                if(!error) {
+                    this.showTargetModal = false;
+                    alert("Intelligence Targets Synchronized.");
+                }
             },
             async fetchWeight() {
                 const { data } = await _client.from('daily_metrics').select('*').order('created_at', { ascending: true }).limit(30);
-                if (data && data.length) {
-                    this.weightHistory = [...data].reverse();
+                if (data?.length) {
+                    this.weightHistory = data;
                     this.calculateGraph(data);
                 }
             },
             calculateGraph(data) {
                 if (data.length < 2) return;
-                
-                this.startDate = new Date(data[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
                 const weights = data.map(d => d.weight);
-                const min = Math.min(...weights) - 2; 
+                const min = Math.min(...weights) - 2;
                 const max = Math.max(...weights) + 2;
                 const range = max - min;
-                
-                const width = 300;
-                const height = 150;
-
                 const points = weights.map((w, i) => {
-                    const x = (i / (weights.length - 1)) * width;
-                    const y = height - ((w - min) / range) * height;
+                    const x = (i / (weights.length - 1)) * 300;
+                    const y = 150 - ((w - min) / range) * 150;
                     return { x, y };
                 });
-
                 this.chartPath = points.map(p => `${p.x},${p.y}`).join(' ');
-                this.chartFillPath = `0,${height} ${this.chartPath} ${width},${height}`;
-                this.lastPoint = points[points.length - 1];
+                this.chartFillPath = `0,150 ${this.chartPath} 300,150`;
+                this.lastPoint = points[points.length-1];
+                this.startDate = new Date(data[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             },
-            async fetchInventory() {
-                const { data } = await _client.from('inventory').select('*').order('created_at', { ascending: false });
-                this.inventory = data || [];
+            async fetchWeeklyLogs() {
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                const { data } = await _client.from('food_logs').select('*').gte('created_at', sevenDaysAgo);
+                this.weeklyLogs = data || [];
             },
             async fetchWorkouts() {
                 const { data } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false });
@@ -445,64 +323,12 @@
                 const uniqueDates = [...new Set(logs.map(l => l.created_at.split('T')[0]))].sort().reverse();
                 let streak = 0;
                 let today = new Date().toISOString().split('T')[0];
-                let yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-                
                 if (uniqueDates.includes(today)) {
                     streak++;
                     let checkDate = new Date(Date.now() - 86400000);
-                    while (true) {
-                        let dateStr = checkDate.toISOString().split('T')[0];
-                        if (uniqueDates.includes(dateStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); } else break;
-                    }
-                } else if (uniqueDates.includes(yesterday)) {
-                     let checkDate = new Date(Date.now() - 86400000);
-                     while (true) {
-                        let dateStr = checkDate.toISOString().split('T')[0];
-                        if (uniqueDates.includes(dateStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); } else break;
-                    }
+                    while (uniqueDates.includes(checkDate.toISOString().split('T')[0])) { streak++; checkDate.setDate(checkDate.getDate() - 1); }
                 }
                 this.streak = streak;
-            },
-            async logActivity() {
-                const name = prompt("Activity Name (e.g. Walk, Yoga, Hike):");
-                if (!name) return;
-                const duration = prompt("Duration (minutes):");
-                if (!duration) return;
-
-                const payload = {
-                    exercise_name: `Recovery: ${name}`,
-                    user_id: this.session.user.id,
-                    sets_data: [{ weight: 0, reps: parseInt(duration), done: true }]
-                };
-
-                await _client.from('workout_logs').insert([payload]);
-                alert("Recovery Session Logged.");
-                this.fetchWorkouts();
-            },
-            async addItem() {
-                const name = prompt("Item Name:");
-                const servings = prompt("Total Servings:");
-                if (name && servings) {
-                    await _client.from('inventory').insert([{ item_name: name, total_servings: parseInt(servings), servings_left: parseInt(servings), user_id: this.session.user.id }]);
-                    this.fetchInventory();
-                }
-            },
-            async handleLogout() {
-    if(confirm("Log out of Constellation?")) {
-        await _client.auth.signOut();
-        window.location.href = 'index.html';
-    }
-},
-            async updateStock(item, amount) {
-                const newAmount = item.servings_left + amount;
-                await _client.from('inventory').update({ servings_left: newAmount }).eq('id', item.id);
-                this.fetchInventory();
-            },
-            async deleteItem(id) {
-                if(confirm("Remove item?")) {
-                    await _client.from('inventory').delete().eq('id', id);
-                    this.fetchInventory();
-                }
             }
         }
     }).mount('#app');
