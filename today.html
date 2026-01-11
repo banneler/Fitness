@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Today | Constellation</title>
 
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -35,9 +35,7 @@
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
         
         .droplet-fill { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        /* Active State: Blue Fill & Glow */
         .droplet-active { fill: #3b82f6; stroke: #3b82f6; filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6)); transform: scale(1.1); }
-        /* Inactive State: Dark Outline */
         .droplet-inactive { stroke: #334155; fill: transparent; }
     </style>
 </head>
@@ -77,7 +75,7 @@
 
     <header class="flex justify-between items-center mb-8">
         <div>
-            <h1 class="text-3xl font-black italic text-white uppercase">Today</h1>
+            <h1 class="text-3xl font-black italic text-white uppercase">{{ timeGreeting }}</h1>
             <div class="flex flex-col">
                 <span class="text-[10px] text-slate-500 font-black uppercase tracking-widest">{{ currentDate }}</span>
                 <a href="gym.html" v-if="todaysWorkout" class="text-[10px] font-bold text-blue-400 uppercase tracking-wider mt-1 flex items-center gap-1 hover:text-blue-300">
@@ -86,9 +84,14 @@
                 <span v-else class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mt-1">Rest Day Protocol</span>
             </div>
         </div>
-        <button @click="logoutModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
-            <i data-lucide="log-out" class="w-5 h-5"></i>
-        </button>
+        <div class="flex gap-2">
+            <button v-if="deferredPrompt" @click="installPWA" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-blue-500/30 shadow-lg active:scale-95 transition-all text-blue-400 animate-pulse">
+                <i data-lucide="download" class="w-5 h-5"></i>
+            </button>
+            <button @click="logoutModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+            </button>
+        </div>
     </header>
 
     <main class="space-y-6">
@@ -161,12 +164,12 @@
                             {{ weightDelta.icon }} {{ weightDelta.val }} lbs
                         </span>
                     </div>
-                    <input type="number" v-model="metrics.weight" class="bg-transparent text-right font-black text-xl text-white outline-none w-24 placeholder-slate-700" placeholder="0.0">
+                    <input type="number" inputmode="decimal" v-model="metrics.weight" class="bg-transparent text-right font-black text-xl text-white outline-none w-24 placeholder-slate-700" placeholder="0.0">
                 </div>
 
                 <div class="bg-slate-900/50 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
                     <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Resting HR</span>
-                    <input type="number" v-model="metrics.resting_hr" class="bg-transparent text-right font-black text-xl text-white outline-none w-24 placeholder-slate-700" placeholder="0">
+                    <input type="number" inputmode="numeric" v-model="metrics.resting_hr" class="bg-transparent text-right font-black text-xl text-white outline-none w-24 placeholder-slate-700" placeholder="0">
                 </div>
 
                 <div>
@@ -226,6 +229,7 @@
                 session: null,
                 reportSaved: false,
                 logoutModal: false,
+                deferredPrompt: null, // PWA State
                 metrics: {
                     id: null,
                     weight: null,
@@ -246,6 +250,12 @@
             currentDate() {
                 return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
             },
+            timeGreeting() {
+                const hour = new Date().getHours();
+                if(hour < 12) return "Good Morning";
+                if(hour < 18) return "Good Afternoon";
+                return "Good Evening";
+            },
             proteinLeft() {
                 return Math.max(0, this.proteinTarget - this.proteinCurrent);
             },
@@ -256,11 +266,17 @@
                 return {
                     val: Math.abs(diff).toFixed(1),
                     color: diff > 0 ? 'text-red-400' : 'text-green-400',
-                    icon: diff > 0 ? '🔺' : '🔻'
+                    icon: diff > 0 ? '↑' : '↓'
                 };
             }
         },
         async mounted() {
+            // Listen for PWA Install Event
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                this.deferredPrompt = e;
+            });
+
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
@@ -280,6 +296,14 @@
                 await _client.auth.signOut();
                 window.location.href = 'index.html';
             },
+            // PWA Install Trigger
+            async installPWA() {
+                if(this.deferredPrompt) {
+                    this.deferredPrompt.prompt();
+                    const { outcome } = await this.deferredPrompt.userChoice;
+                    if(outcome === 'accepted') this.deferredPrompt = null;
+                }
+            },
             showToast(title, message) {
                 this.toast = { visible: true, title, message };
                 setTimeout(() => this.toast.visible = false, 3000);
@@ -288,7 +312,7 @@
                 return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             },
             async fetchSchedule() {
-                const dayName = new Date().toLocaleDateString('en-US', {weekday:'short'}); // 'Sat'
+                const dayName = new Date().toLocaleDateString('en-US', {weekday:'short'}); 
                 const { data } = await _client.from('schedule').select('*, routines(name)').eq('day_of_week', dayName).single();
                 if (data && data.routines) {
                     this.todaysWorkout = data.routines.name;
@@ -296,8 +320,6 @@
             },
             async fetchMetrics() {
                 const today = new Date().toISOString().split('T')[0];
-                
-                // 1. Fetch Today's Data
                 const { data: todayData } = await _client
                     .from('daily_metrics')
                     .select('*')
@@ -318,7 +340,6 @@
                     this.reportSaved = true;
                 }
 
-                // 2. Fetch Previous Weight (for Trend)
                 const { data: prevData } = await _client
                     .from('daily_metrics')
                     .select('weight')
@@ -353,7 +374,6 @@
                 }
             },
             async saveWater(level) {
-                // Toggle logic
                 const newVal = this.metrics.water_intake === level ? 0 : level;
                 this.metrics.water_intake = newVal;
                 await this.saveMetrics(true); 
