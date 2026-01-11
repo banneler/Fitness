@@ -40,27 +40,27 @@
             color: #eab308 !important;
         }
 
-       /* HEATMAP STYLES */
-.muscle-base { 
-    fill: rgba(30, 41, 59, 0.3); /* More transparent base */
-    stroke: rgba(71, 85, 105, 0.6); 
-    stroke-width: 2; /* Thicker outline to match style */
-    transition: all 0.5s ease; 
-}
-/* Dynamic Colors */
-.fill-red-500 { 
-    fill: rgba(239, 68, 68, 0.5); /* Semi-transparent fill */
-    stroke: #ef4444; /* Solid stroke */
-    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.8)); 
-}
-.fill-orange-500 { 
-    fill: rgba(249, 115, 22, 0.5);
-    stroke: #f97316;
-}
-.fill-blue-500 { 
-    fill: rgba(59, 130, 246, 0.3);
-    stroke: #3b82f6;
-}
+        /* HEATMAP STYLES (New) */
+        .muscle-base { 
+            fill: rgba(30, 41, 59, 0.3); 
+            stroke: rgba(255, 255, 255, 0.15); /* Thin sharp lines */
+            stroke-width: 1px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        /* Dynamic Colors with Inner Glow */
+        .fill-red-500 { 
+            fill: rgba(239, 68, 68, 0.6); 
+            stroke: #ef4444; 
+            filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5)); 
+        }
+        .fill-orange-500 { 
+            fill: rgba(249, 115, 22, 0.6);
+            stroke: #f97316;
+        }
+        .fill-blue-500 { 
+            fill: rgba(59, 130, 246, 0.2);
+            stroke: rgba(59, 130, 246, 0.4);
+        }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -91,7 +91,6 @@
             <div class="glass w-full max-w-sm rounded-3xl p-6 relative border border-white/10 shadow-2xl">
                 <h2 class="text-xl font-black italic uppercase text-center mb-2 text-white">System Logout</h2>
                 <p class="text-xs text-slate-500 font-bold text-center mb-6">End current session?</p>
-                
                 <div class="grid grid-cols-2 gap-3">
                     <button @click="logoutModal = false" class="py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">
                         Cancel
@@ -135,27 +134,65 @@
                 </div>
             </div>
             
-            <div class="flex justify-around relative z-10 px-4">
-           <svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
-    <g stroke="#475569" stroke-width="2" fill="none">
-        <path d="M100,30 C115,30 125,40 125,55 L125,65 C125,75 115,85 100,85 C85,85 75,75 75,65 L75,55 C75,40 85,30 100,30 Z" /> <path d="M100,85 L100,100 M75,65 L60,75 M125,65 L140,75" /> <path d="M60,75 C40,85 30,110 30,140 L30,220 L45,240" /> <path d="M140,75 C160,85 170,110 170,140 L170,220 L155,240" /> <path d="M60,100 C60,150 70,200 75,240 L70,300 L65,350 L55,380 L75,390 L85,380 L90,300" /> <path d="M140,100 C140,150 130,200 125,240 L130,300 L135,350 L145,380 L125,390 L115,380 L110,300" /> <path d="M75,240 C100,260 125,240 125,240" /> </g>
+            <div class="flex justify-around relative z-10 px-2">
+                <svg class="h-64 w-auto drop-shadow-xl" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+                    <g stroke="rgba(255,255,255,0.1)" stroke-width="1">
+                        <path d="M100,20 C112,20 118,30 118,45 C118,55 112,65 100,65 C88,65 82,55 82,45 C82,30 88,20 100,20 Z" class="muscle-base" />
+                        
+                        <path d="M82,55 L60,70 L100,80 L140,70 L118,55 L100,65 Z" class="muscle-base" />
 
-    <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" d="M60,75 C50,80 40,95 40,120 C50,130 65,130 75,115 L60,75 Z M140,75 C150,80 160,95 160,120 C150,130 135,130 125,115 L140,75 Z" />
-    <path :class="['muscle-base', muscleHeatmap['chest'].color]" d="M75,115 C85,125 115,125 125,115 C130,140 120,155 100,160 C80,155 70,140 75,115 Z" />
-    <path :class="['muscle-base', muscleHeatmap['arms'].color]" d="M40,120 C35,150 35,190 45,240 L55,230 C50,190 50,150 60,130 C50,130 40,120 40,120 Z M160,120 C165,150 165,190 155,240 L145,230 C150,190 150,150 140,130 C150,130 160,120 160,120 Z" />
-    <path :class="['muscle-base', muscleHeatmap['core'].color]" d="M75,160 C85,165 115,165 125,160 C120,200 115,230 100,240 C85,230 80,200 75,160 Z" />
-    <path :class="['muscle-base', muscleHeatmap['legs'].color]" d="M75,240 C70,280 70,320 75,350 L90,340 C95,310 95,270 90,250 C85,250 80,245 75,240 Z M125,240 C130,280 130,320 125,350 L110,340 C105,310 105,270 110,250 C115,250 120,245 125,240 Z" />
-</svg>
+                        <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" 
+                              d="M60,70 L40,80 C35,90 35,105 45,125 L55,115 C50,100 55,85 60,70 Z M140,70 L160,80 C165,90 165,105 155,125 L145,115 C150,100 145,85 140,70 Z" />
 
-<svg class="h-64 w-auto" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
-    <g stroke="#475569" stroke-width="2" fill="none">
-        <path d="M100,30 C115,30 125,40 125,55 L125,65 C125,75 115,85 100,85 C85,85 75,75 75,65 L75,55 C75,40 85,30 100,30 Z" /> <path d="M100,85 L100,390" stroke-dasharray="4,4" opacity="0.5" /> <path d="M75,65 L50,80 C30,100 30,140 30,170 L45,240" /> <path d="M125,65 L150,80 C170,100 170,140 170,170 L155,240" /> <path d="M75,240 C65,280 65,330 70,390 L85,390 L90,320 L95,390" /> <path d="M125,240 C135,280 135,330 130,390 L115,390 L110,320 L105,390" /> </g>
+                        <path :class="['muscle-base', muscleHeatmap['chest'].color]" 
+                              d="M60,80 L100,85 L140,80 L135,115 C130,130 100,135 100,135 C100,135 70,130 65,115 L60,80 M100,85 L100,135" />
 
-    <path :class="['muscle-base', muscleHeatmap['back'].color]" d="M100,85 L75,95 C65,120 70,160 85,200 C95,210 105,210 115,200 C130,160 135,120 125,95 L100,85 Z" />
-    <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" d="M75,95 C60,100 50,120 50,140 C60,150 75,140 85,125 L75,95 Z M125,95 C140,100 150,120 150,140 C140,150 125,140 115,125 L125,95 Z" />
-    <path :class="['muscle-base', muscleHeatmap['arms'].color]" d="M50,140 C45,170 45,210 50,240 L65,230 C60,190 60,160 75,140 C60,145 55,140 50,140 Z M150,140 C155,170 155,210 150,240 L135,230 C140,190 140,160 125,140 C140,145 145,140 150,140 Z" />
-    <path :class="['muscle-base', muscleHeatmap['legs'].color]" d="M85,200 C70,210 65,240 75,260 C70,300 70,340 75,380 L90,370 C95,330 95,290 85,260 C95,250 95,220 85,200 Z M115,200 C130,210 135,240 125,260 C130,300 130,340 125,380 L110,370 C105,330 105,290 115,260 C105,250 105,220 115,200 Z" />
-</svg>
+                        <path :class="['muscle-base', muscleHeatmap['arms'].color]" 
+                              d="M45,125 L35,160 L45,170 L58,160 L55,115 Z M155,125 L165,160 L155,170 L142,160 L145,115 Z" />
+                        
+                        <path :class="['muscle-base', muscleHeatmap['arms'].color]" 
+                              d="M35,160 L25,200 L30,220 L48,210 L45,170 Z M165,160 L175,200 L170,220 L152,210 L155,170 Z" />
+
+                        <path :class="['muscle-base', muscleHeatmap['core'].color]" 
+                              d="M65,130 L135,130 L125,180 L100,190 L75,180 Z M100,135 L100,190 M75,150 L125,150 M80,165 L120,165" />
+
+                        <path :class="['muscle-base', muscleHeatmap['legs'].color]" 
+                              d="M75,190 L60,220 C55,250 60,280 70,300 L95,290 C90,260 92,220 100,200 L75,190 Z M125,190 L140,220 C145,250 140,280 130,300 L105,290 C110,260 108,220 100,200 L125,190 Z" />
+                        
+                        <path :class="['muscle-base', muscleHeatmap['legs'].color]" 
+                              d="M70,300 L65,340 L75,380 L85,370 L90,340 L85,300 Z M130,300 L135,340 L125,380 L115,370 L110,340 L115,300 Z" />
+                    </g>
+                </svg>
+
+                <svg class="h-64 w-auto drop-shadow-xl" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+                    <g stroke="rgba(255,255,255,0.1)" stroke-width="1">
+                        <path d="M100,20 C112,20 118,30 118,45 C118,55 112,65 100,65 C88,65 82,55 82,45 C82,30 88,20 100,20 Z" class="muscle-base" />
+
+                        <path :class="['muscle-base', muscleHeatmap['back'].color]" 
+                              d="M82,55 L60,70 L85,90 L100,130 L115,90 L140,70 L118,55 L100,65 Z" />
+
+                        <path :class="['muscle-base', muscleHeatmap['shoulders'].color]" 
+                              d="M60,70 L40,80 L45,110 L65,95 L85,90 Z M140,70 L160,80 L155,110 L135,95 L115,90 Z" />
+
+                        <path :class="['muscle-base', muscleHeatmap['back'].color]" 
+                              d="M65,95 L48,130 L65,160 L100,180 L135,160 L152,130 L135,95 L115,120 L100,180 L85,120 Z" />
+
+                        <path :class="['muscle-base', muscleHeatmap['arms'].color]" 
+                              d="M45,110 L35,150 L45,165 L55,150 Z M155,110 L165,150 L155,165 L145,150 Z" />
+                        
+                        <path :class="['muscle-base', muscleHeatmap['arms'].color]" 
+                              d="M45,165 L30,200 L35,220 L50,210 Z M155,165 L170,200 L165,220 L150,210 Z" />
+
+                        <path :class="['muscle-base', muscleHeatmap['legs'].color]" 
+                              d="M65,180 L100,190 L135,180 L135,210 C135,230 100,230 100,230 C100,230 65,230 65,210 Z" />
+
+                        <path :class="['muscle-base', muscleHeatmap['legs'].color]" 
+                              d="M70,230 L60,260 L65,300 L90,290 L95,250 Z M130,230 L140,260 L135,300 L110,290 L105,250 Z" />
+                        
+                        <path :class="['muscle-base', muscleHeatmap['legs'].color]" 
+                              d="M65,300 L55,330 L75,380 L90,330 Z M135,300 L145,330 L125,380 L110,330 Z" />
+                    </g>
+                </svg>
             </div>
         </div>
 
@@ -435,7 +472,7 @@
                 libraryExercises: [], 
                 schedule: [], 
                 recentSessions: [],
-                rawLogs: [], // Store raw logs for heatmap calculation
+                rawLogs: [], 
                 iconLibrary: ICONS,
                 daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                 
@@ -443,7 +480,7 @@
                 muscleHeatmap: { 
                     'chest': {color: 'fill-blue-500', lastTrained: null}, 
                     'back': {color: 'fill-blue-500', lastTrained: null}, 
-                    'legs': {color: 'fill-blue-500', lastTrained: null}, // Maps to quads/hamstrings/glutes
+                    'legs': {color: 'fill-blue-500', lastTrained: null}, 
                     'arms': {color: 'fill-blue-500', lastTrained: null}, 
                     'shoulders': {color: 'fill-blue-500', lastTrained: null},
                     'core': {color: 'fill-blue-500', lastTrained: null}
@@ -466,7 +503,7 @@
                 restTimer: 0, 
                 restTimerRunning: false, 
                 restInterval: null,
-                personalRecords: {} // Map: { 'Bench Press': 225 }
+                personalRecords: {} 
             } 
         },
         computed: {
@@ -529,7 +566,6 @@
                 this.schedule = data || []; 
             },
             async fetchHistory() {
-                // Fetch raw logs for Heatmap & PRs
                 const { data: rawData } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false }).limit(300);
                 this.rawLogs = rawData || [];
 
@@ -544,7 +580,6 @@
                 this.rawLogs.forEach((log) => {
                     const logTime = new Date(log.created_at).getTime();
                     
-                    // Track Max Weights for PRs
                     if(log.sets_data) {
                         log.sets_data.forEach(s => {
                             if(s.weight > (this.personalRecords[log.exercise_name] || 0)) {
@@ -553,7 +588,6 @@
                         });
                     }
 
-                    // Grouping logic for Recent Sessions UI
                     if (!currentSession) {
                         currentSession = { 
                             id: log.id, 
@@ -587,16 +621,12 @@
                 const now = new Date().getTime();
                 const oneDay = 1000 * 60 * 60 * 24;
 
-                // Reset timestamps
                 for(let m in this.muscleHeatmap) this.muscleHeatmap[m].lastTrained = null;
 
-                // Find most recent training time for each muscle group
                 this.rawLogs.forEach(log => {
                     const exDef = this.libraryExercises.find(e => e.name === log.exercise_name);
                     if(exDef && exDef.muscle_group) {
-                        // Normalize group name to match heatmap keys
                         let groupKey = exDef.muscle_group.toLowerCase();
-                        // Map specific groups to generalized heatmap zones if necessary
                         if(['quads', 'hamstrings', 'glutes', 'calves'].includes(groupKey)) groupKey = 'legs';
                         if(['lats', 'traps', 'lower back'].includes(groupKey)) groupKey = 'back';
                         if(['biceps', 'triceps', 'forearms'].includes(groupKey)) groupKey = 'arms';
@@ -610,15 +640,14 @@
                     }
                 });
 
-                // Apply colors based on recency
                 for(let m in this.muscleHeatmap) {
                     if(this.muscleHeatmap[m].lastTrained) {
                         const daysSince = (now - this.muscleHeatmap[m].lastTrained) / oneDay;
-                        if(daysSince < 2) this.muscleHeatmap[m].color = 'fill-red-500 animate-pulse'; // < 48hrs
-                        else if(daysSince < 4) this.muscleHeatmap[m].color = 'fill-orange-500'; // 2-4 days
-                        else this.muscleHeatmap[m].color = 'fill-blue-500'; // > 4 days (Cold)
+                        if(daysSince < 2) this.muscleHeatmap[m].color = 'fill-red-500 animate-pulse'; 
+                        else if(daysSince < 4) this.muscleHeatmap[m].color = 'fill-orange-500';
+                        else this.muscleHeatmap[m].color = 'fill-blue-500';
                     } else {
-                         this.muscleHeatmap[m].color = 'fill-blue-500'; // Never trained
+                         this.muscleHeatmap[m].color = 'fill-blue-500';
                     }
                 }
             },
@@ -628,7 +657,6 @@
                 this.loadingText = "Analyzing Biometrics...";
                 
                 try {
-                    // Requires edge function to be deployed
                     const { data, error } = await _client.functions.invoke('ai-workout-generator');
                     if(error) throw error;
                     
@@ -638,7 +666,7 @@
                     }
                 } catch (e) {
                     console.error(e);
-                    // Fallback Simulation for demo/testing without edge function deployment
+                    // Fallback
                     setTimeout(async () => {
                         const fillerExercises = this.libraryExercises.slice(0, 3).map(e => e.id);
                         if(fillerExercises.length) {
@@ -655,7 +683,6 @@
                 this.loading = false;
             },
 
-            // Standard Getters & Setters
             getScheduleForDay(dayName) { 
                 const entry = this.schedule.find(s => s.day_of_week === dayName); 
                 return entry ? { name: entry.routines.name, icon_name: entry.routines.icon_name } : null; 
@@ -696,7 +723,6 @@
             
             async saveExercise() {
                 if(!this.newExercise.name) return;
-                // Ensure muscle group is normalized for heatmap
                 const muscleGroup = this.newExercise.group.toLowerCase();
                 const payload = { 
                     name: this.newExercise.name, 
@@ -737,7 +763,6 @@
                 }
             },
 
-            // Active Session Logic
             getExerciseName(id) { 
                 const ex = this.libraryExercises.find(e => e.id === id); 
                 return ex ? ex.name : 'Unknown Exercise'; 
