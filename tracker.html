@@ -92,10 +92,21 @@
                             <span v-else class="animate-pulse">ANALYZING...</span>
                         </button>
                     </div>
+
                     <div v-if="analysis" class="space-y-4">
                         <div class="bg-slate-950/50 p-5 rounded-3xl border border-white/5">
                             <p class="text-[10px] text-purple-400 font-black uppercase mb-2 tracking-widest">Executive Briefing</p>
                             <p class="text-sm italic leading-relaxed text-slate-200">{{ analysis.summary }}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                                <p class="text-[8px] text-orange-400 font-black uppercase mb-1">Prediction</p>
+                                <p class="text-[10px] font-bold text-slate-300 italic">{{ analysis.prediction }}</p>
+                            </div>
+                            <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                                <p class="text-[8px] text-emerald-400 font-black uppercase mb-1">Growth Vector</p>
+                                <p class="text-[10px] font-bold text-slate-300 italic">{{ analysis.advice }}</p>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -125,7 +136,27 @@
                     </div>
                 </section>
 
-                <section class="glass p-6 rounded-[2.5rem] shadow-xl relative overflow-hidden">
+                <section class="glass p-6 rounded-[2.5rem] shadow-xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-2 opacity-60">
+                            <i data-lucide="target" class="w-4 h-4 text-green-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Neural Targets</h3>
+                        </div>
+                        <button @click="showTargetModal = true" class="text-[8px] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white transition-colors">Adjust Goals</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein Goal</span>
+                            <span class="text-xl font-black italic">{{ targets.protein }}g</span>
+                        </div>
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calorie Goal</span>
+                            <span class="text-xl font-black italic">{{ targets.cals }}</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="glass p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
                     <div class="flex justify-between items-end mb-6">
                         <div class="flex items-center gap-2 opacity-60">
                             <i data-lucide="pie-chart" class="w-4 h-4 text-orange-400"></i>
@@ -143,7 +174,9 @@
                                   x1="0" :y1="150 - (targets.protein * chartScale)" 
                                   x2="300" :y2="150 - (targets.protein * chartScale)" 
                                   stroke="#22c55e" stroke-width="2" stroke-dasharray="6 3" />
+                            
                             <text v-if="targets.protein > 0" x="295" :y="145 - (targets.protein * chartScale)" text-anchor="end" font-size="6" fill="#22c55e" font-weight="black" class="uppercase">Goal: {{targets.protein}}g</text>
+
                             <g v-for="(day, index) in weeklyMacrosFull" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
                                 <rect :y="150 - day.p" width="28" :height="day.p" :fill="day.active ? '#3b82f6' : '#1e293b'" rx="2" class="bar-grow" />
                                 <rect :y="150 - day.p - day.c" width="28" :height="day.c" :fill="day.active ? '#10b981' : '#334155'" rx="2" class="bar-grow" style="animation-delay:0.1s" />
@@ -153,6 +186,32 @@
                             </g>
                         </svg>
                     </div>
+                </section>
+
+                <section class="glass p-6 rounded-[2.5rem] shadow-xl space-y-6">
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Growth Vectors</h3>
+                    <div v-for="metric in ['waist', 'chest', 'arms', 'thigh']" :key="metric" class="space-y-2">
+                        <div class="flex justify-between items-end px-1">
+                            <span class="text-xs font-black uppercase italic">{{ metric }}</span>
+                            <span class="text-[10px] font-bold text-blue-400">{{ getLatestMetric(metric) }} in</span>
+                        </div>
+                        <div class="h-12 w-full bg-slate-950/40 rounded-xl border border-white/5 overflow-hidden">
+                            <svg class="w-full h-full" viewBox="0 0 300 60" preserveAspectRatio="none">
+                                <polyline :points="getMetricPath(metric)" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="glass p-6 rounded-[2.5rem] shadow-xl border-t-4 border-t-emerald-500">
+                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-300 mb-6">Archive Measurements</h3>
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <div v-for="m in ['waist', 'chest', 'arms', 'thigh']" :key="m" class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[7px] text-slate-500 font-black uppercase block mb-1">{{ m }} (in)</span>
+                            <input type="number" step="0.01" v-model="bodyMetrics[m]" class="bg-transparent border-none text-xl font-black w-full text-white p-0 focus:ring-0">
+                        </div>
+                    </div>
+                    <button @click="saveBodyMetrics" class="w-full py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase shadow-lg active:scale-95 transition-all">Submit to Registry</button>
                 </section>
             </div>
 
@@ -178,6 +237,16 @@
                             <div class="text-right">
                                 <span class="block text-xl font-black text-blue-400 leading-none">{{ session.tonnage.toLocaleString() }}</span>
                                 <span class="text-[7px] font-black text-slate-600 uppercase tracking-widest">LBS Tonnage</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="timer" class="w-3 h-3 text-slate-500"></i>
+                                <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">{{ formatTUL(session.tul) }} Load</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="layers" class="w-3 h-3 text-slate-500"></i>
+                                <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">{{ session.setCount }} Sets</span>
                             </div>
                         </div>
                     </div>
@@ -433,7 +502,7 @@
                 const points = this.mvmtHistory.map(log => {
                     let val = 0;
                     if(this.mvmtChartMode === 'strength') {
-                        // Estimate 1RM: Weight * (1 + Reps/30)
+                        // Estimate 1RM: Weight * (1 + Reps/30) (Epley)
                         const maxEst = (log.sets_data || []).reduce((max, s) => {
                              const w = parseFloat(s.weight||0);
                              const r = parseInt(s.reps||0);
