@@ -40,12 +40,27 @@
             color: #eab308 !important;
         }
 
-        /* HEATMAP STYLES */
-        .muscle-base { fill: rgba(30, 41, 59, 0.5); stroke: rgba(71, 85, 105, 0.5); stroke-width: 1; transition: all 0.5s ease; }
-        /* Dynamic Colors */
-        .fill-red-500 { fill: #ef4444; filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.6)); }
-        .fill-orange-500 { fill: #f97316; }
-        .fill-blue-500 { fill: #3b82f6; opacity: 0.3; }
+       /* HEATMAP STYLES */
+.muscle-base { 
+    fill: rgba(30, 41, 59, 0.3); /* More transparent base */
+    stroke: rgba(71, 85, 105, 0.6); 
+    stroke-width: 2; /* Thicker outline to match style */
+    transition: all 0.5s ease; 
+}
+/* Dynamic Colors */
+.fill-red-500 { 
+    fill: rgba(239, 68, 68, 0.5); /* Semi-transparent fill */
+    stroke: #ef4444; /* Solid stroke */
+    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.8)); 
+}
+.fill-orange-500 { 
+    fill: rgba(249, 115, 22, 0.5);
+    stroke: #f97316;
+}
+.fill-blue-500 { 
+    fill: rgba(59, 130, 246, 0.3);
+    stroke: #3b82f6;
+}
     </style>
 </head>
 <body class="font-sans antialiased">
