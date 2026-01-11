@@ -28,7 +28,10 @@
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
         
         .droplet-fill { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .droplet-active { fill: #3b82f6; stroke: #3b82f6; filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.5)); transform: scale(1.1); }
+        /* Active State: Blue Fill & Glow */
+        .droplet-active { fill: #3b82f6; stroke: #3b82f6; filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6)); transform: scale(1.1); }
+        /* Inactive State: Dark Outline */
+        .droplet-inactive { stroke: #334155; fill: transparent; }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -119,12 +122,15 @@
             </div>
             
             <div class="flex justify-between px-1">
-                <i v-for="n in 8" :key="n" 
-                   @click="saveWater(n)"
-                   data-lucide="droplet" 
-                   class="w-7 h-7 cursor-pointer droplet-fill transition-all active:scale-90"
-                   :class="n <= (metrics.water_intake || 0) ? 'droplet-active' : 'text-slate-700'">
-                </i>
+                <svg v-for="n in 8" :key="n" 
+                     @click="saveWater(n)"
+                     xmlns="http://www.w3.org/2000/svg" 
+                     viewBox="0 0 24 24" 
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     class="w-7 h-7 cursor-pointer droplet-fill transition-all active:scale-90"
+                     :class="n <= (metrics.water_intake || 0) ? 'droplet-active' : 'droplet-inactive'">
+                    <path d="M12 22a7 7 0 0 0 7-7c0-2-6-9-7-10.32L12 4.68 5 15a7 7 0 0 0 7 7Z"/>
+                </svg>
             </div>
             <div class="text-center mt-3">
                 <span class="text-[8px] text-slate-600 font-bold uppercase tracking-[0.2em]">1 Drop = 16oz • Goal: 1 Gallon</span>
@@ -309,7 +315,7 @@
                 const { data: prevData } = await _client
                     .from('daily_metrics')
                     .select('weight')
-                    .lt('created_at', today) // Strictly before today
+                    .lt('created_at', today) 
                     .order('created_at', {ascending: false})
                     .limit(1);
                 
@@ -340,10 +346,10 @@
                 }
             },
             async saveWater(level) {
-                // Toggle logic: If clicking the current level, clear it. Else, set it.
+                // Toggle logic
                 const newVal = this.metrics.water_intake === level ? 0 : level;
                 this.metrics.water_intake = newVal;
-                await this.saveMetrics(true); // Silent save
+                await this.saveMetrics(true); 
             },
             async saveMetrics(silent = false) {
                 const payload = {
