@@ -93,6 +93,10 @@
         .fill-red-500 { fill: rgba(239, 68, 68, 0.4) !important; stroke: #ef4444 !important; stroke-width: 1.5px; filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.6)); }
         .fill-orange-500 { fill: rgba(249, 115, 22, 0.3) !important; stroke: #f97316 !important; stroke-width: 1.2px; }
         .fill-blue-500 { fill: rgba(59, 130, 246, 0.05) !important; stroke: rgba(255, 255, 255, 0.1) !important; }
+
+        /* Superset Link Line (Phase 2.6) */
+        .superset-link { position: absolute; left: 1.5rem; top: -1.25rem; bottom: 50%; width: 2px; background: #3b82f6; z-index: 0; }
+        .superset-dot { position: absolute; left: 1.2rem; top: 50%; width: 0.75rem; height: 0.75rem; background: #020617; border: 2px solid #3b82f6; border-radius: 50%; z-index: 1; transform: translateY(-50%); }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -268,12 +272,12 @@
         </header>
 
         <div class="flex p-1 bg-slate-900 rounded-xl mb-6 border border-white/5">
-            <button @click="builderTab = 'routine'" :class="builderTab === 'routine' ? 'bg-blue-600 text-white' : 'text-slate-500'" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">Routine</button>
-            <button @click="builderTab = 'exercise'" :class="builderTab === 'exercise' ? 'bg-blue-600 text-white' : 'text-slate-500'" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">Exercise</button>
+            <button @click="builderTab = 'routine'" :class="builderTab === 'routine' ? 'bg-blue-600 text-white' : 'text-slate-500'" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">Routine Sequence</button>
+            <button @click="builderTab = 'exercise'" :class="builderTab === 'exercise' ? 'bg-blue-600 text-white' : 'text-slate-500'" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">New Exercise</button>
         </div>
 
         <div v-if="builderTab === 'routine'" class="space-y-4 flex-1 overflow-y-auto pb-32">
-            <input v-model="newRoutine.name" placeholder="Routine Name (e.g. Back Day)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none">
+            <input v-model="newRoutine.name" placeholder="Protocol Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none font-bold">
             
             <div class="grid grid-cols-6 gap-2 bg-slate-900/50 p-4 rounded-xl border border-white/5">
                 <button v-for="icon in iconLibrary" :key="icon" @click="newRoutine.icon = icon" :class="newRoutine.icon === icon ? 'text-blue-500 bg-blue-500/10' : 'text-slate-600'" class="p-2 rounded-lg flex justify-center hover:bg-white/5 transition-all">
@@ -281,18 +285,52 @@
                 </button>
             </div>
 
-            <div class="space-y-2">
-                <p class="text-[10px] font-bold uppercase text-slate-500">Select Exercises</p>
-                <input type="text" v-model="exerciseSearch" placeholder="Filter exercises..." class="w-full bg-slate-950/50 border border-white/5 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-blue-500 mb-2 placeholder-slate-600">
-                
-                <div v-if="filteredExercises.length === 0" class="text-center py-4 text-slate-600 text-xs italic">No matching exercises found.</div>
-                
-                <div v-for="ex in filteredExercises" :key="ex.id" @click="toggleExerciseInRoutine(ex.id)" :class="newRoutine.exercises.includes(ex.id) ? 'border-blue-500 bg-blue-500/10' : 'border-white/5 bg-slate-900/50'" class="p-3 rounded-xl border flex justify-between items-center transition-all cursor-pointer">
-                    <div class="flex items-center gap-3">
-                        <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4 text-slate-500"></i>
-                        <span class="text-xs font-bold text-white">{{ ex.name }}</span>
+            <div class="space-y-2" v-if="newRoutine.exercises.length > 0">
+                <p class="text-[10px] font-bold uppercase text-slate-500 mb-1">Sequence Order</p>
+                <div v-for="(exId, idx) in newRoutine.exercises" :key="idx" class="flex items-center gap-2 bg-slate-950/50 p-3 rounded-xl border border-white/5 relative group">
+                    <div class="flex flex-col gap-1">
+                        <button @click="moveExercise(idx, -1)" :disabled="idx === 0" class="p-1 text-slate-500 hover:text-white disabled:opacity-30"><i data-lucide="chevron-up" class="w-3 h-3"></i></button>
+                        <button @click="moveExercise(idx, 1)" :disabled="idx === newRoutine.exercises.length - 1" class="p-1 text-slate-500 hover:text-white disabled:opacity-30"><i data-lucide="chevron-down" class="w-3 h-3"></i></button>
                     </div>
-                    <i v-if="newRoutine.exercises.includes(ex.id)" data-lucide="check" class="w-4 h-4 text-blue-500"></i>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-mono text-slate-600">0{{idx+1}}</span>
+                            <span class="text-xs font-bold text-slate-200">{{ getExerciseName(exId) }}</span>
+                        </div>
+                        <div v-if="idx > 0 && isSuperset(idx)" class="flex items-center gap-1 mt-1 text-[8px] text-blue-400 font-bold uppercase tracking-wider">
+                            <i data-lucide="link" class="w-3 h-3"></i> Linked to Above
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button v-if="idx > 0" @click="toggleSuperset(idx)" class="p-2 rounded-lg transition-colors" :class="isSuperset(idx) ? 'text-blue-500 bg-blue-500/10' : 'text-slate-600 hover:text-white'">
+                            <i data-lucide="link" class="w-3 h-3"></i>
+                        </button>
+                        <button @click="removeExercise(idx)" class="p-2 text-slate-600 hover:text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="text-center py-8 text-slate-600 text-xs italic border border-dashed border-slate-800 rounded-xl">Sequence is empty. Add exercises below.</div>
+
+            <div class="space-y-2 mt-6">
+                <div class="flex justify-between items-center">
+                    <p class="text-[10px] font-bold uppercase text-slate-500">Library</p>
+                    <button @click="builderShowPicker = !builderShowPicker" class="text-[10px] font-black uppercase text-blue-500 flex items-center gap-1">{{ builderShowPicker ? 'Hide' : 'Show' }} Library</button>
+                </div>
+                
+                <div v-if="builderShowPicker" class="animate-slide-down">
+                    <input type="text" v-model="exerciseSearch" placeholder="Filter library..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none mb-3">
+                    <div class="space-y-2 max-h-60 overflow-y-auto">
+                        <button v-for="ex in filteredExercises" :key="ex.id" @click="addExercise(ex.id)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-900/50 flex justify-between items-center active:scale-95 transition-transform text-left group">
+                            <div class="flex items-center gap-3">
+                                <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4 text-slate-500"></i>
+                                <div>
+                                    <div class="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{{ ex.name }}</div>
+                                    <div class="text-[9px] text-slate-500 uppercase">{{ ex.muscle_group }}</div>
+                                </div>
+                            </div>
+                            <i data-lucide="plus" class="w-4 h-4 text-green-500"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -305,9 +343,30 @@
         </div>
 
         <div v-if="builderTab === 'exercise'" class="space-y-4">
-            <input v-model="newExercise.name" placeholder="Exercise Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none">
-            <input v-model="newExercise.group" placeholder="Muscle Group (e.g. Chest)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none">
-            <p class="text-[10px] font-bold uppercase text-slate-500 mt-4">Select Category Icon</p>
+            <input v-model="newExercise.name" placeholder="Exercise Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-600 focus:border-blue-500 outline-none font-bold">
+            
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold uppercase text-slate-500">Target Muscle</label>
+                <select v-model="newExercise.group" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white outline-none appearance-none">
+                    <option value="" disabled>Select Primary Muscle</option>
+                    <option v-for="m in muscleGroups" :key="m" :value="m">{{ m }}</option>
+                </select>
+            </div>
+
+            <div class="flex gap-2">
+                <button @click="newExercise.weight_type = 'combined'" class="flex-1 p-4 rounded-xl border transition-all text-left" :class="newExercise.weight_type === 'combined' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-slate-900'">
+                    <span class="block text-[10px] font-black uppercase text-slate-400 mb-1">Standard</span>
+                    <span class="block text-xs font-bold text-white">Barbell / Machine</span>
+                    <span class="block text-[8px] text-slate-500 mt-1">Total Weight</span>
+                </button>
+                <button @click="newExercise.weight_type = 'per_side'" class="flex-1 p-4 rounded-xl border transition-all text-left" :class="newExercise.weight_type === 'per_side' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-slate-900'">
+                    <span class="block text-[10px] font-black uppercase text-slate-400 mb-1">Unilateral</span>
+                    <span class="block text-xs font-bold text-white">Dumbbell / Cable</span>
+                    <span class="block text-[8px] text-slate-500 mt-1">Weight Per Arm</span>
+                </button>
+            </div>
+
+            <p class="text-[10px] font-bold uppercase text-slate-500 mt-4">Visual Icon</p>
             <div class="grid grid-cols-6 gap-2 bg-slate-900/50 p-4 rounded-xl border border-white/5">
                 <button v-for="icon in iconLibrary" :key="icon" @click="newExercise.icon = icon" :class="newExercise.icon === icon ? 'text-blue-500 bg-blue-500/10' : 'text-slate-600'" class="p-2 rounded-lg flex justify-center hover:bg-white/5 transition-all">
                     <i :data-lucide="icon" class="w-5 h-5"></i>
@@ -381,20 +440,26 @@
             <div v-for="(exercise, exIndex) in activeRoutine.data" 
                  :key="exIndex" 
                  @click="activeExerciseIdx = exIndex"
-                 class="glass p-5 rounded-3xl border border-white/10 exercise-card"
+                 class="glass p-5 rounded-3xl border border-white/10 exercise-card relative"
                  :class="activeExerciseIdx === exIndex ? 'exercise-active' : 'exercise-blurred'">
                  
-                <div class="flex justify-between items-center mb-4">
+                 <div v-if="exercise.isSuperset" class="superset-link"></div>
+                 <div v-if="exercise.isSuperset" class="superset-dot"></div>
+
+                <div class="flex justify-between items-center mb-4 pl-4">
                     <div class="flex items-center gap-2">
                         <i :data-lucide="exercise.icon || 'dumbbell'" class="w-5 h-5 text-blue-500"></i>
-                        <h3 class="font-black text-lg italic text-blue-400">{{ exercise.name }}</h3>
+                        <div>
+                            <h3 class="font-black text-lg italic text-blue-400 leading-none">{{ exercise.name }}</h3>
+                            <span v-if="exercise.weightType === 'per_side'" class="text-[8px] font-bold uppercase text-slate-500 tracking-wider">Per Arm / Side</span>
+                        </div>
                     </div>
                     <div class="flex gap-2">
                          <span v-if="exercise.isPR" class="bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest border border-yellow-500/50 animate-pulse">NEW PR!</span>
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-12 gap-2 text-[8px] text-slate-500 font-black uppercase tracking-widest mb-2 text-center">
+                <div class="grid grid-cols-12 gap-2 text-[8px] text-slate-500 font-black uppercase tracking-widest mb-2 text-center pl-4">
                     <div class="col-span-1">Set</div>
                     <div class="col-span-4">lbs</div>
                     <div class="col-span-4">Reps</div>
@@ -402,7 +467,7 @@
                     <div class="col-span-1"><i data-lucide="skull" class="w-3 h-3 mx-auto"></i></div>
                 </div>
 
-                <div v-for="(set, setIndex) in exercise.sets" :key="setIndex" class="grid grid-cols-12 gap-2 mb-2 items-center">
+                <div v-for="(set, setIndex) in exercise.sets" :key="setIndex" class="grid grid-cols-12 gap-2 mb-2 items-center pl-4">
                     <div class="col-span-1 flex justify-center">
                         <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">{{ setIndex + 1 }}</div>
                     </div>
@@ -425,7 +490,7 @@
                     <div class="col-span-1 flex justify-center"><input type="checkbox" v-model="set.failure" class="failure-checkbox"></div>
                 </div>
                 
-                <div class="flex gap-2 mt-3">
+                <div class="flex gap-2 mt-3 pl-4">
                      <button @click.stop="addSet(exIndex)" class="flex-1 py-2 border border-dashed border-slate-700 rounded-xl text-[10px] text-slate-500 font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-500">+ Set</button>
                      <button v-if="activeExerciseIdx === exIndex && exIndex < activeRoutine.data.length - 1" @click.stop="activeExerciseIdx++" class="flex-1 py-2 bg-slate-800 rounded-xl text-[10px] text-white font-black uppercase tracking-widest hover:bg-slate-700">Next Exercise &darr;</button>
                 </div>
@@ -466,6 +531,7 @@
     );
 
     const ICONS = ['dumbbell', 'biceps-flexed', 'weight', 'disc', 'anchor', 'sword', 'shield', 'arrow-up-circle', 'arrow-down-circle', 'move', 'layers', 'columns-2', 'footprints', 'bike', 'waves', 'zap', 'activity', 'trophy'];
+    const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Cardio'];
 
     createApp({
         data() { 
@@ -475,6 +541,7 @@
                 session: null,
                 view: 'dashboard', 
                 builderTab: 'routine',
+                builderShowPicker: false, // New toggle state
                 toast: { visible: false, title: '', message: '' },
                 logoutModal: false,
                 finishModal: false,
@@ -486,6 +553,7 @@
                 recentSessions: [],
                 rawLogs: [], 
                 iconLibrary: ICONS,
+                muscleGroups: MUSCLES,
                 daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                 
                 // Heatmap Data
@@ -503,8 +571,8 @@
                 previewModal: null,
 
                 // Builder State
-                newRoutine: { id: null, name: '', icon: 'activity', exercises: [] },
-                newExercise: { name: '', group: '', icon: 'dumbbell' },
+                newRoutine: { id: null, name: '', icon: 'activity', exercises: [], supersets: [] }, // Added supersets
+                newExercise: { name: '', group: '', icon: 'dumbbell', weight_type: 'combined' }, // Added weight_type
                 exerciseSearch: '',
 
                 // Active Session
@@ -690,6 +758,7 @@
                     }
                 } catch (e) {
                     console.error(e);
+                    // Fallback
                     setTimeout(async () => {
                         const fillerExercises = this.libraryExercises.slice(0, 3).map(e => e.id);
                         if(fillerExercises.length) {
@@ -720,7 +789,7 @@
             },
 
             resetBuilder() { 
-                this.newRoutine = { id: null, name: '', icon: 'activity', exercises: [] }; 
+                this.newRoutine = { id: null, name: '', icon: 'activity', exercises: [], supersets: [] }; 
                 this.builderTab = 'routine'; 
                 this.exerciseSearch = ''; 
                 this.view = 'builder'; 
@@ -730,29 +799,56 @@
                     id: routine.id, 
                     name: routine.name, 
                     icon: routine.icon_name, 
-                    exercises: [...(routine.exercise_order || [])] 
+                    exercises: [...(routine.exercise_order || [])],
+                    supersets: [...(routine.supersets || [])] 
                 }; 
                 this.builderTab = 'routine'; 
                 this.exerciseSearch = ''; 
                 this.view = 'builder'; 
             },
-            toggleExerciseInRoutine(id) { 
-                const idx = this.newRoutine.exercises.indexOf(id); 
-                if (idx > -1) this.newRoutine.exercises.splice(idx, 1); 
-                else this.newRoutine.exercises.push(id); 
+            
+            // PHASE 2.10: Sequence & Reorder Logic
+            moveExercise(idx, direction) {
+                const arr = this.newRoutine.exercises;
+                const newIdx = idx + direction;
+                if(newIdx < 0 || newIdx >= arr.length) return;
+                [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+                
+                // Break superset link if moved
+                const ss = this.newRoutine.supersets || [];
+                if(ss.includes(idx)) ss.splice(ss.indexOf(idx), 1);
             },
+            removeExercise(idx) {
+                this.newRoutine.exercises.splice(idx, 1);
+                // Adjust superset indices
+                this.newRoutine.supersets = (this.newRoutine.supersets || []).filter(i => i !== idx).map(i => i > idx ? i - 1 : i);
+            },
+            addExercise(id) {
+                this.newRoutine.exercises.push(id);
+                this.builderShowPicker = false;
+            },
+            
+            // PHASE 2.6: Superset Logic
+            isSuperset(idx) { return (this.newRoutine.supersets || []).includes(idx); },
+            toggleSuperset(idx) {
+                if(!this.newRoutine.supersets) this.newRoutine.supersets = [];
+                const ss = this.newRoutine.supersets;
+                if(ss.includes(idx)) ss.splice(ss.indexOf(idx), 1);
+                else ss.push(idx);
+            },
+
             async saveExercise() {
-                if(!this.newExercise.name) return;
-                const muscleGroup = this.newExercise.group.toLowerCase();
-                const payload = { 
+                if(!this.newExercise.name || !this.newExercise.group) return;
+                await _client.from('exercises').insert([{ 
                     name: this.newExercise.name, 
-                    muscle_group: muscleGroup, 
-                    icon_name: this.newExercise.icon || 'dumbbell', 
+                    muscle_group: this.newExercise.group, 
+                    icon_name: this.newExercise.icon, 
+                    weight_type: this.newExercise.weight_type, // PHASE 2.8: Weight Logic
                     user_id: this.session.user.id 
-                };
-                await _client.from('exercises').insert([payload]);
-                this.newExercise = { name: '', group: '', icon: 'dumbbell' }; 
+                }]);
+                this.newExercise = { name: '', group: '', icon: 'dumbbell', weight_type: 'combined' }; 
                 await this.fetchExercises();
+                this.builderTab = 'routine'; // Switch back to sequence
                 this.showToast("Library Updated", "Exercise added.");
             },
             async saveRoutine() {
@@ -761,6 +857,7 @@
                     name: this.newRoutine.name, 
                     icon_name: this.newRoutine.icon, 
                     exercise_order: this.newRoutine.exercises, 
+                    supersets: this.newRoutine.supersets, // Save Superset Structure
                     user_id: this.session.user.id 
                 };
                 if (this.newRoutine.id) { 
@@ -801,17 +898,18 @@
                     if(container) container.scrollTop = 0;
                 });
                 
-                const sessionExercises = (routine.exercise_order || []).map(id => {
+                const sessionExercises = (routine.exercise_order || []).map((id, index) => {
                     const exDef = this.libraryExercises.find(e => e.id === id);
                     const pr = exDef ? (this.personalRecords[exDef.name] || 0) : 0;
                     return { 
                         id: id,
                         name: exDef ? exDef.name : 'Exercise', 
-                        icon: exDef ? exDef.icon_name : 'dumbbell', 
+                        icon: exDef ? exDef.icon_name : 'dumbbell',
+                        weightType: exDef ? exDef.weight_type : 'combined', // Pass Weight Type to Session
                         personalRecord: pr, 
                         isPR: false, 
                         loadingHistory: true, 
-                        // Initializes with empty values; ghost data comes later
+                        isSuperset: (routine.supersets || []).includes(index), // Pass Superset Status
                         sets: [{weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}] 
                     };
                 });
@@ -834,14 +932,10 @@
                         .single();
 
                     if(lastLog && lastLog.sets_data && lastLog.sets_data.length > 0) {
-                        // Map previous sets to placeholder props, keep model empty
                         ex.sets = lastLog.sets_data.map(s => ({
-                            weight: '', // Empty for user entry
-                            prevWeight: s.weight, // Ghost value
-                            reps: '', // Empty for user entry
-                            prevReps: s.reps, // Ghost value
-                            done: false,
-                            failure: false 
+                            weight: '', prevWeight: s.weight,
+                            reps: '', prevReps: s.reps,
+                            done: false, failure: false 
                         }));
                         while(ex.sets.length < 3) {
                             ex.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
