@@ -84,14 +84,9 @@
                 <span v-else class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mt-1">Rest Day Protocol</span>
             </div>
         </div>
-        <div class="flex gap-2">
-            <button v-if="deferredPrompt" @click="installPWA" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-blue-500/30 shadow-lg active:scale-95 transition-all text-blue-400 animate-pulse">
-                <i data-lucide="download" class="w-5 h-5"></i>
-            </button>
-            <button @click="logoutModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
-                <i data-lucide="log-out" class="w-5 h-5"></i>
-            </button>
-        </div>
+        <button @click="logoutModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
+            <i data-lucide="log-out" class="w-5 h-5"></i>
+        </button>
     </header>
 
     <main class="space-y-6">
@@ -229,7 +224,6 @@
                 session: null,
                 reportSaved: false,
                 logoutModal: false,
-                deferredPrompt: null, // PWA State
                 metrics: {
                     id: null,
                     weight: null,
@@ -271,12 +265,6 @@
             }
         },
         async mounted() {
-            // Listen for PWA Install Event
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                this.deferredPrompt = e;
-            });
-
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
@@ -295,14 +283,6 @@
             async confirmLogout() {
                 await _client.auth.signOut();
                 window.location.href = 'index.html';
-            },
-            // PWA Install Trigger
-            async installPWA() {
-                if(this.deferredPrompt) {
-                    this.deferredPrompt.prompt();
-                    const { outcome } = await this.deferredPrompt.userChoice;
-                    if(outcome === 'accepted') this.deferredPrompt = null;
-                }
             },
             showToast(title, message) {
                 this.toast = { visible: true, title, message };
