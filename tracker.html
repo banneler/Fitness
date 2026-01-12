@@ -8,7 +8,6 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Constellation">
     <link rel="manifest" href="manifest.json">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,8 +18,6 @@
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
-        .tab-active { color: #3b82f6; }
-        .tab-active i { stroke-width: 3px; filter: drop-shadow(0 0 8px #3b82f6); }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
         .loading-mask { position: fixed; inset: 0; background: #020617; z-index: 999; display: flex; align-items: center; justify-content: center; }
 
@@ -33,17 +30,16 @@
             50% { filter: drop-shadow(0 0 15px #f97316); }
         }
         .streak-fire { animation: pulse-orange 2s infinite; }
-        
         .bar-grow { transform-origin: bottom; animation: grow 1s ease-out forwards; transform: scaleY(0); }
         @keyframes grow { to { transform: scaleY(1); } }
-
         .warning-overlay { mix-blend-mode: multiply; }
-
         .matrix-cell { aspect-ratio: 1/1; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.01); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
         .matrix-active { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3); color: #22c55e; }
 
         .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
+        .toast-enter-active, .toast-leave-active { transition: all 0.5s ease; }
+        .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(20px); }
     </style>
 </head>
 <body class="font-sans antialiased text-slate-200">
@@ -55,6 +51,18 @@
             <p class="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600 italic">Compiling Intelligence</p>
         </div>
     </div>
+
+    <transition name="toast">
+        <div v-if="toast.visible" class="fixed bottom-24 left-6 right-6 glass border-blue-500/30 p-4 rounded-2xl shadow-2xl z-[250] flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                <i data-lucide="check" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h4 class="text-sm font-black italic text-white uppercase">{{ toast.title }}</h4>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ toast.message }}</p>
+            </div>
+        </div>
+    </transition>
 
     <div v-else>
         <header class="flex justify-between items-center mb-8">
@@ -81,6 +89,7 @@
 
         <main>
             <div v-if="view === 'intel'" class="space-y-6">
+                
                 <section class="glass p-6 rounded-[2.5rem] shadow-2xl border-t-4 border-t-purple-600 mb-6 bg-gradient-to-br from-purple-900/10 to-transparent">
                     <div class="flex justify-between items-center mb-6">
                         <div class="flex items-center gap-2">
@@ -133,6 +142,7 @@
                             <polyline :points="chartPath" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" />
                             <circle :cx="lastPoint.x" :cy="lastPoint.y" r="4" fill="#fff" stroke="#3b82f6" stroke-width="2" />
                         </svg>
+                        <div v-else class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-600 uppercase font-bold italic">Not Enough Data</div>
                     </div>
                 </section>
 
@@ -153,6 +163,14 @@
                             <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calorie Goal</span>
                             <span class="text-xl font-black italic">{{ targets.cals }}</span>
                         </div>
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Carb Goal</span>
+                            <span class="text-xl font-black italic">{{ targets.carbs }}g</span>
+                        </div>
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Fat Goal</span>
+                            <span class="text-xl font-black italic">{{ targets.fat }}g</span>
+                        </div>
                     </div>
                 </section>
 
@@ -170,11 +188,7 @@
                     </div>
                     <div class="h-44 w-full relative">
                         <svg class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
-                            <line v-if="targets.protein > 0" 
-                                  x1="0" :y1="150 - (targets.protein * chartScale)" 
-                                  x2="300" :y2="150 - (targets.protein * chartScale)" 
-                                  stroke="#22c55e" stroke-width="2" stroke-dasharray="6 3" />
-                            
+                            <line v-if="targets.protein > 0" x1="0" :y1="150 - (targets.protein * chartScale)" x2="300" :y2="150 - (targets.protein * chartScale)" stroke="#22c55e" stroke-width="2" stroke-dasharray="6 3" />
                             <text v-if="targets.protein > 0" x="295" :y="145 - (targets.protein * chartScale)" text-anchor="end" font-size="6" fill="#22c55e" font-weight="black" class="uppercase">Goal: {{targets.protein}}g</text>
 
                             <g v-for="(day, index) in weeklyMacrosFull" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
@@ -316,14 +330,22 @@
                 <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="showTargetModal = false"></div>
                 <div class="glass w-full max-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl">
                     <h2 class="text-xl font-black italic uppercase text-white mb-6 tracking-tight">Sync Targets</h2>
-                    <div class="space-y-4 mb-8">
+                    <div class="grid grid-cols-2 gap-4 mb-8">
                         <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein Target (g)</span>
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein (g)</span>
                             <input type="number" v-model="targets.protein" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
                         </div>
                         <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calorie Target</span>
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calories</span>
                             <input type="number" v-model="targets.cals" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
+                        </div>
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Carbs (g)</span>
+                            <input type="number" v-model="targets.carbs" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
+                        </div>
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Fat (g)</span>
+                            <input type="number" v-model="targets.fat" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
                         </div>
                     </div>
                     <button @click="saveTargets" class="w-full py-5 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase shadow-lg active:scale-95 transition-all">Authorize Intelligence</button>
@@ -362,14 +384,12 @@
             return {
                 initialLoading: true, logoutModal: false, showTargetModal: false,
                 view: 'intel', session: null, streak: 0,
-                // Add toast state object
                 toast: { visible: false, title: '', message: '' },
                 weightHistory: [], weeklyLogs: [], rawWorkouts: [], bodyHistory: [],
                 bodyMetrics: { waist: null, chest: null, arms: null, thigh: null },
-                targets: { protein: 180, cals: 2500 },
+                targets: { protein: 180, cals: 2500, carbs: 250, fat: 80 },
                 chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0}, startDate: '',
-                isAnalyzing: false,
-                analysis: null,
+                isAnalyzing: false, analysis: null,
                 
                 // MOVEMENT ANALYSIS
                 library: [], mvmtSearch: '', showMvmtList: false, filteredExercises: [],
@@ -464,8 +484,7 @@
         updated() { lucide.createIcons(); },
         methods: {
             async handleLogout() { await _client.auth.signOut(); window.location.href = 'index.html'; },
-
-            // ADDED: Missing Toast Method
+            
             showToast(title, message) {
                 this.toast = { visible: true, title, message };
                 setTimeout(() => this.toast.visible = false, 3000);
@@ -515,22 +534,22 @@
             },
             
             async fetchTargets() {
-                // FIXED: Removed .neq constraint so it loads your data even if incomplete
                 const { data } = await _client.from('daily_metrics')
-                    .select('target_protein, target_calories')
+                    .select('target_protein, target_calories, target_carbs, target_fat')
                     .eq('user_id', this.session.user.id)
                     .order('created_at', { ascending: false })
                     .limit(1);
                 
                 if(data?.[0]) { 
                     this.targets.protein = data[0].target_protein || 180; 
-                    this.targets.cals = data[0].target_calories || 2500; 
+                    this.targets.cals = data[0].target_calories || 2500;
+                    this.targets.carbs = data[0].target_carbs || 250;
+                    this.targets.fat = data[0].target_fat || 80;
                 }
             },
             
             async saveTargets() {
                 const today = new Date().toLocaleDateString('en-CA');
-                
                 const { data: existing } = await _client.from('daily_metrics')
                     .select('id')
                     .eq('user_id', this.session.user.id) 
@@ -539,16 +558,20 @@
                     .limit(1);
 
                 let error;
+                const payload = { 
+                    target_protein: this.targets.protein, 
+                    target_calories: this.targets.cals,
+                    target_carbs: this.targets.carbs,
+                    target_fat: this.targets.fat
+                };
+
                 if(existing && existing.length > 0) {
-                    const { error: err } = await _client.from('daily_metrics')
-                        .update({ target_protein: this.targets.protein, target_calories: this.targets.cals })
-                        .eq('id', existing[0].id);
+                    const { error: err } = await _client.from('daily_metrics').update(payload).eq('id', existing[0].id);
                     error = err;
                 } else {
                     const { error: err } = await _client.from('daily_metrics').insert([{ 
                         user_id: this.session.user.id, 
-                        target_protein: this.targets.protein, 
-                        target_calories: this.targets.cals, 
+                        ...payload,
                         weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null 
                     }]);
                     error = err;
@@ -556,7 +579,7 @@
 
                 if(!error) { 
                     this.showTargetModal = false;
-                    this.showToast("Goals Synced", "Neural pathways updated."); // FIXED: Added visual confirmation
+                    this.showToast("Goals Synced", "Neural pathways updated.");
                     await this.fetchTargets(); 
                 } else {
                     console.error("Save failed:", error);
@@ -592,7 +615,6 @@
                 if(!error) { await this.fetchBodyHistory(); this.showToast("Saved", "Biometrics registry updated."); }
             },
             async fetchWeight() {
-                // FIXED: Now fetches newest 30 entries (Descending), then reverses for graph
                 const { data } = await _client.from('daily_metrics')
                     .select('*')
                     .eq('user_id', this.session.user.id)
@@ -601,7 +623,7 @@
                     .limit(30);
                     
                 if (data?.length) { 
-                    this.weightHistory = data.reverse(); // Reverse for Chart (Old -> New)
+                    this.weightHistory = [...data].reverse(); // Reverse for Graph (Old -> New)
                     this.calculateGraph(this.weightHistory); 
                 }
             },
@@ -637,7 +659,6 @@
         }
     }).mount('#app');
 </script>
-
 
 </body>
 </html>
