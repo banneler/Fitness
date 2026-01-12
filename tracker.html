@@ -362,6 +362,8 @@
             return {
                 initialLoading: true, logoutModal: false, showTargetModal: false,
                 view: 'intel', session: null, streak: 0,
+                // Add toast state object
+                toast: { visible: false, title: '', message: '' },
                 weightHistory: [], weeklyLogs: [], rawWorkouts: [], bodyHistory: [],
                 bodyMetrics: { waist: null, chest: null, arms: null, thigh: null },
                 targets: { protein: 180, cals: 2500 },
@@ -369,16 +371,10 @@
                 isAnalyzing: false,
                 analysis: null,
                 
-                // MOVEMENT ANALYSIS (Phase 4)
-                library: [],
-                mvmtSearch: '',
-                showMvmtList: false,
-                filteredExercises: [],
-                selectedMovement: null,
-                mvmtHistory: [],
-                mvmtChartMode: 'strength', // 'strength' or 'volume'
-                mvmtChartPath: '', mvmtFillPath: '', mvmtPoints: [],
-                mvmtStats: { max1RM: 0 }
+                // MOVEMENT ANALYSIS
+                library: [], mvmtSearch: '', showMvmtList: false, filteredExercises: [],
+                selectedMovement: null, mvmtHistory: [], mvmtChartMode: 'strength',
+                mvmtChartPath: '', mvmtFillPath: '', mvmtPoints: [], mvmtStats: { max1RM: 0 }
             }
         },
         computed: {
@@ -468,6 +464,12 @@
         updated() { lucide.createIcons(); },
         methods: {
             async handleLogout() { await _client.auth.signOut(); window.location.href = 'index.html'; },
+
+            // ADDED: Missing Toast Method
+            showToast(title, message) {
+                this.toast = { visible: true, title, message };
+                setTimeout(() => this.toast.visible = false, 3000);
+            },
             
             async fetchLibrary() {
                 const { data } = await _client.from('exercises').select('*').order('name');
@@ -483,137 +485,93 @@
                 this.selectedMovement = ex;
                 this.mvmtSearch = ex.name;
                 this.showMvmtList = false;
-                
-                // Fetch specific history for chart
-                const { data } = await _client.from('workout_logs')
-                    .select('*')
-                    .eq('exercise_name', ex.name)
-                    .order('created_at', { ascending: true }) // Oldest first for chart left-to-right
-                    .limit(30); // Last 30 sessions
-                
+                const { data } = await _client.from('workout_logs').select('*').eq('exercise_name', ex.name).order('created_at', { ascending: true }).limit(30);
                 this.mvmtHistory = data || [];
                 this.calculateMvmtChart();
             },
             calculateMvmtChart() {
-                if(!this.mvmtHistory.length) { 
-                    this.mvmtChartPath = ''; this.mvmtStats.max1RM = 0; return; 
-                }
-
+                if(!this.mvmtHistory.length) { this.mvmtChartPath = ''; this.mvmtStats.max1RM = 0; return; }
                 const points = this.mvmtHistory.map(log => {
                     let val = 0;
                     if(this.mvmtChartMode === 'strength') {
-                        // Estimate 1RM: Weight * (1 + Reps/30) (Epley)
                         const maxEst = (log.sets_data || []).reduce((max, s) => {
-                             const w = parseFloat(s.weight||0);
-                             const r = parseInt(s.reps||0);
-                             if(w > 0 && r > 0) {
-                                 const est = w * (1 + r/30);
-                                 return est > max ? est : max;
-                             }
+                             const w = parseFloat(s.weight||0); const r = parseInt(s.reps||0);
+                             if(w > 0 && r > 0) { const est = w * (1 + r/30); return est > max ? est : max; }
                              return max;
                         }, 0);
                         val = maxEst;
                     } else {
-                        // Volume: Weight * Reps
                         val = (log.sets_data || []).reduce((acc, s) => acc + (parseFloat(s.weight||0) * parseInt(s.reps||0)), 0);
                     }
                     return val;
                 });
-
-                // Update Stats
                 this.mvmtStats.max1RM = Math.max(0, ...points).toFixed(1);
-
-                if(points.length < 2) { 
-                     // Handle single point
-                     this.mvmtChartPath = `0,75 300,75`; 
-                     return; 
-                }
-
-                const min = Math.min(...points) * 0.9;
-                const max = Math.max(...points) * 1.1;
-                const range = max - min || 1;
-                
-                const coords = points.map((val, i) => ({
-                    x: (i / (points.length - 1)) * 300,
-                    y: 150 - ((val - min) / range * 130) - 10 // Padding
-                }));
-
+                if(points.length < 2) { this.mvmtChartPath = `0,75 300,75`; return; }
+                const min = Math.min(...points) * 0.9; const max = Math.max(...points) * 1.1; const range = max - min || 1;
+                const coords = points.map((val, i) => ({ x: (i / (points.length - 1)) * 300, y: 150 - ((val - min) / range * 130) - 10 }));
                 this.mvmtPoints = coords;
                 this.mvmtChartPath = coords.map(p => `${p.x},${p.y}`).join(' ');
                 this.mvmtFillPath = `0,150 ${this.mvmtChartPath} 300,150`;
             },
             
             async fetchTargets() {
-    const { data } = await _client.from('daily_metrics')
-        .select('target_protein, target_calories')
-        .eq('user_id', this.session.user.id) // FIXED: Filter by User
-        .neq('target_calories', null)
-        .order('created_at', { ascending: false })
-        .limit(1);
-    
-    if(data?.[0]) { 
-        this.targets.protein = data[0].target_protein; 
-        this.targets.cals = data[0].target_calories; 
-    }
-},
-
+                // FIXED: Removed .neq constraint so it loads your data even if incomplete
+                const { data } = await _client.from('daily_metrics')
+                    .select('target_protein, target_calories')
+                    .eq('user_id', this.session.user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+                
+                if(data?.[0]) { 
+                    this.targets.protein = data[0].target_protein || 180; 
+                    this.targets.cals = data[0].target_calories || 2500; 
+                }
+            },
             
             async saveTargets() {
-    const today = new Date().toLocaleDateString('en-CA');
-    
-    // FIXED: Only look for MY existing logs for today
-    const { data: existing } = await _client.from('daily_metrics')
-        .select('id')
-        .eq('user_id', this.session.user.id) 
-        .gte('created_at', today)
-        .order('created_at', { ascending: false })
-        .limit(1);
+                const today = new Date().toLocaleDateString('en-CA');
+                
+                const { data: existing } = await _client.from('daily_metrics')
+                    .select('id')
+                    .eq('user_id', this.session.user.id) 
+                    .gte('created_at', today)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
 
-    let error;
-    if(existing && existing.length > 0) {
-        // Update existing row
-        const { error: err } = await _client.from('daily_metrics')
-            .update({ 
-                target_protein: this.targets.protein, 
-                target_calories: this.targets.cals 
-            })
-            .eq('id', existing[0].id);
-        error = err;
-    } else {
-        // Insert new row
-        const { error: err } = await _client.from('daily_metrics').insert([{ 
-            user_id: this.session.user.id, 
-            target_protein: this.targets.protein, 
-            target_calories: this.targets.cals, 
-            weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null 
-        }]);
-        error = err;
-    }
+                let error;
+                if(existing && existing.length > 0) {
+                    const { error: err } = await _client.from('daily_metrics')
+                        .update({ target_protein: this.targets.protein, target_calories: this.targets.cals })
+                        .eq('id', existing[0].id);
+                    error = err;
+                } else {
+                    const { error: err } = await _client.from('daily_metrics').insert([{ 
+                        user_id: this.session.user.id, 
+                        target_protein: this.targets.protein, 
+                        target_calories: this.targets.cals, 
+                        weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null 
+                    }]);
+                    error = err;
+                }
 
-    if(!error) { 
-        this.showTargetModal = false;
-        await this.fetchTargets(); 
-    } else {
-        console.error("Save failed:", error);
-        alert("Could not save targets.");
-    }
-},
-
+                if(!error) { 
+                    this.showTargetModal = false;
+                    this.showToast("Goals Synced", "Neural pathways updated."); // FIXED: Added visual confirmation
+                    await this.fetchTargets(); 
+                } else {
+                    console.error("Save failed:", error);
+                    alert("Could not save targets.");
+                }
+            },
 
             async runAnalysis() {
                 this.isAnalyzing = true;
                 try {
-                    const { data, error } = await _client.functions.invoke('ai-performance-summary', {
-                        body: { user_id: this.session.user.id }
-                    });
+                    const { data, error } = await _client.functions.invoke('ai-performance-summary', { body: { user_id: this.session.user.id } });
                     if (error) throw error;
                     this.analysis = data;
                     this.$nextTick(() => lucide.createIcons());
-                } catch (e) {
-                    console.error("Neural link failed", e);
-                } finally {
-                    this.isAnalyzing = false;
-                }
+                } catch (e) { console.error("Neural link failed", e); } finally { this.isAnalyzing = false; }
             },
             async fetchBodyHistory() {
                 const { data } = await _client.from('body_metrics').select('*').order('created_at', { ascending: true });
@@ -626,26 +584,31 @@
             getMetricPath(m) {
                 const data = this.bodyHistory.filter(h => h[m] !== null);
                 if(data.length < 2) return "";
-                const vals = data.map(d => d[m]);
-                const min = Math.min(...vals) - 0.1;
-                const max = Math.max(...vals) + 0.1;
-                const range = max - min || 1;
+                const vals = data.map(d => d[m]); const min = Math.min(...vals) - 0.1; const max = Math.max(...vals) + 0.1; const range = max - min || 1;
                 return data.map((d, i) => `${(i/(data.length-1))*300},${60 - ((d[m]-min)/range*60)}`).join(' ');
             },
             async saveBodyMetrics() {
                 const { error } = await _client.from('body_metrics').insert([{ user_id: this.session.user.id, waist: parseFloat(this.bodyMetrics.waist), chest: parseFloat(this.bodyMetrics.chest), arms: parseFloat(this.bodyMetrics.arms), thigh: parseFloat(this.bodyMetrics.thigh) }]);
-                if(!error) { await this.fetchBodyHistory(); alert("Biometrics registry updated."); }
+                if(!error) { await this.fetchBodyHistory(); this.showToast("Saved", "Biometrics registry updated."); }
             },
             async fetchWeight() {
-                const { data } = await _client.from('daily_metrics').select('*').order('created_at', { ascending: true }).limit(30);
-                if (data?.length) { this.weightHistory = data; this.calculateGraph(data); }
+                // FIXED: Now fetches newest 30 entries (Descending), then reverses for graph
+                const { data } = await _client.from('daily_metrics')
+                    .select('*')
+                    .eq('user_id', this.session.user.id)
+                    .neq('weight', null)
+                    .order('created_at', { ascending: false }) // Get Newest
+                    .limit(30);
+                    
+                if (data?.length) { 
+                    this.weightHistory = data.reverse(); // Reverse for Chart (Old -> New)
+                    this.calculateGraph(this.weightHistory); 
+                }
             },
             calculateGraph(data) {
                 const weights = data.map(d => d.weight).filter(w => w);
                 if (weights.length < 2) return;
-                const min = Math.min(...weights) - 1;
-                const max = Math.max(...weights) + 1;
-                const range = max - min || 1;
+                const min = Math.min(...weights) - 1; const max = Math.max(...weights) + 1; const range = max - min || 1;
                 const points = weights.map((w, i) => ({ x: (i/(weights.length-1))*300, y: 150 - ((w-min)/range*150) }));
                 this.chartPath = points.map(p => `${p.x},${p.y}`).join(' ');
                 this.chartFillPath = `0,150 ${this.chartPath} 300,150`;
@@ -674,6 +637,7 @@
         }
     }).mount('#app');
 </script>
+
 
 </body>
 </html>
