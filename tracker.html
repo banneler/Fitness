@@ -398,7 +398,9 @@
             }
         },
         computed: {
-            currentWeight() { return this.weightHistory.length ? this.weightHistory[this.weightHistory.length-1].weight : '--'; },
+            currentWeight() { 
+    return this.weightHistory.length ? this.weightHistory[0].weight : '--'; 
+},
             globalMaxMacros() {
                 const totals = [];
                 for(let i=6; i>=0; i--) {
@@ -614,30 +616,57 @@
                 const { error } = await _client.from('body_metrics').insert([{ user_id: this.session.user.id, waist: parseFloat(this.bodyMetrics.waist), chest: parseFloat(this.bodyMetrics.chest), arms: parseFloat(this.bodyMetrics.arms), thigh: parseFloat(this.bodyMetrics.thigh) }]);
                 if(!error) { await this.fetchBodyHistory(); this.showToast("Saved", "Biometrics registry updated."); }
             },
-            async fetchWeight() {
-                // Fetch the 30 MOST RECENT entries (Descending order)
-                const { data } = await _client.from('daily_metrics')
-                    .select('*')
-                    .eq('user_id', this.session.user.id)
-                    .neq('weight', null)
-                    .order('created_at', { ascending: false }) 
-                    .limit(30);
-                    
-                if (data?.length) { 
-                    // Reverse them locally so the graph draws Oldest -> Newest (Left -> Right)
-                    this.weightHistory = [...data].reverse(); 
-                    this.calculateGraph(this.weightHistory); 
-                }
-            },
-            calculateGraph(data) {
-                const weights = data.map(d => d.weight).filter(w => w);
-                if (weights.length < 2) return;
-                const min = Math.min(...weights) - 1; const max = Math.max(...weights) + 1; const range = max - min || 1;
-                const points = weights.map((w, i) => ({ x: (i/(weights.length-1))*300, y: 150 - ((w-min)/range*150) }));
-                this.chartPath = points.map(p => `${p.x},${p.y}`).join(' ');
-                this.chartFillPath = `0,150 ${this.chartPath} 300,150`;
-                this.lastPoint = points[points.length-1];
-            },
+        async fetchWeight() {
+    const { data } = await _client.from('daily_metrics')
+        .select('*')
+        .eq('user_id', this.session.user.id)
+        .neq('weight', null)
+        .order('created_at', { ascending: false }) // Newest first
+        .limit(30);
+        
+    if (data?.length) { 
+        // Store exactly what we fetched (Newest -> Oldest)
+        // This ensures weightHistory[0] is ALWAYS the latest weight
+        this.weightHistory = data;
+        
+        // Create a copy and reverse it for the time-series graph (Oldest -> Newest)
+        const graphData = [...data].reverse();
+        this.calculateGraph(graphData); 
+    }
+},
+
+calculateGraph(data) {
+    const weights = data.map(d => d.weight).filter(w => w);
+    
+    // CASE 1: No data
+    if (weights.length === 0) {
+        this.chartPath = ''; 
+        return;
+    }
+
+    // CASE 2: Single Data Point (Draw a straight line or dot)
+    if (weights.length === 1) {
+        // Draw a flat line across the middle
+        this.chartPath = "0,75 300,75"; 
+        this.chartFillPath = "0,150 0,75 300,75 300,150";
+        this.lastPoint = { x: 300, y: 75 };
+        return;
+    }
+
+    // CASE 3: Multiple Points (Normal Graph)
+    const min = Math.min(...weights) - 1;
+    const max = Math.max(...weights) + 1;
+    const range = max - min || 1;
+    
+    const points = weights.map((w, i) => ({ 
+        x: (i / (weights.length - 1)) * 300, 
+        y: 150 - ((w - min) / range * 150) 
+    }));
+    
+    this.chartPath = points.map(p => `${p.x},${p.y}`).join(' ');
+    this.chartFillPath = `0,150 ${this.chartPath} 300,150`;
+    this.lastPoint = points[points.length - 1];
+},
             async fetchWeeklyLogs() {
                 const { data } = await _client.from('food_logs').select('*').gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]);
                 this.weeklyLogs = data || [];
