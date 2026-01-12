@@ -146,7 +146,9 @@
                     <span class="text-xs font-bold text-slate-300 mb-2">{{ dayObj.dateNum }}</span>
                     <div v-if="getScheduleForDay(dayObj.dayName)" class="flex flex-col items-center">
                         <i :data-lucide="getScheduleForDay(dayObj.dayName).icon_name" class="w-5 h-5 text-blue-400 mb-1"></i>
-                        <span class="text-[8px] font-bold text-center leading-tight truncate w-full text-blue-400">{{ getScheduleForDay(dayObj.dayName).name }}</span>
+                       <span class="text-[8px] font-bold text-center leading-none whitespace-normal break-words w-full text-blue-400">
+    {{ getScheduleForDay(dayObj.dayName).name }}
+</span>
                     </div>
                     <div v-else class="w-8 h-8 rounded-full border border-dashed border-slate-700 flex items-center justify-center">
                         <i data-lucide="plus" class="w-3 h-3 text-slate-600"></i>
