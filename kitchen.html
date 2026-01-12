@@ -416,7 +416,7 @@
                 this.inventory = data || [];
             },
             async fetchDailyLogs() {
-                const today = new Date().toISOString().split('T')[0];
+                const today = new Date().toLocaleDateString('en-CA');
                 const { data } = await _client.from('food_logs').select('*').gte('created_at', today).order('created_at', { ascending: false });
                 this.dailyLogs = data || [];
             },
