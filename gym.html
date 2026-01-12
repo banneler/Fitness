@@ -383,18 +383,19 @@
         },
         computed: {
             upcomingDays() {
-                const days = [];
-                for(let i=0; i<7; i++) {
-                    const d = new Date(); 
-                    d.setDate(d.getDate() + i);
-                    days.push({ 
-                        dateNum: d.getDate(), 
-                        dayName: d.toLocaleDateString('en-US', {weekday:'short'}), 
-                        fullDate: d.toISOString().split('T')[0] 
-                    });
-                }
-                return days;
-            }
+    const days = [];
+    for(let i=0; i<7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        days.push({ 
+            dateNum: d.getDate(), 
+            dayName: d.toLocaleDateString('en-US', {weekday:'short'}), 
+            fullDate: d.toLocaleDateString('en-CA') // FIXED: Matches database local time
+        });
+    }
+    return days;
+}
+
         },
         async mounted() {
             const { data: { session }, error } = await _client.auth.getSession();
