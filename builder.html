@@ -237,6 +237,11 @@
                         </div>
                         <input type="checkbox" v-model="exerciseForm.is_static" class="toggle-checkbox">
                     </div>
+                    
+                    <div v-if="exerciseForm.is_static" class="pt-2 border-t border-white/5 mt-4">
+                        <label class="text-[9px] font-black uppercase text-blue-400 tracking-widest mb-1 block">Global Static Weight (lbs)</label>
+                        <input type="number" v-model="exerciseForm.static_weight" placeholder="e.g. 45" class="w-full bg-slate-950 border border-blue-500/30 rounded-lg p-3 text-white font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none">
+                    </div>
                 </div>
             </div>
 
@@ -291,6 +296,7 @@
                                     <div class="flex gap-1 mt-0.5">
                                         <span v-if="ex.is_bodyweight" class="text-[8px] text-slate-500 uppercase tracking-wider">BW</span>
                                         <span v-if="ex.is_static" class="text-[8px] text-slate-500 uppercase tracking-wider">Static</span>
+                                        <span v-if="ex.static_weight" class="text-[8px] text-blue-500 uppercase tracking-wider ml-1">({{ex.static_weight}}lbs)</span>
                                     </div>
                                 </div>
                             </div>
@@ -338,9 +344,9 @@
                     id: null, 
                     name: '', 
                     icon: 'activity', 
-                    supersets: [] // Store superset indices here
+                    supersets: [] 
                 },
-                routineExercises: [], // Stores objects { id: 'uuid', uniqueKey: 'random' } for stable drag-drop
+                routineExercises: [], 
 
                 // Exercise Editor State
                 exerciseForm: { 
@@ -349,13 +355,13 @@
                     group: '', 
                     icon: 'dumbbell', 
                     weight_type: 'combined',
-                    is_bodyweight: false, // NEW
-                    is_static: false      // NEW
+                    is_bodyweight: false, 
+                    is_static: false,
+                    static_weight: null // NEW FIELD
                 }
             }
         },
         computed: {
-            // NEW: Returns library grouped by muscle group
             groupedLibrary() {
                 let filtered = this.library;
                 if(this.search) {
@@ -571,14 +577,15 @@
                     group: ex.muscle_group, 
                     icon: ex.icon_name, 
                     weight_type: ex.weight_type,
-                    is_bodyweight: ex.is_bodyweight || false, // NEW
-                    is_static: ex.is_static || false          // NEW
+                    is_bodyweight: ex.is_bodyweight || false, 
+                    is_static: ex.is_static || false,
+                    static_weight: ex.static_weight || null
                 };
                 window.scrollTo(0,0);
             },
 
             clearExerciseForm() {
-                this.exerciseForm = { id: null, name: '', group: '', icon: 'dumbbell', weight_type: 'combined', is_bodyweight: false, is_static: false };
+                this.exerciseForm = { id: null, name: '', group: '', icon: 'dumbbell', weight_type: 'combined', is_bodyweight: false, is_static: false, static_weight: null };
             },
 
             async saveExercise() {
@@ -595,8 +602,9 @@
                     muscle_group: this.exerciseForm.group,
                     icon_name: this.exerciseForm.icon,
                     weight_type: this.exerciseForm.weight_type,
-                    is_bodyweight: this.exerciseForm.is_bodyweight, // NEW
-                    is_static: this.exerciseForm.is_static,         // NEW
+                    is_bodyweight: this.exerciseForm.is_bodyweight, 
+                    is_static: this.exerciseForm.is_static,
+                    static_weight: this.exerciseForm.is_static ? this.exerciseForm.static_weight : null,
                     user_id: this.session.user.id
                 };
 
