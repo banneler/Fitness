@@ -37,7 +37,6 @@
         .exercise-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .exercise-blurred { opacity: 0.4; filter: grayscale(100%) blur(1px); transform: scale(0.98); pointer-events: none; }
         .exercise-active { opacity: 1; filter: none; transform: scale(1); border-color: rgba(59, 130, 246, 0.3); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); }
-        .pr-active { border-color: #eab308 !important; box-shadow: 0 0 15px rgba(234, 179, 8, 0.2); color: #eab308 !important; background: rgba(234, 179, 8, 0.05); }
         
         .muscle-base { fill: rgba(30, 41, 59, 0.1); stroke: rgba(255, 255, 255, 0.2); stroke-width: 1px; stroke-linecap: round; stroke-linejoin: round; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         .fill-red-500 { fill: rgba(239, 68, 68, 0.4) !important; stroke: #ef4444 !important; }
@@ -267,7 +266,11 @@
                                     {{ ex.name }}<span v-if="i < group.exercises.length - 1" class="text-slate-500"> + </span>
                                 </span>
                             </h3>
-                            <span v-if="group.exercises[0].weightType === 'per_side'" class="text-[8px] font-bold uppercase text-slate-500 tracking-wider">Per Arm / Side</span>
+                            <div class="flex gap-2">
+                                <span v-if="group.exercises[0].weightType === 'per_side'" class="text-[8px] font-bold uppercase text-slate-500 tracking-wider">Per Arm / Side</span>
+                                <span v-if="group.exercises[0].isBodyweight" class="text-[8px] font-bold uppercase text-green-500 tracking-wider">Bodyweight</span>
+                                <span v-if="group.exercises[0].isStatic" class="text-[8px] font-bold uppercase text-purple-500 tracking-wider">Fixed Weight</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -293,7 +296,10 @@
                         </div>
 
                         <div class="col-span-4" v-if="ex.sets[i]">
-                            <input type="number" v-model="ex.sets[i].weight" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[i].prevWeight || '-'">
+                            <input type="number" 
+                                   v-model="ex.sets[i].weight" 
+                                   class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" 
+                                   :placeholder="ex.isBodyweight ? 'BW' : (ex.sets[i].prevWeight || '-')">
                         </div>
                         <div class="col-span-3" v-if="ex.sets[i]">
                             <input type="number" v-model="ex.sets[i].reps" class="w-full bg-slate-900 rounded-lg p-2 text-center font-bold text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-slate-600" :placeholder="ex.sets[i].prevReps || '-'">
@@ -457,7 +463,6 @@
                         this.activeExerciseIdx = parsed.activeExerciseIdx || 0;
                         this.stackTaken = parsed.stackTaken || false;
                         
-                        // Restore Timer Correctly (Time continues even if browser closed)
                         const now = Date.now();
                         this.sessionTimer = Math.floor((now - this.sessionStartTime) / 1000);
                         this.sessionInterval = setInterval(() => {
@@ -657,6 +662,12 @@
                         name: exDef ? exDef.name : 'Exercise', 
                         icon: exDef ? exDef.icon_name : 'dumbbell', 
                         weightType: exDef ? exDef.weight_type : 'combined',
+                        
+                        // LOGIC: Capture Flags from Builder/DB
+                        isStatic: exDef ? exDef.is_static : false,
+                        staticWeight: exDef ? exDef.static_weight : null,
+                        isBodyweight: exDef ? exDef.is_bodyweight : false,
+                        
                         personalRecord: pr, 
                         isLinked: (routine.supersets || []).includes(index),
                         sets: [{weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}] 
@@ -683,22 +694,31 @@
                             .limit(1)
                             .single();
 
+                        // LOGIC: Determine Default Weight to Pre-Fill
+                        let defaultWeight = '';
+                        if (ex.isStatic && ex.staticWeight) defaultWeight = ex.staticWeight;
+                        // Bodyweight = leave empty, handled by placeholder
+
                         if(lastLog && lastLog.sets_data && lastLog.sets_data.length > 0) {
                             ex.sets = lastLog.sets_data.map(s => ({
-                                weight: '', prevWeight: s.weight,
-                                reps: '', prevReps: s.reps,
+                                weight: defaultWeight || '', // Force static if set, otherwise leave blank or user's prev
+                                prevWeight: s.weight,
+                                reps: '', 
+                                prevReps: s.reps,
                                 done: false, failure: false 
                             }));
                         }
+                        
+                        // Ensure min 3 sets, applying defaults
                         while(ex.sets.length < 3) {
-                            ex.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
+                            ex.sets.push({ weight: defaultWeight || '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
                         }
                     }
                     
                     const maxSets = Math.max(...group.exercises.map(e => e.sets.length));
                     group.exercises.forEach(ex => {
                          while(ex.sets.length < maxSets) {
-                             ex.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
+                             ex.sets.push({ weight: (ex.isStatic && ex.staticWeight) ? ex.staticWeight : '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
                          }
                     });
                 }
@@ -732,7 +752,16 @@
                 const group = this.activeRoutine.data[groupIdx];
                 group.exercises.forEach(ex => {
                     const prev = ex.sets.slice(-1)[0]; 
-                    ex.sets.push({ weight: '', prevWeight: prev?.prevWeight||'', reps: '', prevReps: prev?.prevReps||'', done: false, failure: false }); 
+                    // Use static weight if available
+                    const newWeight = (ex.isStatic && ex.staticWeight) ? ex.staticWeight : '';
+                    
+                    ex.sets.push({ 
+                        weight: newWeight, 
+                        prevWeight: prev?.prevWeight||'', 
+                        reps: '', 
+                        prevReps: prev?.prevReps||'', 
+                        done: false, failure: false 
+                    }); 
                 });
             },
 
@@ -759,11 +788,17 @@
                     group.exercises.forEach(ex => {
                         const validSets = ex.sets.filter(s => s.done);
                         if (validSets.length > 0) {
+                            // SANITIZATION: If bodyweight and empty, treat as 0 for DB
+                            const sanitizedSets = validSets.map(s => ({
+                                ...s,
+                                weight: (s.weight === '' || s.weight === null) ? 0 : s.weight
+                            }));
+
                             flatLogs.push({
                                 user_id: this.session.user.id, 
                                 exercise_name: ex.name, 
                                 protocol_name: this.activeRoutine.name, 
-                                sets_data: validSets,
+                                sets_data: sanitizedSets,
                                 duration_seconds: this.sessionTimer,
                                 created_at: new Date().toISOString() 
                             });
