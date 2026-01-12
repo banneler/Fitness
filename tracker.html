@@ -544,29 +544,61 @@
             },
             
             async fetchTargets() {
-                const { data } = await _client.from('daily_metrics')
-                    .select('target_protein, target_calories')
-                    .neq('target_calories', null)
-                    .order('created_at', { ascending: false })
-                    .limit(1);
-                if(data?.[0]) { this.targets.protein = data[0].target_protein; this.targets.cals = data[0].target_calories; }
-            },
+    const { data } = await _client.from('daily_metrics')
+        .select('target_protein, target_calories')
+        .eq('user_id', this.session.user.id) // FIXED: Filter by User
+        .neq('target_calories', null)
+        .order('created_at', { ascending: false })
+        .limit(1);
+    
+    if(data?.[0]) { 
+        this.targets.protein = data[0].target_protein; 
+        this.targets.cals = data[0].target_calories; 
+    }
+},
+
             
             async saveTargets() {
-                const today = new Date().toLocaleDateString('en-CA'); 
-                const { data: existing } = await _client.from('daily_metrics').select('id').gte('created_at', today).order('created_at', { ascending: false }).limit(1);
+    const today = new Date().toLocaleDateString('en-CA');
+    
+    // FIXED: Only look for MY existing logs for today
+    const { data: existing } = await _client.from('daily_metrics')
+        .select('id')
+        .eq('user_id', this.session.user.id) 
+        .gte('created_at', today)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-                let error;
-                if(existing && existing.length > 0) {
-                    const { error: err } = await _client.from('daily_metrics').update({ target_protein: this.targets.protein, target_calories: this.targets.cals }).eq('id', existing[0].id);
-                    error = err;
-                } else {
-                    const { error: err } = await _client.from('daily_metrics').insert([{ user_id: this.session.user.id, target_protein: this.targets.protein, target_calories: this.targets.cals, weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null }]);
-                    error = err;
-                }
+    let error;
+    if(existing && existing.length > 0) {
+        // Update existing row
+        const { error: err } = await _client.from('daily_metrics')
+            .update({ 
+                target_protein: this.targets.protein, 
+                target_calories: this.targets.cals 
+            })
+            .eq('id', existing[0].id);
+        error = err;
+    } else {
+        // Insert new row
+        const { error: err } = await _client.from('daily_metrics').insert([{ 
+            user_id: this.session.user.id, 
+            target_protein: this.targets.protein, 
+            target_calories: this.targets.cals, 
+            weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null 
+        }]);
+        error = err;
+    }
 
-                if(!error) { this.showTargetModal = false; await this.fetchTargets(); }
-            },
+    if(!error) { 
+        this.showTargetModal = false;
+        await this.fetchTargets(); 
+    } else {
+        console.error("Save failed:", error);
+        alert("Could not save targets.");
+    }
+},
+
 
             async runAnalysis() {
                 this.isAnalyzing = true;
