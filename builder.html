@@ -42,6 +42,12 @@
         /* Utility */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Custom Toggle Switch */
+        .toggle-checkbox { appearance: none; width: 2.5rem; height: 1.5rem; background: #334155; border-radius: 9999px; position: relative; cursor: pointer; transition: background 0.3s; }
+        .toggle-checkbox::after { content: ''; position: absolute; top: 0.125rem; left: 0.125rem; width: 1.25rem; height: 1.25rem; background: white; border-radius: 50%; transition: transform 0.3s; }
+        .toggle-checkbox:checked { background: #3b82f6; }
+        .toggle-checkbox:checked::after { transform: translateX(100%); }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -118,7 +124,7 @@
                             </div>
                         </div>
                         <div v-if="isSuperset(idx)" class="flex items-center gap-1 mt-1.5 ml-7 text-[8px] text-blue-400 font-black uppercase tracking-wider animate-pulse">
-                            <i data-lucide="link" class="w-3 h-3"></i> Linked to Previous
+                             <i data-lucide="link" class="w-3 h-3"></i> Linked to Previous
                         </div>
                     </div>
 
@@ -127,7 +133,7 @@
                             <i data-lucide="link" class="w-4 h-4"></i>
                         </button>
                         <button @click="removeExercise(idx)" class="p-2 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all active:scale-90">
-                            <i data-lucide="x" class="w-4 h-4"></i>
+                             <i data-lucide="x" class="w-4 h-4"></i>
                         </button>
                     </div>
                 </div>
@@ -148,17 +154,26 @@
             <transition name="slide-down">
                 <div v-if="showLibrary" class="space-y-3 pt-2">
                     <input type="text" v-model="search" placeholder="Filter library..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-blue-500 transition-colors">
-                    <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
-                        <button v-for="ex in filteredLibrary" :key="ex.id" @click="addExercise(ex.id)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-950/30 flex justify-between items-center active:scale-95 transition-all text-left group hover:border-blue-500/30 hover:bg-blue-500/5">
-                            <div class="flex items-center gap-3">
-                                <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4 text-slate-500 group-hover:text-blue-500 transition-colors"></i>
-                                <div>
-                                    <div class="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{{ ex.name }}</div>
-                                    <div class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">{{ ex.muscle_group }}</div>
-                                </div>
+                    
+                    <div class="space-y-4 max-h-64 overflow-y-auto pr-1">
+                        <div v-for="(groupExercises, groupName) in groupedLibrary" :key="groupName">
+                            <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1 sticky top-0 bg-[#0f172a] py-1 z-10">{{ groupName }}</h4>
+                            <div class="space-y-2">
+                                <button v-for="ex in groupExercises" :key="ex.id" @click="addExercise(ex.id)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-950/30 flex justify-between items-center active:scale-95 transition-all text-left group hover:border-blue-500/30 hover:bg-blue-500/5">
+                                    <div class="flex items-center gap-3">
+                                        <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4 text-slate-500 group-hover:text-blue-500 transition-colors"></i>
+                                        <div>
+                                            <div class="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{{ ex.name }}</div>
+                                            <div class="flex gap-1 mt-0.5">
+                                                <span v-if="ex.is_bodyweight" class="text-[8px] bg-slate-800 text-slate-400 px-1 rounded uppercase tracking-wider">Bodyweight</span>
+                                                <span v-if="ex.is_static" class="text-[8px] bg-slate-800 text-slate-400 px-1 rounded uppercase tracking-wider">Static</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <i data-lucide="plus-circle" class="w-4 h-4 text-slate-600 group-hover:text-blue-500 transition-colors"></i>
+                                </button>
                             </div>
-                            <i data-lucide="plus-circle" class="w-4 h-4 text-slate-600 group-hover:text-blue-500 transition-colors"></i>
-                        </button>
+                        </div>
                     </div>
                 </div>
             </transition>
@@ -205,6 +220,27 @@
             </div>
 
             <div class="space-y-1">
+                <label class="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Load Characteristics</label>
+                <div class="bg-slate-900/50 p-4 rounded-xl border border-white/5 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="text-xs font-bold text-white block">Bodyweight Movement</span>
+                            <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Exclude from Tonnage</span>
+                        </div>
+                        <input type="checkbox" v-model="exerciseForm.is_bodyweight" class="toggle-checkbox">
+                    </div>
+                    <div class="w-full h-px bg-white/5"></div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="text-xs font-bold text-white block">Static / Fixed Weight</span>
+                            <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Single Plate / Object</span>
+                        </div>
+                        <input type="checkbox" v-model="exerciseForm.is_static" class="toggle-checkbox">
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-1">
                 <label class="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Weight Logic</label>
                 <div class="grid grid-cols-2 gap-3">
                     <button @click="exerciseForm.weight_type = 'combined'" class="p-4 rounded-xl border transition-all text-left relative overflow-hidden group" :class="exerciseForm.weight_type === 'combined' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-slate-900'">
@@ -240,16 +276,28 @@
         <div class="mt-8 border-t border-white/10 pt-6">
             <p class="text-[10px] font-black uppercase text-slate-500 mb-4 tracking-widest">Edit Existing Movements</p>
             <input type="text" v-model="search" placeholder="Search library to edit..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none mb-3 focus:border-slate-600 transition-colors">
-            <div class="space-y-2">
-                <button v-for="ex in filteredLibrary" :key="ex.id" @click="editExercise(ex)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-900/50 flex justify-between items-center active:scale-95 transition-transform text-left group hover:border-blue-500/30 hover:bg-blue-500/5">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 group-hover:text-blue-400 transition-colors">
-                            <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4"></i>
-                        </div>
-                        <div class="text-xs font-bold text-white group-hover:text-blue-200 transition-colors">{{ ex.name }}</div>
+            
+            <div class="space-y-4">
+                <div v-for="(groupExercises, groupName) in groupedLibrary" :key="groupName">
+                    <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1">{{ groupName }}</h4>
+                    <div class="space-y-2">
+                        <button v-for="ex in groupExercises" :key="ex.id" @click="editExercise(ex)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-900/50 flex justify-between items-center active:scale-95 transition-transform text-left group hover:border-blue-500/30 hover:bg-blue-500/5">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 group-hover:text-blue-400 transition-colors">
+                                    <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4"></i>
+                                </div>
+                                <div class="text-xs font-bold text-white group-hover:text-blue-200 transition-colors">
+                                    {{ ex.name }}
+                                    <div class="flex gap-1 mt-0.5">
+                                        <span v-if="ex.is_bodyweight" class="text-[8px] text-slate-500 uppercase tracking-wider">BW</span>
+                                        <span v-if="ex.is_static" class="text-[8px] text-slate-500 uppercase tracking-wider">Static</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <i data-lucide="pencil" class="w-3 h-3 text-slate-600 group-hover:text-white"></i>
+                        </button>
                     </div>
-                    <i data-lucide="pencil" class="w-3 h-3 text-slate-600 group-hover:text-white"></i>
-                </button>
+                </div>
             </div>
         </div>
     </div>
@@ -300,15 +348,34 @@
                     name: '', 
                     group: '', 
                     icon: 'dumbbell', 
-                    weight_type: 'combined' 
+                    weight_type: 'combined',
+                    is_bodyweight: false, // NEW
+                    is_static: false      // NEW
                 }
             }
         },
         computed: {
-            filteredLibrary() {
-                if(!this.search) return this.library;
-                const s = this.search.toLowerCase();
-                return this.library.filter(ex => ex.name.toLowerCase().includes(s));
+            // NEW: Returns library grouped by muscle group
+            groupedLibrary() {
+                let filtered = this.library;
+                if(this.search) {
+                    const s = this.search.toLowerCase();
+                    filtered = this.library.filter(ex => ex.name.toLowerCase().includes(s));
+                }
+                
+                // Group By Logic
+                const groups = {};
+                filtered.forEach(ex => {
+                    const g = ex.muscle_group || 'Uncategorized';
+                    if(!groups[g]) groups[g] = [];
+                    groups[g].push(ex);
+                });
+                
+                // Sort keys
+                return Object.keys(groups).sort().reduce((obj, key) => { 
+                    obj[key] = groups[key]; 
+                    return obj;
+                }, {});
             }
         },
         watch: {
@@ -328,7 +395,7 @@
             const { data: { session }, error } = await _client.auth.getSession();
             if (error || !session) { window.location.href = 'index.html'; return; }
             this.session = session;
-            
+
             await this.fetchLibrary();
             
             // Check URL for Edit Mode
@@ -383,11 +450,9 @@
                         id: data.id, 
                         name: data.name, 
                         icon: data.icon_name, 
-                        // Fix for null supersets if column is new
                         supersets: (data.supersets && Array.isArray(data.supersets)) ? data.supersets : [] 
                     };
-                    
-                    // Convert IDs to Stable Objects for SortableJS
+
                     this.routineExercises = (data.exercise_order || []).map(eid => ({
                         id: eid,
                         uniqueKey: Math.random().toString(36).substring(2, 15)
@@ -401,7 +466,6 @@
                 const el = this.$refs.sortableList;
                 if(!el) return;
                 
-                // Destroy old instance if exists
                 if(this.sortableInstance) this.sortableInstance.destroy();
 
                 this.sortableInstance = Sortable.create(el, {
@@ -409,19 +473,13 @@
                     animation: 200,
                     ghostClass: 'sortable-ghost',
                     dragClass: 'sortable-drag',
-                    forceFallback: true, // Crucial for mobile
+                    forceFallback: true, 
                     onEnd: (evt) => {
-                        // 1. Move item in the local array
                         const item = this.routineExercises.splice(evt.oldIndex, 1)[0];
                         this.routineExercises.splice(evt.newIndex, 0, item);
                         
-                        // 2. Handle Superset Link Breakage
-                        // If we move an item that was part of a superset, we break the link 
-                        // to avoid logic errors (linking to the wrong neighbor).
                         const ss = this.routine.supersets || [];
                         const affectedIndices = [evt.oldIndex, evt.newIndex];
-                        
-                        // Filter out any links that involved the moved positions
                         this.routine.supersets = ss.filter(idx => !affectedIndices.includes(idx));
                     }
                 });
@@ -439,14 +497,10 @@
 
             removeExercise(idx) {
                 this.routineExercises.splice(idx, 1);
-                // Shift superset indices: if we delete item 2, item 3 becomes 2.
-                // Any link pointing to the deleted index (or above) needs adjustment.
-                // For simplicity/safety, we will remove links around the deleted zone.
                 this.routine.supersets = (this.routine.supersets || []).filter(i => i !== idx).map(i => i > idx ? i - 1 : i);
             },
 
             isSuperset(idx) {
-                // "Is this item linked to the one above it?"
                 return (this.routine.supersets || []).includes(idx);
             },
 
@@ -455,10 +509,8 @@
                 const ss = this.routine.supersets;
                 
                 if (ss.includes(idx)) {
-                    // Unlink
                     ss.splice(ss.indexOf(idx), 1);
                 } else {
-                    // Link
                     ss.push(idx);
                 }
             },
@@ -473,12 +525,11 @@
                 this.loadingText = "Saving Protocol...";
 
                 const finalOrder = this.routineExercises.map(e => e.id);
-                
                 const payload = {
                     name: this.routine.name,
                     icon_name: this.routine.icon,
                     exercise_order: finalOrder,
-                    supersets: this.routine.supersets || [], // JSONB Array
+                    supersets: this.routine.supersets || [],
                     user_id: this.session.user.id
                 };
 
@@ -493,12 +544,10 @@
                 }
 
                 this.loading = false;
-
                 if (error) {
                     console.error(error);
                     this.showToast("Error", "Save failed. Check console.");
                 } else {
-                    // Success -> Redirect
                     window.location.href = 'gym.html';
                 }
             },
@@ -516,19 +565,20 @@
             // ==========================
             
             editExercise(ex) {
-                // Clone data to avoid live editing library list
                 this.exerciseForm = { 
                     id: ex.id, 
                     name: ex.name, 
                     group: ex.muscle_group, 
                     icon: ex.icon_name, 
-                    weight_type: ex.weight_type 
+                    weight_type: ex.weight_type,
+                    is_bodyweight: ex.is_bodyweight || false, // NEW
+                    is_static: ex.is_static || false          // NEW
                 };
                 window.scrollTo(0,0);
             },
 
             clearExerciseForm() {
-                this.exerciseForm = { id: null, name: '', group: '', icon: 'dumbbell', weight_type: 'combined' };
+                this.exerciseForm = { id: null, name: '', group: '', icon: 'dumbbell', weight_type: 'combined', is_bodyweight: false, is_static: false };
             },
 
             async saveExercise() {
@@ -545,17 +595,17 @@
                     muscle_group: this.exerciseForm.group,
                     icon_name: this.exerciseForm.icon,
                     weight_type: this.exerciseForm.weight_type,
+                    is_bodyweight: this.exerciseForm.is_bodyweight, // NEW
+                    is_static: this.exerciseForm.is_static,         // NEW
                     user_id: this.session.user.id
                 };
 
                 let error = null;
 
                 if (this.exerciseForm.id) {
-                    // Update
                     const { error: err } = await _client.from('exercises').update(payload).eq('id', this.exerciseForm.id);
                     error = err;
                 } else {
-                    // Insert
                     const { error: err } = await _client.from('exercises').insert([payload]);
                     error = err;
                 }
@@ -566,7 +616,7 @@
                 } else {
                     this.showToast("Success", this.exerciseForm.id ? "Exercise updated." : "Exercise created.");
                     this.clearExerciseForm();
-                    await this.fetchLibrary(); // Refresh list
+                    await this.fetchLibrary();
                 }
                 
                 this.loading = false;
