@@ -299,7 +299,8 @@
                 }
             },
             async fetchMetrics() {
-                const today = new Date().toISOString().split('T')[0];
+                // FIXED: Use Local Date string to ensure "Today" matches user perception
+                const today = new Date().toLocaleDateString('en-CA');
                 const { data: todayData } = await _client
                     .from('daily_metrics')
                     .select('*')
@@ -332,14 +333,16 @@
                 }
             },
             async fetchProtein() {
-                const today = new Date().toISOString().split('T')[0];
+                // FIXED: Use Local Date string
+                const today = new Date().toLocaleDateString('en-CA');
                 const { data } = await _client.from('food_logs').select('protein').gte('created_at', today);
                 if (data) {
                     this.proteinCurrent = data.reduce((sum, item) => sum + (item.protein || 0), 0);
                 }
             },
             async fetchVolume() {
-                const today = new Date().toISOString().split('T')[0];
+                // FIXED: Use Local Date string to match user's morning workout
+                const today = new Date().toLocaleDateString('en-CA');
                 const { data } = await _client.from('workout_logs').select('sets_data').gte('created_at', today);
                 if (data) {
                     let vol = 0;
