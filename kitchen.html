@@ -375,20 +375,22 @@
                 this.toast.visible = true;
                 setTimeout(() => { this.toast.visible = false; }, 3000);
             },
-            async fetchTargets() {
-                const { data } = await _client.from('daily_metrics')
-                    .select('target_calories, target_protein, target_carbs, target_fat')
-                    .neq('target_calories', null) // FIX: Ignore empty rows
-                    .order('created_at', { ascending: false })
-                    .limit(1);
-                
-                if (data && data[0]) {
-                    this.targets.cals = data[0].target_calories || 2500;
-                    this.targets.protein = data[0].target_protein || 180;
-                    this.targets.carbs = data[0].target_carbs || 250;
-                    this.targets.fat = data[0].target_fat || 80;
-                }
-            },
+       async fetchTargets() {
+    // FIXED: Removed strict NULL checks so we get the latest row regardless
+    const { data } = await _client.from('daily_metrics')
+        .select('target_calories, target_protein, target_carbs, target_fat')
+        .eq('user_id', this.session.user.id) // Ensure we get YOUR targets
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+    if (data && data[0]) {
+        // Use database values, falling back to defaults only if genuinely missing
+        this.targets.cals = data[0].target_calories || 2500;
+        this.targets.protein = data[0].target_protein || 180;
+        this.targets.carbs = data[0].target_carbs || 250;
+        this.targets.fat = data[0].target_fat || 80;
+    }
+},
             async initMemory() {
                 const { data } = await _client.from('food_memory').select('*').order('use_count', { ascending: false });
                 this.memory = data || [];
