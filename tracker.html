@@ -64,7 +64,7 @@
         </div>
     </transition>
 
-    <div v-else>
+    <div v-if="!initialLoading">
         <header class="flex justify-between items-center mb-8">
             <div>
                 <h1 class="text-3xl font-black italic text-purple-500 uppercase tracking-tighter">Tracker</h1>
@@ -615,15 +615,17 @@
                 if(!error) { await this.fetchBodyHistory(); this.showToast("Saved", "Biometrics registry updated."); }
             },
             async fetchWeight() {
+                // Fetch the 30 MOST RECENT entries (Descending order)
                 const { data } = await _client.from('daily_metrics')
                     .select('*')
                     .eq('user_id', this.session.user.id)
                     .neq('weight', null)
-                    .order('created_at', { ascending: false }) // Get Newest
+                    .order('created_at', { ascending: false }) 
                     .limit(30);
                     
                 if (data?.length) { 
-                    this.weightHistory = [...data].reverse(); // Reverse for Graph (Old -> New)
+                    // Reverse them locally so the graph draws Oldest -> Newest (Left -> Right)
+                    this.weightHistory = [...data].reverse(); 
                     this.calculateGraph(this.weightHistory); 
                 }
             },
