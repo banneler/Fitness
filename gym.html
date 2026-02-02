@@ -300,10 +300,10 @@
                     Finish
                 </button>
 
-                <button @click="toggleRestTimer" :class="restTimerRunning ? 'bg-red-500/20 border-red-500/50' : 'bg-slate-800/80 text-slate-400 border-transparent'" class="col-span-1 h-12 rounded-2xl flex items-center justify-center transition-all relative overflow-hidden active:scale-95 border">
-                     <span v-if="restTimerRunning" class="absolute inset-0 bg-red-500/20 animate-pulse z-0"></span>
-                     <span v-if="restTimerRunning" class="relative z-20 font-mono font-black text-lg text-white drop-shadow-md">{{ formatTimer(restTimer) }}</span>
-                     <i v-else data-lucide="timer" class="w-6 h-6 z-10"></i>
+                <button @click="toggleRestTimer" :class="restTimerRunning ? 'bg-red-500/20 border-red-500/50' : 'bg-slate-800/80 text-slate-400 border-transparent'" class="col-span-1 h-12 rounded-2xl flex items-center justify-center transition-all relative active:scale-95 border group">
+                    <span v-if="restTimerRunning" class="absolute inset-0 rounded-2xl bg-red-500/20 animate-pulse z-0"></span>
+                    <span v-if="restTimerRunning" class="relative z-10 font-mono font-black text-lg text-white drop-shadow-md">{{ formatTimer(restTimer) }}</span>
+                    <i v-else data-lucide="timer" class="w-6 h-6 z-10 relative"></i>
                 </button>
             </div>
             <button @click="exitModal = true" class="w-full py-2 text-[10px] text-slate-500 font-black uppercase hover:text-white transition-colors">Exit Workout</button>
@@ -465,13 +465,10 @@
     );
 
     // --- SEPARATE SVG COMPONENT ---
-    // We are using the EXACT structure provided by the user to ensure all limbs and paths are present.
-    // Dynamic classes are bound to the group <g> tags.
     const HeatmapSvg = defineComponent({
         props: ['statuses'],
         methods: {
             getClass(muscleGroup) {
-                // Map the ID (e.g. Chest) to the data key (e.g. chest)
                 const key = muscleGroup.toLowerCase();
                 const status = this.statuses[key] ? this.statuses[key].status : 'fresh';
                 return `muscle-${status}`;
@@ -514,6 +511,7 @@
                 session: null,
                 view: 'dashboard', 
                 toast: { visible: false, title: '', message: '' },
+                isFinishing: false,
                 
                 // Modals
                 scheduleModal: null, 
@@ -684,7 +682,7 @@
             prevExercise() { if(this.activeExerciseIdx > 0) this.activeExerciseIdx--; },
 
             saveSessionState() {
-                if (this.view !== 'active_session' || !this.activeRoutine.name) return;
+                if (this.view !== 'active_session' || !this.activeRoutine.name || this.isFinishing) return;
                 const state = { activeRoutine: this.activeRoutine, sessionStartTime: this.sessionStartTime, activeExerciseIdx: this.activeExerciseIdx, stackTaken: this.stackTaken };
                 localStorage.setItem('constellation_active_session', JSON.stringify(state));
             },
@@ -867,7 +865,6 @@
                         id: id, 
                         name: exDef ? exDef.name : 'Exercise', 
                         icon: exDef ? exDef.icon_name : 'dumbbell', 
-                        // FIX: Use is_bodyweight boolean
                         weightType: (exDef && exDef.is_bodyweight) ? 'bodyweight' : 'combined',
                         personalRecord: pr, 
                         isLinked: (routine.supersets || []).includes(index), 
@@ -909,7 +906,8 @@
             },
             formatTimer(s) { if(s < 0) s = 0; return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
             async confirmFinishSession() {
-                // FIX: Clean storage first to prevent reload loop
+                // FIX: Lock session state to prevent zombie save
+                this.isFinishing = true; 
                 localStorage.removeItem('constellation_active_session');
                 clearInterval(this.sessionInterval); 
                 this.finishModal = false; 
@@ -935,6 +933,7 @@
                 await this.fetchHistory(); 
                 this.view = 'dashboard'; 
                 this.loading = false; 
+                this.isFinishing = false;
                 this.showToast("Victory", "Session archived.");
             }
         }
