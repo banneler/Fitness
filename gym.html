@@ -569,12 +569,10 @@
         updated() { this.$nextTick(() => { lucide.createIcons(); }); },
         methods: {
             isBodyWeight(type) { 
-    // Handle if the DB passes a raw boolean true
-    if (type === true) return true; 
-    if (!type) return false;
-    const t = type.toString().toLowerCase();
-    return t === 'bodyweight' || t === 'body_weight' || t === 'bw' || t === 'true'; 
-},
+                if(!type) return false;
+                const t = type.toLowerCase();
+                return t === 'bodyweight' || t === 'body_weight' || t === 'bw'; 
+            },
             openDualPicker(setObj, weightType) {
                 this.pickerModal.targetSet = setObj;
                 this.pickerModal.targetWeightType = weightType;
@@ -754,7 +752,7 @@
                 const flatExercises = (routine.exercise_order || []).map((id, index) => {
                     const exDef = this.libraryExercises.find(e => e.id === id);
                     const pr = exDef ? (this.personalRecords[exDef.name] || 0) : 0;
-                    return { id: id, name: exDef ? exDef.name : 'Exercise', icon: exDef ? exDef.icon_name : 'dumbbell', // If exDef.is_bodyweight is true, set type to 'bodyweight', otherwise default to 'combined' weightType: (exDef && exDef.is_bodyweight) ? 'bodyweight' : 'combined', personalRecord: pr, isLinked: (routine.supersets || []).includes(index), sets: [{weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}] };
+                    return { id: id, name: exDef ? exDef.name : 'Exercise', icon: exDef ? exDef.icon_name : 'dumbbell', weightType: exDef ? exDef.weight_type : 'combined', personalRecord: pr, isLinked: (routine.supersets || []).includes(index), sets: [{weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}, {weight:'', prevWeight:'', reps:'', prevReps:'', done:false, failure:false}] };
                 });
                 const clusters = [];
                 flatExercises.forEach((ex) => {
