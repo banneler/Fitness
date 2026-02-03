@@ -424,60 +424,24 @@
                 }
                 return days;
             },
-           recentWorkouts() {
-    const sessions = [];
-    let currentSession = null;
-
-    // 1. Sort by date first to ensure grouping logic works linearly
-    const sortedWorkouts = [...this.rawWorkouts].sort((a, b) => 
-        new Date(a.created_at) - new Date(b.created_at)
-    );
-
-    sortedWorkouts.forEach(log => {
-        const logTime = new Date(log.created_at).getTime();
-        
-        // Calculate volume metrics
-        const tonnage = (log.sets_data || []).reduce((acc, s) => acc + (parseFloat(s.weight || 0) * parseInt(s.reps || 0)), 0);
-        // TUL (Time Under Tension) logic remains the same
-        const tul = (log.sets_data || []).reduce((acc, s) => acc + (parseInt(s.reps || 0) * 4), 0);
-        
-        // 2. Calculate duration for this specific log (convert seconds to minutes)
-        const durationMinutes = (log.duration_seconds || 0) / 60;
-
-        // Check if we need to start a new session (gap > 1 hour)
-        if (!currentSession || (logTime - currentSession.lastLogTime) > 3600000) {
-            currentSession = { 
-                id: log.id, 
-                protocol_name: log.protocol_name || 'Generic Session', 
-                startTime: logTime, 
-                lastLogTime: logTime, // Track the last log to manage gaps
-                date: new Date(log.created_at).toLocaleDateString(), 
-                setCount: 0, 
-                tonnage: 0, 
-                tul: 0, 
-                durationMinutes: 0, // Initialize duration
-                exercises: new Set() 
-            };
-            sessions.push(currentSession);
-        }
-
-        // Aggregate values
-        currentSession.setCount += (log.sets_data?.length || 0);
-        currentSession.tonnage += tonnage;
-        currentSession.tul += tul;
-        
-        // 3. Add the duration
-        currentSession.durationMinutes += durationMinutes;
-        
-        currentSession.exercises.add(log.exercise_name);
-        currentSession.lastLogTime = logTime; // Update the "cursor" for the session
-    });
-
-    // Optional: Round the minutes for cleaner display
-    sessions.forEach(s => s.durationMinutes = Math.round(s.durationMinutes));
-
-    return sessions.slice(0, 10);
-}
+            recentWorkouts() {
+                const sessions = [];
+                let currentSession = null;
+                [...this.rawWorkouts].forEach(log => {
+                    const logTime = new Date(log.created_at).getTime();
+                    const tonnage = (log.sets_data || []).reduce((acc, s) => acc + (parseFloat(s.weight || 0) * parseInt(s.reps || 0)), 0);
+                    const tul = (log.sets_data || []).reduce((acc, s) => acc + (parseInt(s.reps || 0) * 4), 0);
+                    if(!currentSession || Math.abs(currentSession.startTime - logTime) > 3600000) {
+                        currentSession = { id: log.id, protocol_name: log.protocol_name || 'Generic Session', startTime: logTime, date: new Date(log.created_at).toLocaleDateString(), setCount: 0, tonnage: 0, tul: 0, exercises: new Set() };
+                        sessions.push(currentSession);
+                    }
+                    currentSession.setCount += (log.sets_data?.length || 0);
+                    currentSession.tonnage += tonnage;
+                    currentSession.tul += tul;
+                    currentSession.exercises.add(log.exercise_name);
+                });
+                return sessions.slice(0, 10);
+            },
             weeklyMacrosFull() {
                 const days = [];
                 for(let i=6; i>=0; i--) {
