@@ -100,10 +100,10 @@
             <div v-if="view === 'intel'" class="space-y-6">
                 
                 <section class="glass p-6 rounded-[2.5rem] shadow-xl border-t-4 border-t-rose-500">
-                    <div class="flex justify-between items-end mb-4">
+                    <div class="flex justify-between items-center mb-6">
                         <div class="flex items-center gap-2 opacity-80">
                             <i data-lucide="activity" class="w-4 h-4 text-rose-400"></i>
-                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Vitals & Recovery</h3>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Recovery Status</h3>
                         </div>
                         <div class="flex gap-3">
                             <div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div><span class="text-[6px] uppercase font-bold text-slate-500 tracking-wider">Sleep</span></div>
@@ -111,24 +111,39 @@
                         </div>
                     </div>
 
-                    <div class="h-28 w-full relative mb-6">
-                        <svg v-if="vitals.sleepPath || vitals.energyPath" class="w-full h-full overflow-visible" viewBox="0 0 300 100" preserveAspectRatio="none">
+                    <div class="grid grid-cols-3 gap-2 mb-6">
+                        <div class="bg-slate-950/50 p-3 rounded-2xl border border-white/5 flex flex-col items-center justify-center">
+                            <span class="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-1">Sleep</span>
+                            <span class="text-lg font-black text-blue-400 italic">{{ latestSleep }}<span class="text-[9px] text-slate-600 not-italic ml-0.5">h</span></span>
+                        </div>
+                        <div class="bg-slate-950/50 p-3 rounded-2xl border border-white/5 flex flex-col items-center justify-center">
+                            <span class="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-1">Energy</span>
+                            <span class="text-lg font-black text-yellow-400 italic">{{ latestEnergy }}<span class="text-[9px] text-slate-600 not-italic ml-0.5">/10</span></span>
+                        </div>
+                        <div class="bg-slate-950/50 p-3 rounded-2xl border border-white/5 relative overflow-hidden flex flex-col items-center justify-center">
+                            <span class="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-1 relative z-10">RHR</span>
+                            <span class="text-lg font-black text-rose-400 italic relative z-10">{{ latestRHR }}<span class="text-[9px] text-slate-600 not-italic ml-0.5">bpm</span></span>
+                            
+                            <div class="absolute inset-0 opacity-20">
+                                <svg v-if="vitals.rhrPath" class="w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">
+                                    <polyline :points="vitals.rhrPath" fill="none" stroke="#fb7185" stroke-width="4" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="h-28 w-full relative">
+                        <div class="absolute inset-0 flex flex-col justify-between text-[8px] font-bold text-slate-700 pointer-events-none">
+                            <div class="w-full border-t border-dashed border-white/10 pt-1">10+</div>
+                            <div class="w-full border-t border-dashed border-white/5"></div>
+                            <div class="w-full border-b border-dashed border-white/10 pb-1">0</div>
+                        </div>
+
+                        <svg v-if="vitals.sleepPath || vitals.energyPath" class="w-full h-full overflow-visible relative z-10 pl-4" viewBox="0 0 300 100" preserveAspectRatio="none">
                             <polyline :points="vitals.energyPath" fill="none" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-opacity="0.8" />
                             <polyline :points="vitals.sleepPath" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" />
                         </svg>
                         <div v-else class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-600 uppercase font-bold italic">No Recovery Data</div>
-                    </div>
-
-                    <div class="flex justify-between items-center bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                        <div>
-                            <span class="text-[8px] font-black uppercase tracking-widest text-slate-500 block mb-1">Resting HR</span>
-                            <span class="text-xl font-black text-rose-400 italic">{{ latestRHR }} <span class="text-xs text-slate-600 not-italic">bpm</span></span>
-                        </div>
-                        <div class="h-10 w-24">
-                            <svg v-if="vitals.rhrPath" class="w-full h-full overflow-visible" viewBox="0 0 100 40" preserveAspectRatio="none">
-                                <polyline :points="vitals.rhrPath" fill="none" stroke="#fb7185" stroke-width="2" stroke-linecap="round" />
-                            </svg>
-                        </div>
                     </div>
                 </section>
 
@@ -202,9 +217,6 @@
                     </div>
                     <div class="h-44 w-full relative">
                         <svg class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
-                            <line v-if="targets.protein > 0" x1="0" :y1="150 - (targets.protein * chartScale)" x2="300" :y2="150 - (targets.protein * chartScale)" stroke="#22c55e" stroke-width="2" stroke-dasharray="6 3" />
-                            <text v-if="targets.protein > 0" x="295" :y="145 - (targets.protein * chartScale)" text-anchor="end" font-size="6" fill="#22c55e" font-weight="black" class="uppercase">Goal: {{targets.protein}}g</text>
-
                             <g v-for="(day, index) in weeklyMacrosFull" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
                                 <rect :y="150 - day.p" width="28" :height="day.p" :fill="day.active ? '#3b82f6' : '#1e293b'" rx="2" class="bar-grow" />
                                 <rect :y="150 - day.p - day.c" width="28" :height="day.c" :fill="day.active ? '#10b981' : '#334155'" rx="2" class="bar-grow" style="animation-delay:0.1s" />
@@ -404,18 +416,16 @@
                 toast: { visible: false, title: '', message: '' },
                 
                 // DATA
-                allMetrics: [], // Stores full metric history for 30 days
+                allMetrics: [], 
                 weeklyLogs: [], rawWorkouts: [], bodyHistory: [],
                 bodyMetrics: { waist: null, chest: null, arms: null, thigh: null },
-                
-                // Targets (Keep for Chart calculations, but no longer editable here)
-                targets: { protein: 180, cals: 2500, carbs: 250, fat: 80 }, // Defaults, loaded from fetch
                 
                 // CHARTS
                 chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0}, 
                 vitals: { sleepPath: '', energyPath: '', rhrPath: '' }, // NEW
                 
-                latestRHR: '--',
+                latestRHR: '--', latestSleep: '--', latestEnergy: '--',
+                
                 isAnalyzing: false, analysis: null,
                 
                 // MOVEMENT ANALYSIS
@@ -609,10 +619,6 @@
                     // 2. Calculate Vitals Graph (Oldest -> Newest)
                     // Use all data points, even if weight is missing
                     this.calculateVitalsGraph([...data].reverse());
-                    
-                    // 3. Set latest target if available
-                    if (data[0].target_protein) this.targets.protein = data[0].target_protein;
-                    if (data[0].target_calories) this.targets.cals = data[0].target_calories;
                 }
             },
             
@@ -632,6 +638,12 @@
             },
             
             calculateVitalsGraph(data) {
+                // Latest Values
+                const latest = data[data.length-1];
+                this.latestRHR = latest.resting_hr || '--';
+                this.latestSleep = latest.sleep_quality || '--';
+                this.latestEnergy = latest.energy_level || '--';
+
                 if(data.length < 2) return;
                 
                 // Sleep (0-12) & Energy (0-10)
@@ -653,10 +665,6 @@
                 this.vitals.energyPath = energyPts.join(' ');
                 
                 // RHR Sparkline
-                // Find latest
-                const latest = data[data.length-1];
-                this.latestRHR = latest.resting_hr || '--';
-                
                 const rhrVals = data.map(d => d.resting_hr).filter(v => v);
                 if(rhrVals.length > 1) {
                     const min = Math.min(...rhrVals) - 5;
