@@ -39,6 +39,7 @@
         .droplet-active { 
             fill: #3b82f6; 
             stroke: #3b82f6; 
+            /* Drop shadow creates the glow, overflow-visible on SVG prevents clipping */
             filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.8)); 
         }
         .droplet-inactive { stroke: #334155; fill: transparent; }
@@ -110,24 +111,26 @@
         </div>
     </transition>
 
-    <header class="flex justify-between items-center mb-8">
+    <header class="flex justify-between items-start mb-8">
         <div>
-            <h1 class="text-3xl font-black italic text-white uppercase">{{ timeGreeting }}</h1>
-            <div class="flex flex-col">
-                <span class="text-[10px] text-slate-500 font-black uppercase tracking-widest">{{ currentDate }}</span>
-                <a href="gym.html" v-if="todaysWorkout" class="text-[10px] font-bold text-blue-400 uppercase tracking-wider mt-1 flex items-center gap-1 hover:text-blue-300">
+            <h1 class="text-3xl font-black italic text-white uppercase mb-1">{{ timeGreeting }}</h1>
+            <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-slate-500 font-black uppercase tracking-widest">{{ currentDate }}</span>
+                    <div v-if="streak > 0" class="flex items-center gap-1 bg-orange-500/10 border border-orange-500/20 px-1.5 py-0.5 rounded-md">
+                        <i data-lucide="flame" class="w-3 h-3 text-orange-500 streak-fire fill-orange-500"></i>
+                        <span class="text-[9px] font-black text-white italic">{{ streak }}</span>
+                    </div>
+                </div>
+                
+                <a href="gym.html" v-if="todaysWorkout" class="text-[10px] font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1 hover:text-blue-300">
                     <i data-lucide="crosshair" class="w-3 h-3"></i> Protocol: {{ todaysWorkout }}
                 </a>
-                <span v-else class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mt-1">Rest Day Protocol</span>
+                <span v-else class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Rest Day Protocol</span>
             </div>
         </div>
         
-        <div class="flex items-center gap-3">
-            <div v-if="streak > 0" class="glass px-3 py-1 rounded-full flex items-center gap-2 border-orange-500/20">
-                <i data-lucide="flame" class="w-4 h-4 text-orange-500 streak-fire fill-orange-500"></i>
-                <span class="text-lg font-black text-white italic">{{ streak }}</span>
-            </div>
-
+        <div class="flex items-center gap-2">
             <button @click="showSettingsModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-white">
                 <i data-lucide="settings" class="w-5 h-5"></i>
             </button>
@@ -140,6 +143,19 @@
 
     <main class="space-y-6">
         
+        <div v-if="resumeSessionName" class="fixed bottom-24 left-6 right-6 z-[90]">
+            <a href="workout.html" class="flex items-center justify-between bg-blue-600/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/10 shadow-blue-900/20 active:scale-95 transition-all">
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+                    <div>
+                        <div class="text-[10px] font-black uppercase tracking-widest text-blue-200">Session in Progress</div>
+                        <div class="text-sm font-bold text-white italic">{{ resumeSessionName }}</div>
+                    </div>
+                </div>
+                <i data-lucide="chevron-right" class="w-5 h-5 text-white"></i>
+            </a>
+        </div>
+
         <div v-if="lowStockItems.length > 0" class="glass p-4 rounded-2xl border border-red-500/30 bg-red-900/10 flex items-center gap-4 relative overflow-hidden">
             <div class="absolute inset-0 border border-red-500/20 rounded-2xl animate-pulse"></div>
             <div class="w-10 h-10 rounded-xl bg-red-500/20 flex flex-shrink-0 items-center justify-center text-red-500 z-10">
@@ -196,7 +212,7 @@
                      xmlns="http://www.w3.org/2000/svg" 
                      viewBox="0 0 24 24" 
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                     class="w-7 h-7 cursor-pointer droplet-fill transition-all active:scale-90"
+                     class="w-7 h-7 cursor-pointer droplet-fill transition-all active:scale-90 overflow-visible"
                      :class="n <= (metrics.water_intake || 0) ? 'droplet-active' : 'droplet-inactive'">
                     <path d="M12 22a7 7 0 0 0 7-7c0-2-6-9-7-10.32L12 4.68 5 15a7 7 0 0 0 7 7Z"/>
                 </svg>
@@ -288,8 +304,8 @@
                 session: null,
                 reportSaved: false,
                 logoutModal: false,
-                showSettingsModal: false, // NEW
-                profile: { full_name: '', initials: '' }, // NEW
+                showSettingsModal: false, 
+                profile: { full_name: '', initials: '' }, 
                 metrics: {
                     id: null,
                     weight: null,
@@ -305,6 +321,7 @@
                 totalVolume: 0,
                 streak: 0, 
                 lowStockItems: [], 
+                resumeSessionName: null, // NEW
                 toast: { visible: false, title: '', message: '' }
             } 
         },
@@ -336,6 +353,19 @@
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
+
+            // Check for active session for banner
+            const saved = localStorage.getItem('constellation_active_session');
+            if (saved) { 
+                try { 
+                    const parsed = JSON.parse(saved); 
+                    if (parsed.activeRoutine && parsed.activeRoutine.name) { 
+                        this.resumeSessionName = parsed.activeRoutine.name; 
+                    } 
+                } catch (e) { 
+                    localStorage.removeItem('constellation_active_session'); 
+                } 
+            }
             
             await Promise.all([
                 this.fetchMetrics(),
@@ -345,7 +375,7 @@
                 this.fetchSchedule(),
                 this.fetchStreak(),
                 this.fetchLowStock(),
-                this.fetchProfile() // NEW
+                this.fetchProfile() 
             ]);
             
             this.$nextTick(() => lucide.createIcons());
@@ -407,7 +437,6 @@
                 
                 this.lowStockItems = data || [];
             },
-            // NEW: Profile Management
             async fetchProfile() {
                 const { data } = await _client.from('profiles').select('full_name, initials').eq('id', this.session.user.id).single();
                 if (data) {
