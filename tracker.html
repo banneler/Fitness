@@ -37,7 +37,7 @@
         
         .matrix-cell { aspect-ratio: 1/1; border-radius: 6px; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.01); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
         .matrix-active { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3); color: #22c55e; }
-        .matrix-future { opacity: 0.2; border-style: dashed; } /* New style for future days */
+        .matrix-future { opacity: 0.2; border-style: dashed; }
 
         .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
@@ -154,34 +154,6 @@
                     </div>
                 </section>
 
-                <section class="glass p-6 rounded-[2.5rem] shadow-xl">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex items-center gap-2 opacity-60">
-                            <i data-lucide="target" class="w-4 h-4 text-green-400"></i>
-                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Neural Targets</h3>
-                        </div>
-                        <button @click="showTargetModal = true" class="text-[8px] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white transition-colors">Adjust Goals</button>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein Goal</span>
-                            <span class="text-xl font-black italic">{{ targets.protein }}g</span>
-                        </div>
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calorie Goal</span>
-                            <span class="text-xl font-black italic">{{ targets.cals }}</span>
-                        </div>
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Carb Goal</span>
-                            <span class="text-xl font-black italic">{{ targets.carbs }}g</span>
-                        </div>
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Fat Goal</span>
-                            <span class="text-xl font-black italic">{{ targets.fat }}g</span>
-                        </div>
-                    </div>
-                </section>
-
                 <section class="glass p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
                     <div class="flex justify-between items-end mb-6">
                         <div class="flex items-center gap-2 opacity-60">
@@ -196,14 +168,10 @@
                     </div>
                     <div class="h-44 w-full relative">
                         <svg class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
-                            <line v-if="targets.protein > 0" x1="0" :y1="150 - (targets.protein * chartScale)" x2="300" :y2="150 - (targets.protein * chartScale)" stroke="#22c55e" stroke-width="2" stroke-dasharray="6 3" />
-                            <text v-if="targets.protein > 0" x="295" :y="145 - (targets.protein * chartScale)" text-anchor="end" font-size="6" fill="#22c55e" font-weight="black" class="uppercase">Goal: {{targets.protein}}g</text>
-
                             <g v-for="(day, index) in weeklyMacrosFull" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
                                 <rect :y="150 - day.p" width="28" :height="day.p" :fill="day.active ? '#3b82f6' : '#1e293b'" rx="2" class="bar-grow" />
                                 <rect :y="150 - day.p - day.c" width="28" :height="day.c" :fill="day.active ? '#10b981' : '#334155'" rx="2" class="bar-grow" style="animation-delay:0.1s" />
                                 <rect :y="150 - day.p - day.c - day.f" width="28" :height="day.f" :fill="day.active ? '#f59e0b' : '#475569'" rx="2" class="bar-grow" style="animation-delay:0.2s" />
-                                <rect v-if="day.isOver" :y="150 - day.p - day.c - day.f" width="28" :height="day.p + day.c + day.f" fill="#ef4444" fill-opacity="0.4" rx="2" class="bar-grow warning-overlay" />
                                 <text x="14" y="165" text-anchor="middle" font-size="8" :fill="day.isToday ? '#fff' : '#64748b'" font-weight="black" class="uppercase tracking-tighter">{{ day.label }}</text>
                             </g>
                         </svg>
@@ -365,34 +333,6 @@
         </main>
 
         <transition name="modal">
-            <div v-if="showTargetModal" class="fixed inset-0 z-[300] flex items-end justify-center p-4">
-                <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="showTargetModal = false"></div>
-                <div class="glass w-full max-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl">
-                    <h2 class="text-xl font-black italic uppercase text-white mb-6 tracking-tight">Sync Targets</h2>
-                    <div class="grid grid-cols-2 gap-4 mb-8">
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein (g)</span>
-                            <input type="number" v-model="targets.protein" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
-                        </div>
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calories</span>
-                            <input type="number" v-model="targets.cals" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
-                        </div>
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Carbs (g)</span>
-                            <input type="number" v-model="targets.carbs" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
-                        </div>
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                            <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Fat (g)</span>
-                            <input type="number" v-model="targets.fat" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
-                        </div>
-                    </div>
-                    <button @click="saveTargets" class="w-full py-5 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase shadow-lg active:scale-95 transition-all">Authorize Intelligence</button>
-                </div>
-            </div>
-        </transition>
-
-        <transition name="modal">
             <div v-if="logoutModal" class="fixed inset-0 z-[300] flex items-end justify-center p-4">
                 <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="logoutModal = false"></div>
                 <div class="glass w-full max-w-sm rounded-3xl p-6 relative border border-white/10 shadow-2xl">
@@ -422,12 +362,11 @@
     createApp({
         data() {
             return {
-                initialLoading: true, logoutModal: false, showTargetModal: false,
+                initialLoading: true, logoutModal: false,
                 view: 'intel', session: null, streak: 0,
                 toast: { visible: false, title: '', message: '' },
                 weightHistory: [], weeklyLogs: [], rawWorkouts: [], bodyHistory: [],
                 bodyMetrics: { waist: null, chest: null, arms: null, thigh: null },
-                targets: { protein: 180, cals: 2500, carbs: 250, fat: 80 },
                 chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0}, startDate: '',
                 isAnalyzing: false, analysis: null,
                 
@@ -451,7 +390,6 @@
                 return Math.max(...totals, 450); 
             },
             chartScale() { return 135 / this.globalMaxMacros; },
-            calculateProteinLineY() { return (this.targets.protein * this.chartScale) + 'px'; },
             // NEW: Weekly aligned matrix logic
             activityMatrix() {
                 const days = [];
@@ -534,8 +472,8 @@
                         p: p * this.chartScale, 
                         c: c * this.chartScale, 
                         f: f * this.chartScale, 
-                        active: p >= this.targets.protein, 
-                        isOver: totalCals > this.targets.cals, 
+                        active: p >= 0, // removed dependency on targets.protein
+                        isOver: false, // removed dependency on targets.cals
                         isToday: ds === new Date().toLocaleDateString('en-CA') 
                     });
                 }
@@ -562,9 +500,7 @@
                     return obj;
                 }, {});
             },
-            // NEW: Filtered flat list (if you preferred that, but we used grouped)
             filteredExercises() {
-                // Not used in the new template, can be removed, but harmless to keep
                 return this.library; 
             }
         },
@@ -577,7 +513,7 @@
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
-            await Promise.all([this.fetchWeight(), this.fetchWeeklyLogs(), this.fetchWorkouts(), this.fetchTargets(), this.fetchBodyHistory(), this.fetchLibrary()]);
+            await Promise.all([this.fetchWeight(), this.fetchWeeklyLogs(), this.fetchWorkouts(), this.fetchBodyHistory(), this.fetchLibrary()]);
             
             if (this.bodyHistory.length) {
                 const last = this.bodyHistory[this.bodyHistory.length - 1];
@@ -599,9 +535,7 @@
                 const { data } = await _client.from('exercises').select('*').order('name');
                 this.library = data || [];
             },
-            // Note: filterExercises() is replaced by computed property logic
             filterExercises() {
-               // No-op, handled by computed 'groupedLibrary' + v-model on input
                this.showMvmtList = true;
             },
             async selectMovement(ex) {
@@ -637,60 +571,6 @@
                 this.mvmtFillPath = `0,150 ${this.mvmtChartPath} 300,150`;
             },
             
-            async fetchTargets() {
-                const { data } = await _client.from('daily_metrics')
-                    .select('target_protein, target_calories, target_carbs, target_fat')
-                    .eq('user_id', this.session.user.id)
-                    .order('created_at', { ascending: false })
-                    .limit(1);
-                
-                if(data?.[0]) { 
-                    this.targets.protein = data[0].target_protein || 180; 
-                    this.targets.cals = data[0].target_calories || 2500;
-                    this.targets.carbs = data[0].target_carbs || 250;
-                    this.targets.fat = data[0].target_fat || 80;
-                }
-            },
-            
-            async saveTargets() {
-                const today = new Date().toLocaleDateString('en-CA');
-                const { data: existing } = await _client.from('daily_metrics')
-                    .select('id')
-                    .eq('user_id', this.session.user.id) 
-                    .gte('created_at', today)
-                    .order('created_at', { ascending: false })
-                    .limit(1);
-
-                let error;
-                const payload = { 
-                    target_protein: this.targets.protein, 
-                    target_calories: this.targets.cals,
-                    target_carbs: this.targets.carbs,
-                    target_fat: this.targets.fat
-                };
-
-                if(existing && existing.length > 0) {
-                    const { error: err } = await _client.from('daily_metrics').update(payload).eq('id', existing[0].id);
-                    error = err;
-                } else {
-                    const { error: err } = await _client.from('daily_metrics').insert([{ 
-                        user_id: this.session.user.id, 
-                        ...payload,
-                        weight: this.currentWeight !== '--' ? parseFloat(this.currentWeight) : null 
-                    }]);
-                    error = err;
-                }
-
-                if(!error) { 
-                    this.showTargetModal = false;
-                    this.showToast("Goals Synced", "Neural pathways updated.");
-                    await this.fetchTargets(); 
-                } else {
-                    console.error("Save failed:", error);
-                    alert("Could not save targets.");
-                }
-            },
-
             async runAnalysis() {
                 this.isAnalyzing = true;
                 try {
