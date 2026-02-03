@@ -67,6 +67,31 @@
     </transition>
 
     <transition name="modal">
+        <div v-if="showSettingsModal" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
+            <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="showSettingsModal = false"></div>
+            <div class="glass w-full max-w-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl">
+                <h2 class="text-xl font-black italic uppercase text-white mb-6">Profile Settings</h2>
+                
+                <div class="space-y-4 mb-8">
+                    <div class="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                        <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Display Name</span>
+                        <input type="text" v-model="profile.full_name" class="bg-transparent border-none text-lg font-bold w-full text-white p-0 focus:ring-0 placeholder-slate-700" placeholder="Your Name">
+                    </div>
+                    <div class="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                        <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Initials (For Leaderboard)</span>
+                        <input type="text" v-model="profile.initials" maxlength="2" class="bg-transparent border-none text-lg font-bold w-full text-white p-0 focus:ring-0 uppercase placeholder-slate-700" placeholder="XX">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <button @click="showSettingsModal = false" class="py-4 rounded-2xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">Cancel</button>
+                    <button @click="saveProfile" class="py-4 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase shadow-lg active:scale-95 transition-all">Save Identity</button>
+                </div>
+            </div>
+        </div>
+    </transition>
+
+    <transition name="modal">
         <div v-if="logoutModal" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
             <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="logoutModal = false"></div>
             <div class="glass w-full max-w-sm rounded-3xl p-6 relative border border-white/10 shadow-2xl">
@@ -102,6 +127,10 @@
                 <i data-lucide="flame" class="w-4 h-4 text-orange-500 streak-fire fill-orange-500"></i>
                 <span class="text-lg font-black text-white italic">{{ streak }}</span>
             </div>
+
+            <button @click="showSettingsModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-white">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
 
             <button @click="logoutModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
                 <i data-lucide="log-out" class="w-5 h-5"></i>
@@ -259,6 +288,8 @@
                 session: null,
                 reportSaved: false,
                 logoutModal: false,
+                showSettingsModal: false, // NEW
+                profile: { full_name: '', initials: '' }, // NEW
                 metrics: {
                     id: null,
                     weight: null,
@@ -272,8 +303,8 @@
                 proteinTarget: null,
                 proteinCurrent: 0,
                 totalVolume: 0,
-                streak: 0, // NEW
-                lowStockItems: [], // NEW
+                streak: 0, 
+                lowStockItems: [], 
                 toast: { visible: false, title: '', message: '' }
             } 
         },
@@ -312,8 +343,9 @@
                 this.fetchProtein(),
                 this.fetchVolume(),
                 this.fetchSchedule(),
-                this.fetchStreak(), // NEW
-                this.fetchLowStock() // NEW
+                this.fetchStreak(),
+                this.fetchLowStock(),
+                this.fetchProfile() // NEW
             ]);
             
             this.$nextTick(() => lucide.createIcons());
@@ -349,7 +381,6 @@
                     this.proteinTarget = data[0].target_protein;
                 }
             },
-            // NEW: Streak Logic
             async fetchStreak() {
                 const { data } = await _client.from('workout_logs').select('created_at').order('created_at', { ascending: false });
                 if (!data) return;
@@ -359,7 +390,6 @@
                 let today = new Date().toLocaleDateString('en-CA');
                 let yesterday = new Date(Date.now()-86400000).toLocaleDateString('en-CA');
                 
-                // If trained today or yesterday, streak is alive
                 if(dates.includes(today) || dates.includes(yesterday)) {
                     let d = dates.includes(today) ? new Date() : new Date(Date.now()-86400000);
                     while(dates.includes(d.toLocaleDateString('en-CA'))) { 
@@ -369,16 +399,34 @@
                 }
                 this.streak = s;
             },
-            // NEW: Low Inventory Logic
             async fetchLowStock() {
                 const { data } = await _client.from('inventory')
                     .select('id, item_name, servings_left')
                     .eq('user_id', this.session.user.id)
-                    .lt('servings_left', 5); // Warning threshold
+                    .lt('servings_left', 5);
                 
                 this.lowStockItems = data || [];
             },
-
+            // NEW: Profile Management
+            async fetchProfile() {
+                const { data } = await _client.from('profiles').select('full_name, initials').eq('id', this.session.user.id).single();
+                if (data) {
+                    this.profile = data;
+                }
+            },
+            async saveProfile() {
+                const { error } = await _client.from('profiles').update({
+                    full_name: this.profile.full_name,
+                    initials: this.profile.initials.toUpperCase()
+                }).eq('id', this.session.user.id);
+                
+                if (!error) {
+                    this.showToast("Identity Updated", "Profile settings saved.");
+                    this.showSettingsModal = false;
+                } else {
+                    this.showToast("Error", "Could not save profile.");
+                }
+            },
             async fetchMetrics() {
                 const today = new Date().toLocaleDateString('en-CA');
                 const { data: todayData } = await _client
