@@ -217,10 +217,16 @@
                     </div>
                     <div class="h-44 w-full relative">
                         <svg class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
+                            <line v-if="targets.protein > 0" x1="0" :y1="150 - (targets.protein * chartScale)" x2="300" :y2="150 - (targets.protein * chartScale)" stroke="#22c55e" stroke-width="2" stroke-dasharray="6 3" />
+                            <text v-if="targets.protein > 0" x="295" :y="145 - (targets.protein * chartScale)" text-anchor="end" font-size="6" fill="#22c55e" font-weight="black" class="uppercase">Goal: {{targets.protein}}g</text>
+
                             <g v-for="(day, index) in weeklyMacrosFull" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
                                 <rect :y="150 - day.p" width="28" :height="day.p" :fill="day.active ? '#3b82f6' : '#1e293b'" rx="2" class="bar-grow" />
                                 <rect :y="150 - day.p - day.c" width="28" :height="day.c" :fill="day.active ? '#10b981' : '#334155'" rx="2" class="bar-grow" style="animation-delay:0.1s" />
                                 <rect :y="150 - day.p - day.c - day.f" width="28" :height="day.f" :fill="day.active ? '#f59e0b' : '#475569'" rx="2" class="bar-grow" style="animation-delay:0.2s" />
+                                
+                                <rect v-if="day.isOver" :y="150 - day.p - day.c - day.f" width="28" :height="day.p + day.c + day.f" fill="#ef4444" fill-opacity="0.4" rx="2" class="bar-grow warning-overlay" />
+                                
                                 <text x="14" y="165" text-anchor="middle" font-size="8" :fill="day.isToday ? '#fff' : '#64748b'" font-weight="black" class="uppercase tracking-tighter">{{ day.label }}</text>
                             </g>
                         </svg>
@@ -420,12 +426,14 @@
                 weeklyLogs: [], rawWorkouts: [], bodyHistory: [],
                 bodyMetrics: { waist: null, chest: null, arms: null, thigh: null },
                 
+                // Targets (Loaded via fetch, used for graph logic)
+                targets: { protein: 180, cals: 2500, carbs: 250, fat: 80 },
+                
                 // CHARTS
                 chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0}, 
-                vitals: { sleepPath: '', energyPath: '', rhrPath: '' }, // NEW
+                vitals: { sleepPath: '', energyPath: '', rhrPath: '' },
                 
                 latestRHR: '--', latestSleep: '--', latestEnergy: '--',
-                
                 isAnalyzing: false, analysis: null,
                 
                 // MOVEMENT ANALYSIS
@@ -451,7 +459,6 @@
                 return Math.max(...totals, 450); 
             },
             chartScale() { return 135 / this.globalMaxMacros; },
-            // NEW: Weekly aligned matrix logic
             activityMatrix() {
                 const days = [];
                 const now = new Date();
@@ -497,6 +504,7 @@
                 });
                 return sessions.slice(0, 10);
             },
+            // RESTORED: Logic for chart coloring
             weeklyMacrosFull() {
                 const days = [];
                 for(let i=6; i>=0; i--) {
@@ -511,7 +519,9 @@
                     days.push({ 
                         label: d.toLocaleDateString('en-US', {weekday:'narrow'}), 
                         p: p * this.chartScale, c: c * this.chartScale, f: f * this.chartScale, 
-                        active: p >= 0, isOver: false, isToday: ds === new Date().toLocaleDateString('en-CA') 
+                        active: p >= this.targets.protein, // Restored
+                        isOver: totalCals > this.targets.cals, // Restored
+                        isToday: ds === new Date().toLocaleDateString('en-CA') 
                     });
                 }
                 return days;
@@ -599,8 +609,6 @@
                 const { error } = await _client.from('body_metrics').insert([{ user_id: this.session.user.id, waist: parseFloat(this.bodyMetrics.waist), chest: parseFloat(this.bodyMetrics.chest), arms: parseFloat(this.bodyMetrics.arms), thigh: parseFloat(this.bodyMetrics.thigh) }]);
                 if(!error) { await this.fetchBodyHistory(); this.showToast("Saved", "Biometrics registry updated."); }
             },
-            
-            // UPDATED: Fetch EVERYTHING for the last 30 days
             async fetchDailyMetrics() {
                 const { data } = await _client.from('daily_metrics')
                     .select('*')
@@ -609,19 +617,20 @@
                     .limit(30);
                     
                 if (data?.length) { 
-                    this.allMetrics = data; // Store raw data
+                    this.allMetrics = data;
                     
-                    // 1. Calculate Weight Graph (Oldest -> Newest)
-                    // Must filter out null weights so graph doesn't drop to 0
+                    // 1. Weight Graph
                     const weightData = [...data].reverse().filter(d => d.weight);
                     this.calculateWeightGraph(weightData); 
                     
-                    // 2. Calculate Vitals Graph (Oldest -> Newest)
-                    // Use all data points, even if weight is missing
+                    // 2. Vitals Graph
                     this.calculateVitalsGraph([...data].reverse());
+                    
+                    // 3. Targets (for graph logic)
+                    if (data[0].target_protein) this.targets.protein = data[0].target_protein;
+                    if (data[0].target_calories) this.targets.cals = data[0].target_calories;
                 }
             },
-            
             calculateWeightGraph(data) {
                 const weights = data.map(d => d.weight);
                 if (weights.length === 0) { this.chartPath = ''; return; }
@@ -630,15 +639,12 @@
                 const min = Math.min(...weights) - 1;
                 const max = Math.max(...weights) + 1;
                 const range = max - min || 1;
-                
                 const points = weights.map((w, i) => ({ x: (i / (weights.length - 1)) * 300, y: 150 - ((w - min) / range * 150) }));
                 this.chartPath = points.map(p => `${p.x},${p.y}`).join(' ');
                 this.chartFillPath = `0,150 ${this.chartPath} 300,150`;
                 this.lastPoint = points[points.length - 1];
             },
-            
             calculateVitalsGraph(data) {
-                // Latest Values
                 const latest = data[data.length-1];
                 this.latestRHR = latest.resting_hr || '--';
                 this.latestSleep = latest.sleep_quality || '--';
@@ -646,8 +652,6 @@
 
                 if(data.length < 2) return;
                 
-                // Sleep (0-12) & Energy (0-10)
-                // Map to Y: 0 (top/max) to 100 (bottom/min)
                 const sleepPts = data.map((d, i) => {
                     const s = d.sleep_quality || 0;
                     const x = (i / (data.length - 1)) * 300;
@@ -664,7 +668,6 @@
                 });
                 this.vitals.energyPath = energyPts.join(' ');
                 
-                // RHR Sparkline
                 const rhrVals = data.map(d => d.resting_hr).filter(v => v);
                 if(rhrVals.length > 1) {
                     const min = Math.min(...rhrVals) - 5;
@@ -672,13 +675,12 @@
                     const range = max - min || 1;
                     const rhrPts = rhrVals.map((v, i) => {
                         const x = (i / (rhrVals.length - 1)) * 100;
-                        const y = 40 - ((v - min) / range * 40); // 40px height
+                        const y = 40 - ((v - min) / range * 40);
                         return `${x},${y}`;
                     });
                     this.vitals.rhrPath = rhrPts.join(' ');
                 }
             },
-            
             async fetchWeeklyLogs() {
                 const { data } = await _client.from('food_logs').select('*').gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]);
                 this.weeklyLogs = data || [];
