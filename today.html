@@ -6,7 +6,7 @@
     <title>Today | Constellation</title>
 
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Constellation">
     <link rel="manifest" href="manifest.json">
@@ -34,8 +34,14 @@
         .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
         
+        /* Fixed Water Droplet Glow */
         .droplet-fill { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .droplet-active { fill: #3b82f6; stroke: #3b82f6; filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6)); transform: scale(1.1); }
+        .droplet-active { 
+            fill: #3b82f6; 
+            stroke: #3b82f6; 
+            /* Changed from scale to drop-shadow to fix square clipping */
+            filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.8)); 
+        }
         .droplet-inactive { stroke: #334155; fill: transparent; }
     </style>
 </head>
@@ -271,6 +277,7 @@
             
             await Promise.all([
                 this.fetchMetrics(),
+                this.fetchTargets(), // NEW: Fetch custom targets
                 this.fetchProtein(),
                 this.fetchVolume(),
                 this.fetchSchedule()
@@ -298,8 +305,21 @@
                     this.todaysWorkout = data.routines.name;
                 }
             },
+            
+            // NEW: Fetch Targets Logic (Copied from Tracker)
+            async fetchTargets() {
+                const { data } = await _client.from('daily_metrics')
+                    .select('target_protein')
+                    .eq('user_id', this.session.user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (data && data[0] && data[0].target_protein) {
+                    this.proteinTarget = data[0].target_protein;
+                }
+            },
+
             async fetchMetrics() {
-                // FIXED: Use Local Date string to ensure "Today" matches user perception
                 const today = new Date().toLocaleDateString('en-CA');
                 const { data: todayData } = await _client
                     .from('daily_metrics')
@@ -333,7 +353,6 @@
                 }
             },
             async fetchProtein() {
-                // FIXED: Use Local Date string
                 const today = new Date().toLocaleDateString('en-CA');
                 const { data } = await _client.from('food_logs').select('protein').gte('created_at', today);
                 if (data) {
@@ -341,7 +360,6 @@
                 }
             },
             async fetchVolume() {
-                // FIXED: Use Local Date string to match user's morning workout
                 const today = new Date().toLocaleDateString('en-CA');
                 const { data } = await _client.from('workout_logs').select('sets_data').gte('created_at', today);
                 if (data) {
