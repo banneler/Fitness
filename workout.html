@@ -12,13 +12,13 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         [v-cloak] { display: none !important; }
-        body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+        /* CHANGED: Removed overscroll-behavior-y: none to match gym.html fix */
+        body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
         
         .glass-solid { background: #020617; border-bottom: 1px solid rgba(255,255,255,0.08); }
         .glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
         
         .pt-safe-top { padding-top: env(safe-area-inset-top); }
-        /* FIX: Added Safe Area Bottom class to match gym.html */
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -50,9 +50,9 @@
     </style>
 </head>
 <body class="font-sans antialiased bg-slate-950">
-<div id="app" v-cloak class="h-[100dvh] w-screen flex flex-col overflow-hidden">
+<div id="app" v-cloak class="min-h-screen flex flex-col bg-slate-950">
     
-    <div class="glass-solid p-4 pt-safe-top z-30 shadow-2xl flex-none">
+    <div class="fixed top-0 left-0 right-0 glass-solid p-4 pt-safe-top z-40 shadow-2xl">
         <div class="flex justify-between items-center">
             <div>
                 <div class="flex items-center gap-2 mb-1">
@@ -65,7 +65,7 @@
         </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-6 scroll-smooth" id="session-container">
+    <div class="flex-1 p-4 space-y-6 pt-24 pb-32 scroll-smooth" id="session-container">
         <div v-for="(group, groupIdx) in activeRoutine.data" 
              :key="groupIdx" 
              :id="'cluster-' + groupIdx"
@@ -130,10 +130,9 @@
                 </div>
             </div>
         </div>
-        <div class="h-10"></div>
     </div>
 
-    <div class="glass flex-none px-6 py-4 safe-area-bottom z-30">
+    <div class="fixed bottom-0 left-0 right-0 glass px-6 py-4 safe-area-bottom z-40">
         <div class="grid grid-cols-4 gap-2 mb-3">
             <button @click="prevExercise" :disabled="activeExerciseIdx === 0" class="col-span-1 h-12 rounded-2xl bg-slate-800/80 flex items-center justify-center text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
             <button v-if="activeExerciseIdx < activeRoutine.data.length - 1" @click="nextExercise" class="col-span-2 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black uppercase tracking-wider text-sm shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Next</button>
