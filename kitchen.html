@@ -323,10 +323,11 @@
                 logoutModal: false,
                 showAddSuppModal: false,
                 deleteSuppModal: null,
-                deleteFuelModal: null, // NEW
+                deleteFuelModal: null,
                 session: null, 
                 foodSearch: '', 
-                foodEntry: { cals: 0, protein: 0, carbs: 0, fat: 0 }, 
+                // CHANGED: Initialized to '' to show placeholders
+                foodEntry: { cals: '', protein: '', carbs: '', fat: '' }, 
                 memory: [], 
                 recentFoods: [], 
                 filteredMemory: [], 
@@ -375,22 +376,20 @@
                 this.toast.visible = true;
                 setTimeout(() => { this.toast.visible = false; }, 3000);
             },
-       async fetchTargets() {
-    // FIXED: Removed strict NULL checks so we get the latest row regardless
-    const { data } = await _client.from('daily_metrics')
-        .select('target_calories, target_protein, target_carbs, target_fat')
-        .eq('user_id', this.session.user.id) // Ensure we get YOUR targets
-        .order('created_at', { ascending: false })
-        .limit(1);
+            async fetchTargets() {
+                const { data } = await _client.from('daily_metrics')
+                    .select('target_calories, target_protein, target_carbs, target_fat')
+                    .eq('user_id', this.session.user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
 
-    if (data && data[0]) {
-        // Use database values, falling back to defaults only if genuinely missing
-        this.targets.cals = data[0].target_calories || 2500;
-        this.targets.protein = data[0].target_protein || 180;
-        this.targets.carbs = data[0].target_carbs || 250;
-        this.targets.fat = data[0].target_fat || 80;
-    }
-},
+                if (data && data[0]) {
+                    this.targets.cals = data[0].target_calories || 2500;
+                    this.targets.protein = data[0].target_protein || 180;
+                    this.targets.carbs = data[0].target_carbs || 250;
+                    this.targets.fat = data[0].target_fat || 80;
+                }
+            },
             async initMemory() {
                 const { data } = await _client.from('food_memory').select('*').order('use_count', { ascending: false });
                 this.memory = data || [];
@@ -432,21 +431,32 @@
                 this.showMemory = false;
             },
             async saveFood() {
-                if(!this.foodSearch) return;
-                const { error } = await _client.from('food_logs').insert([{ 
-                    food_name: this.foodSearch, 
-                    calories: this.foodEntry.cals, 
-                    protein: this.foodEntry.protein, 
-                    carbs: this.foodEntry.carbs, 
-                    fat: this.foodEntry.fat, 
+                if(!this.foodSearch) {
+                    this.showToast("Enter a food name");
+                    return;
+                }
+                
+                // FIXED: Explicitly parsing numbers to avoid string rejection
+                const payload = { 
+                    food_name: this.foodSearch.trim(), 
+                    calories: parseFloat(this.foodEntry.cals) || 0, 
+                    protein: parseFloat(this.foodEntry.protein) || 0, 
+                    carbs: parseFloat(this.foodEntry.carbs) || 0, 
+                    fat: parseFloat(this.foodEntry.fat) || 0, 
                     user_id: this.session.user.id 
-                }]);
+                };
+
+                const { error } = await _client.from('food_logs').insert([payload]);
                 
                 if(!error) {
                     this.showToast("Fuel Sequence Logged");
                     this.foodSearch = '';
-                    this.foodEntry = { cals: 0, protein: 0, carbs: 0, fat: 0 };
+                    this.foodEntry = { cals: '', protein: '', carbs: '', fat: '' };
+                    this.showMemory = false;
                     await Promise.all([this.fetchDailyLogs(), this.fetchRecentFoods()]);
+                } else {
+                    console.error("Save Error:", error);
+                    this.showToast("Error saving data");
                 }
             },
             openDeleteFuelModal(log) {
