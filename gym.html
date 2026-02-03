@@ -357,8 +357,13 @@
             async confirmLogout() { await _client.auth.signOut(); window.location.href = 'index.html'; },
             
             // NEW: Get all routines (removed user_id filter)
-            async fetchRoutines() { const { data } = await _client.from('routines').select('*').order('created_at'); this.routines = data || []; },
-            
+           async fetchRoutines() { 
+    const { data } = await _client
+        .from('routines')
+        .select('*, profiles(initials)') // <--- The Magic Change
+        .order('created_at'); 
+    this.routines = data || []; 
+},
             async fetchExercises() { const { data } = await _client.from('exercises').select('*').order('name'); this.libraryExercises = data || []; },
             async fetchSchedule() { const { data } = await _client.from('schedule').select('*, routines(name, icon_name)').eq('user_id', this.session.user.id); this.schedule = data || []; },
             async fetchHistory() {
@@ -427,13 +432,17 @@
             
             // NEW: Generate initials for author badge
             getAuthorInitials(routine) {
-                if(routine.user_id === this.session.user.id) return "ME";
-                // Fallback: Generate 2 letters from ID hash
-                const id = routine.user_id || "XX";
-                const c1 = id.charCodeAt(0) % 26 + 65;
-                const c2 = id.charCodeAt(id.length-1) % 26 + 65;
-                return String.fromCharCode(c1) + String.fromCharCode(c2);
-            },
+    // 1. Is it me?
+    if (routine.user_id === this.session.user.id) return "ME";
+    
+    // 2. Do we have real initials from the database?
+    if (routine.profiles && routine.profiles.initials) {
+        return routine.profiles.initials;
+    }
+
+    // 3. Fallback (Just in case)
+    return "??";
+},
 
             async prepAndLaunchSession(routine) {
                 this.loading = true; this.loadingText = "Initializing...";
