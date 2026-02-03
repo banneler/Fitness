@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#020617">
     <title>Builder | Constellation</title>
 
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
 
@@ -20,8 +21,9 @@
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
         
-        /* Glassmorphism Base */
+        /* Layout */
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .pt-safe-offset { padding-top: calc(env(safe-area-inset-top) + 20px); }
         
         /* Drag & Drop Visuals */
         .drag-handle { cursor: grab; touch-action: none; padding: 1rem; margin: -0.5rem; display: flex; align-items: center; justify-content: center; color: #64748b; transition: color 0.2s; }
@@ -51,7 +53,7 @@
     </style>
 </head>
 <body class="font-sans antialiased">
-<div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32">
+<div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32 pt-safe-offset">
 
     <div v-if="loading" class="loading-mask">
         <div class="animate-pulse flex flex-col items-center gap-4">
@@ -155,6 +157,20 @@
                 <div v-if="showLibrary" class="space-y-3 pt-2">
                     <input type="text" v-model="search" placeholder="Filter library..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-blue-500 transition-colors">
                     
+                    <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                        <button @click="activeFilter = null" 
+                                :class="!activeFilter ? 'bg-blue-600 text-white' : 'bg-slate-900 border border-white/10 text-slate-400 hover:text-white'" 
+                                class="flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all">
+                            All
+                        </button>
+                        <button v-for="m in muscleGroups" :key="m" 
+                                @click="activeFilter = (activeFilter === m ? null : m)" 
+                                :class="activeFilter === m ? 'bg-blue-600 text-white' : 'bg-slate-900 border border-white/10 text-slate-400 hover:text-white'" 
+                                class="flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all">
+                            {{ m }}
+                        </button>
+                    </div>
+
                     <div class="space-y-4 max-h-64 overflow-y-auto pr-1">
                         <div v-for="(groupExercises, groupName) in groupedLibrary" :key="groupName">
                             <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1 sticky top-0 bg-[#0f172a] py-1 z-10">{{ groupName }}</h4>
@@ -331,6 +347,7 @@
                 activeTab: 'routine', // 'routine' or 'exercise'
                 showLibrary: false,
                 search: '',
+                activeFilter: null, // NEW: Muscle Group Filter
                 toast: { visible: false, title: '', message: '' },
                 
                 // Data Stores
@@ -357,16 +374,23 @@
                     weight_type: 'combined',
                     is_bodyweight: false, 
                     is_static: false,
-                    static_weight: null // NEW FIELD
+                    static_weight: null 
                 }
             }
         },
         computed: {
             groupedLibrary() {
                 let filtered = this.library;
+                
+                // NEW: Muscle Filter Logic
+                if (this.activeFilter) {
+                    filtered = filtered.filter(ex => ex.muscle_group === this.activeFilter);
+                }
+                
+                // Search Logic
                 if(this.search) {
                     const s = this.search.toLowerCase();
-                    filtered = this.library.filter(ex => ex.name.toLowerCase().includes(s));
+                    filtered = filtered.filter(ex => ex.name.toLowerCase().includes(s));
                 }
                 
                 // Group By Logic
@@ -496,9 +520,14 @@
                     id: id,
                     uniqueKey: Math.random().toString(36).substring(2, 15)
                 });
-                this.showLibrary = false;
-                this.search = '';
-                this.$nextTick(() => this.initSortable());
+                
+                // NEW: Do NOT close library. Keep user in flow.
+                // this.showLibrary = false; <-- REMOVED
+                
+                this.$nextTick(() => {
+                    this.initSortable();
+                    this.showToast("Added", "Exercise added to sequence");
+                });
             },
 
             removeExercise(idx) {
