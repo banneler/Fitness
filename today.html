@@ -34,15 +34,21 @@
         .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
         
-        /* Fixed Water Droplet Glow */
+        /* Water Droplet Glow */
         .droplet-fill { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .droplet-active { 
             fill: #3b82f6; 
             stroke: #3b82f6; 
-            /* Changed from scale to drop-shadow to fix square clipping */
             filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.8)); 
         }
         .droplet-inactive { stroke: #334155; fill: transparent; }
+
+        /* Streak Fire Animation */
+        @keyframes pulse-orange {
+            0%, 100% { filter: drop-shadow(0 0 5px #f97316); }
+            50% { filter: drop-shadow(0 0 15px #f97316); }
+        }
+        .streak-fire { animation: pulse-orange 2s infinite; }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -90,23 +96,46 @@
                 <span v-else class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mt-1">Rest Day Protocol</span>
             </div>
         </div>
-        <button @click="logoutModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
-            <i data-lucide="log-out" class="w-5 h-5"></i>
-        </button>
+        
+        <div class="flex items-center gap-3">
+            <div v-if="streak > 0" class="glass px-3 py-1 rounded-full flex items-center gap-2 border-orange-500/20">
+                <i data-lucide="flame" class="w-4 h-4 text-orange-500 streak-fire fill-orange-500"></i>
+                <span class="text-lg font-black text-white italic">{{ streak }}</span>
+            </div>
+
+            <button @click="logoutModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+            </button>
+        </div>
     </header>
 
     <main class="space-y-6">
         
+        <div v-if="lowStockItems.length > 0" class="glass p-4 rounded-2xl border border-red-500/30 bg-red-900/10 flex items-center gap-4 relative overflow-hidden">
+            <div class="absolute inset-0 border border-red-500/20 rounded-2xl animate-pulse"></div>
+            <div class="w-10 h-10 rounded-xl bg-red-500/20 flex flex-shrink-0 items-center justify-center text-red-500 z-10">
+                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+            </div>
+            <div class="z-10">
+                <h4 class="text-xs font-black italic text-red-400 uppercase tracking-wider mb-1">Supply Critical</h4>
+                <div class="flex flex-wrap gap-2">
+                    <span v-for="item in lowStockItems" :key="item.id" class="text-[9px] font-bold uppercase bg-red-500/20 text-red-200 px-2 py-0.5 rounded text-nowrap">
+                        {{ item.item_name }} ({{ item.servings_left }})
+                    </span>
+                </div>
+            </div>
+        </div>
+
         <div class="grid grid-cols-2 gap-4">
             <div class="glass p-5 rounded-3xl border-t-4" :class="proteinLeft <= 0 ? 'border-t-green-500' : 'border-t-blue-500'">
                 <div class="flex items-center gap-2 mb-3 opacity-60">
                     <i data-lucide="utensils" class="w-4 h-4" :class="proteinLeft <= 0 ? 'text-green-400' : 'text-blue-400'"></i>
                     <span class="text-[9px] font-black uppercase tracking-widest">Fuel Target</span>
                 </div>
-               <div v-if="!proteinTarget || proteinLeft > 0">
-    <div class="text-3xl font-black italic text-white">{{ proteinTarget ? proteinLeft : '--' }}<span class="text-xs text-slate-500 not-italic ml-1">g</span></div>
-    <div class="text-[9px] text-slate-500 font-bold uppercase tracking-wide">Protein Remaining</div>
-</div>
+                <div v-if="!proteinTarget || proteinLeft > 0">
+                    <div class="text-3xl font-black italic text-white">{{ proteinTarget ? proteinLeft : '--' }}<span class="text-xs text-slate-500 not-italic ml-1">g</span></div>
+                    <div class="text-[9px] text-slate-500 font-bold uppercase tracking-wide">Protein Remaining</div>
+                </div>
                 <div v-else>
                     <div class="text-xl font-black italic text-green-400">GOAL HIT</div>
                     <div class="text-[9px] text-slate-500 font-bold uppercase tracking-wide">{{ proteinCurrent }}g Consumed</div>
@@ -243,6 +272,8 @@
                 proteinTarget: null,
                 proteinCurrent: 0,
                 totalVolume: 0,
+                streak: 0, // NEW
+                lowStockItems: [], // NEW
                 toast: { visible: false, title: '', message: '' }
             } 
         },
@@ -277,10 +308,12 @@
             
             await Promise.all([
                 this.fetchMetrics(),
-                this.fetchTargets(), // NEW: Fetch custom targets
+                this.fetchTargets(), 
                 this.fetchProtein(),
                 this.fetchVolume(),
-                this.fetchSchedule()
+                this.fetchSchedule(),
+                this.fetchStreak(), // NEW
+                this.fetchLowStock() // NEW
             ]);
             
             this.$nextTick(() => lucide.createIcons());
@@ -305,8 +338,6 @@
                     this.todaysWorkout = data.routines.name;
                 }
             },
-            
-            // NEW: Fetch Targets Logic (Copied from Tracker)
             async fetchTargets() {
                 const { data } = await _client.from('daily_metrics')
                     .select('target_protein')
@@ -317,6 +348,35 @@
                 if (data && data[0] && data[0].target_protein) {
                     this.proteinTarget = data[0].target_protein;
                 }
+            },
+            // NEW: Streak Logic
+            async fetchStreak() {
+                const { data } = await _client.from('workout_logs').select('created_at').order('created_at', { ascending: false });
+                if (!data) return;
+                
+                const dates = [...new Set(data.map(l => l.created_at.split('T')[0]))].sort().reverse();
+                let s = 0; 
+                let today = new Date().toLocaleDateString('en-CA');
+                let yesterday = new Date(Date.now()-86400000).toLocaleDateString('en-CA');
+                
+                // If trained today or yesterday, streak is alive
+                if(dates.includes(today) || dates.includes(yesterday)) {
+                    let d = dates.includes(today) ? new Date() : new Date(Date.now()-86400000);
+                    while(dates.includes(d.toLocaleDateString('en-CA'))) { 
+                        s++; 
+                        d.setDate(d.getDate()-1); 
+                    }
+                }
+                this.streak = s;
+            },
+            // NEW: Low Inventory Logic
+            async fetchLowStock() {
+                const { data } = await _client.from('inventory')
+                    .select('id, item_name, servings_left')
+                    .eq('user_id', this.session.user.id)
+                    .lt('servings_left', 5); // Warning threshold
+                
+                this.lowStockItems = data || [];
             },
 
             async fetchMetrics() {
