@@ -1,1 +1,349 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#020617">
+    <title>Active Session</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        [v-cloak] { display: none !important; }
+        body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+        .glass-solid { background: #020617; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .pt-safe-top { padding-top: env(safe-area-inset-top); }
+        .pb-safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Inputs */
+        .custom-checkbox { appearance: none; background-color: #1e293b; width: 1.5rem; height: 1.5rem; border-radius: 0.5rem; display: grid; place-content: center; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1); }
+        .custom-checkbox::before { content: ""; width: 0.75rem; height: 0.75rem; transform: scale(0); transition: 120ms transform ease-in-out; box-shadow: inset 1em 1em white; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
+        .custom-checkbox:checked { background-color: #3b82f6; border-color: #3b82f6; }
+        .custom-checkbox:checked::before { transform: scale(1); }
+        .failure-checkbox { appearance: none; width: 1.2rem; height: 1.2rem; background-color: #334155; -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain; mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain; transition: all 0.2s; }
+        .failure-checkbox:checked { background-color: #ef4444; filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.8)); }
+        /* Cards */
+        .exercise-card { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform, opacity, filter; }
+        .exercise-blurred { opacity: 0.3; filter: grayscale(100%); transform: scale(0.96); pointer-events: none; }
+        .exercise-active { opacity: 1; filter: none; transform: scale(1); border-color: rgba(59, 130, 246, 0.4); background: rgba(30, 41, 59, 0.6); box-shadow: 0 0 40px -10px rgba(59, 130, 246, 0.15); }
+        /* Wheel */
+        .picker-container { height: 200px; position: relative; mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent); display: flex; }
+        .wheel-col { flex: 1; overflow-y: scroll; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; text-align: center; }
+        .wheel-item { height: 50px; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.5rem; color: #64748b; transition: all 0.2s; }
+        .wheel-item-active { color: #3b82f6; font-size: 2rem; text-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+        .wheel-highlight { position: absolute; top: 50%; left: 0; right: 0; height: 50px; transform: translateY(-50%); border-top: 1px solid rgba(59, 130, 246, 0.3); border-bottom: 1px solid rgba(59, 130, 246, 0.3); pointer-events: none; background: rgba(59, 130, 246, 0.05); z-index: 10; }
+        /* Transitions */
+        .modal-enter-active, .modal-leave-active { transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(100%); }
+    </style>
+</head>
+<body class="font-sans antialiased bg-slate-950">
+<div id="app" v-cloak class="h-[100dvh] w-screen flex flex-col overflow-hidden">
+    
+    <div class="glass-solid p-4 pt-safe-top z-30 shadow-2xl flex-none">
+        <div class="flex justify-between items-center">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                    <span class="text-[10px] text-red-500 font-black uppercase tracking-widest">LIVE</span>
+                </div>
+                <h2 class="text-xl font-black italic uppercase leading-none">{{ activeRoutine.name }}</h2>
+            </div>
+            <div class="font-mono text-2xl font-bold text-slate-300 tracking-tight">{{ formatTimer(sessionTimer) }}</div>
+        </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-6 scroll-smooth" id="session-container">
+        <div v-for="(group, groupIdx) in activeRoutine.data" 
+             :key="groupIdx" 
+             :id="'cluster-' + groupIdx"
+             @click="activeExerciseIdx = groupIdx"
+             class="exercise-card rounded-3xl border border-white/5 relative p-1"
+             :class="activeExerciseIdx === groupIdx ? 'exercise-active' : 'exercise-blurred'">
+            
+            <div class="p-4">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center border border-white/10 shadow-lg">
+                            <i :data-lucide="group.exercises[0].icon || 'dumbbell'" class="w-5 h-5 text-blue-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-lg italic text-white leading-none mb-1">
+                                <span v-for="(ex, i) in group.exercises" :key="i">
+                                    {{ ex.name }}<span v-if="i < group.exercises.length - 1" class="text-slate-500"> + </span>
+                                    <button @click.stop="openSwapModal(groupIdx, i)" class="ml-1 text-slate-600 hover:text-blue-400 transition-colors"><i data-lucide="refresh-cw" class="w-3 h-3 inline"></i></button>
+                                </span>
+                            </h3>
+                            <div class="flex gap-2">
+                                <span class="text-[9px] font-bold uppercase text-slate-500 bg-slate-900 px-2 py-0.5 rounded tracking-wider">{{ isBodyWeight(group.exercises[0].weightType) ? 'Bodyweight' : (group.exercises[0].weightType === 'per_side' ? 'Per Side' : 'Total') }}</span>
+                                <span v-if="group.exercises[0].personalRecord > 0" class="text-[9px] font-bold uppercase text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded tracking-wider border border-yellow-500/20">PR: {{ group.exercises[0].personalRecord }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-[10px] font-black text-slate-700 bg-slate-900 px-2 py-1 rounded-lg">#{{ groupIdx + 1 }}</div>
+                </div>
+                
+                <div class="grid grid-cols-12 gap-2 text-[8px] text-slate-500 font-black uppercase tracking-widest mb-2 text-center">
+                    <div class="col-span-1">#</div>
+                    <div class="col-span-1">Ex</div>
+                    <div class="col-span-4">lbs</div>
+                    <div class="col-span-3">Reps</div>
+                    <div class="col-span-2">Done</div>
+                    <div class="col-span-1"><i data-lucide="skull" class="w-3 h-3 mx-auto"></i></div>
+                </div>
+
+                <template v-for="(n, i) in getMaxSets(group)" :key="i">
+                    <div v-for="(ex, exIdx) in group.exercises" :key="ex.id + '-' + i" class="grid grid-cols-12 gap-2 mb-2 items-center relative" :class="{'mt-3 pt-3 border-t border-white/5': i > 0 && exIdx === 0}">
+                        <div class="col-span-1 flex justify-center"><div class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[9px] font-bold text-slate-500">{{ i + 1 }}</div></div>
+                        <div class="col-span-1 flex justify-center"><i :data-lucide="ex.icon || 'dumbbell'" class="w-3 h-3 text-slate-600"></i></div>
+                        <div class="col-span-4" v-if="ex.sets[i]">
+                            <button v-if="!isBodyWeight(ex.weightType)" @click="openDualPicker(ex.sets[i], ex.weightType)" class="w-full bg-slate-950/50 border border-white/5 rounded-lg p-2.5 text-center font-bold text-sm text-white focus:ring-1 focus:ring-blue-500 transition-all hover:bg-slate-900 relative active:scale-95">
+                                <span v-if="ex.sets[i].weight !== ''">{{ ex.sets[i].weight }}</span>
+                                <span v-else class="text-slate-700">{{ ex.sets[i].prevWeight || '-' }}</span>
+                            </button>
+                            <div v-else class="w-full bg-slate-900/30 border border-white/5 rounded-lg p-2.5 text-center font-black text-[10px] text-slate-600 tracking-wider cursor-not-allowed">BW</div>
+                        </div>
+                        <div class="col-span-3" v-if="ex.sets[i]">
+                            <button @click="openDualPicker(ex.sets[i], ex.weightType)" class="w-full bg-slate-950/50 border border-white/5 rounded-lg p-2.5 text-center font-bold text-sm text-white focus:ring-1 focus:ring-blue-500 transition-all hover:bg-slate-900 relative active:scale-95">
+                                <span v-if="ex.sets[i].reps">{{ ex.sets[i].reps }}</span>
+                                <span v-else class="text-slate-700">{{ ex.sets[i].prevReps || '-' }}</span>
+                            </button>
+                        </div>
+                        <div class="col-span-2 flex justify-center" v-if="ex.sets[i]"><input type="checkbox" v-model="ex.sets[i].done" @change="haptic" class="custom-checkbox"></div>
+                        <div class="col-span-1 flex justify-center" v-if="ex.sets[i]"><input type="checkbox" v-model="ex.sets[i].failure" @change="haptic" class="failure-checkbox"></div>
+                    </div>
+                </template>
+                <div v-if="activeExerciseIdx === groupIdx" class="flex gap-2 mt-4">
+                     <button @click.stop="addSetToGroup(groupIdx)" class="flex-1 py-3 border border-dashed border-slate-700 rounded-xl text-[10px] text-slate-500 font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-500">+ Set</button>
+                </div>
+            </div>
+        </div>
+        <div class="h-10"></div>
+    </div>
+
+    <div class="glass flex-none p-4 z-30">
+        <div class="grid grid-cols-4 gap-2 mb-3">
+            <button @click="prevExercise" :disabled="activeExerciseIdx === 0" class="col-span-1 h-12 rounded-2xl bg-slate-800/80 flex items-center justify-center text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+            <button v-if="activeExerciseIdx < activeRoutine.data.length - 1" @click="nextExercise" class="col-span-2 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black uppercase tracking-wider text-sm shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Next</button>
+            <button v-else @click="finishModal = true" class="col-span-2 h-12 bg-green-600 rounded-2xl flex items-center justify-center text-white font-black uppercase tracking-wider text-sm shadow-lg shadow-green-900/20 active:scale-95 transition-all">Finish</button>
+            <button @click="toggleRestTimer" :class="restTimerRunning ? 'bg-red-500/20 border-red-500/50' : 'bg-slate-800/80 text-slate-400 border-transparent'" class="col-span-1 h-12 rounded-2xl flex items-center justify-center transition-all relative active:scale-95 border group">
+                <span v-if="restTimerRunning" class="absolute inset-0 rounded-2xl bg-red-500/20 animate-pulse z-0"></span>
+                <span v-if="restTimerRunning" class="relative z-10 font-mono font-black text-lg text-white drop-shadow-md">{{ formatTimer(restTimer) }}</span>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 z-10 relative"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
+            </button>
+        </div>
+        <button @click="exitModal = true" class="w-full py-2 text-[10px] text-slate-500 font-black uppercase hover:text-white transition-colors">Exit Workout</button>
+    </div>
+
+    <transition name="modal">
+        <div v-if="finishModal" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
+            <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="finishModal = false"></div>
+            <div class="glass w-full max-w-sm rounded-3xl p-6 relative border border-green-500/20 shadow-2xl">
+                <div class="flex flex-col items-center mb-6">
+                    <div class="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20 mb-4 shadow-[0_0_20px_rgba(34,197,94,0.2)]"><i data-lucide="trophy" class="w-8 h-8"></i></div>
+                    <h2 class="text-2xl font-black italic uppercase text-center text-white">Session Complete</h2>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{{ activeRoutine.name }} • {{ formatTimer(sessionTimer) }}</p>
+                </div>
+                <label class="flex items-center gap-3 p-4 bg-slate-900/50 rounded-xl mb-6 cursor-pointer border border-white/5">
+                    <div class="relative"><input type="checkbox" v-model="stackTaken" @change="haptic" class="sr-only peer"><div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div></div>
+                    <span class="text-[10px] font-black uppercase tracking-widest flex-1"><span class="block text-slate-400">Inventory</span><span :class="stackTaken ? 'text-purple-400' : 'text-slate-600'">Log Stack Consumption?</span></span>
+                </label>
+                <div class="space-y-3">
+                    <button @click="confirmFinishSession" class="w-full py-4 rounded-xl bg-green-600 text-white font-black text-sm uppercase shadow-lg shadow-green-900/20 hover:bg-green-500 transition-all active:scale-95">Save Workout</button>
+                    <button @click="finishModal = false" class="w-full py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">Resume Training</button>
+                </div>
+            </div>
+        </div>
+    </transition>
+
+    <transition name="modal">
+        <div v-if="exitModal" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
+            <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="exitModal = false"></div>
+            <div class="glass w-full max-w-sm rounded-3xl p-6 relative border border-red-500/20 shadow-2xl">
+                <div class="flex flex-col items-center mb-6">
+                    <div class="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 border border-red-500/20 mb-4"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div>
+                    <h2 class="text-xl font-black italic uppercase text-center text-white">Exit Session?</h2>
+                    <p class="text-xs text-slate-500 font-bold text-center mt-2">Unsaved progress will be permanently lost.</p>
+                </div>
+                <div class="space-y-3">
+                    <button @click="confirmFinishSession" class="w-full py-3 rounded-xl bg-slate-800 text-green-500 font-black text-xs uppercase hover:bg-slate-700">Save & Finish</button>
+                    <button @click="discardSession" class="w-full py-3 rounded-xl bg-red-600 text-white font-black text-xs uppercase shadow-lg shadow-red-900/20 hover:bg-red-500">Discard Data</button>
+                    <button @click="exitModal = false" class="w-full py-2 text-[10px] text-slate-500 font-black uppercase hover:text-white">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </transition>
+
+    <transition name="modal">
+        <div v-if="pickerModal.visible" class="fixed inset-0 z-[400] flex items-end justify-center">
+            <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" @click="saveDualPicker"></div>
+            <div class="glass-solid w-full border-t border-blue-500/30 rounded-t-3xl p-6 relative pb-safe-bottom bg-slate-900">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-black uppercase italic text-blue-500">Edit Set</h3>
+                    <button @click="saveDualPicker" class="text-xs font-bold uppercase text-white bg-blue-600 px-6 py-2 rounded-lg shadow-lg shadow-blue-900/20">Set</button>
+                </div>
+                <div class="grid grid-cols-2 text-[10px] font-black uppercase text-slate-500 tracking-widest text-center mb-2">
+                    <div>{{ isBodyWeight(pickerModal.targetWeightType) ? 'Weight' : 'Weight (lbs)' }}</div>
+                    <div>Reps</div>
+                </div>
+                <div class="picker-container">
+                    <div v-if="!isBodyWeight(pickerModal.targetWeightType)" class="wheel-col no-scrollbar" ref="weightWheel" @scroll="handleWeightScroll">
+                        <div class="h-[75px]"></div>
+                        <div v-for="w in pickerModal.weightValues" :key="'w-'+w" class="wheel-item" :class="{'wheel-item-active': pickerModal.weightVal === w}">{{ w }}</div>
+                        <div class="h-[75px]"></div>
+                    </div>
+                    <div v-else class="wheel-col flex items-center justify-center"><span class="text-3xl font-black text-slate-700 select-none">BW</span></div>
+                    <div class="wheel-col no-scrollbar" ref="repsWheel" @scroll="handleRepsScroll">
+                        <div class="h-[75px]"></div>
+                        <div v-for="r in pickerModal.repsValues" :key="'r-'+r" class="wheel-item" :class="{'wheel-item-active': pickerModal.repsVal === r}">{{ r }}</div>
+                        <div class="h-[75px]"></div>
+                    </div>
+                    <div class="wheel-highlight"></div>
+                </div>
+            </div>
+        </div>
+    </transition>
+
+    <transition name="modal">
+        <div v-if="swapModal.visible" class="fixed inset-0 z-[350] flex items-end justify-center sm:items-center p-4">
+             <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="swapModal.visible = false"></div>
+             <div class="glass w-full max-w-md rounded-3xl p-6 relative border border-blue-500/20 shadow-2xl h-[70vh] flex flex-col">
+                <h3 class="text-lg font-black uppercase italic text-white mb-2">Swap Exercise</h3>
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mb-4">Targeting: {{ swapModal.targetMuscle }}</p>
+                <div class="flex-1 overflow-y-auto space-y-2 no-scrollbar">
+                    <button v-for="ex in swapModal.options" :key="ex.id" @click="selectSwap(ex)" class="w-full text-left p-4 rounded-xl border border-white/5 bg-slate-900/50 hover:bg-blue-600/10 hover:border-blue-500/50 transition-all flex items-center gap-4">
+                         <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-5 h-5 text-blue-500"></i>
+                         <span class="text-white font-bold text-sm uppercase italic">{{ ex.name }}</span>
+                    </button>
+                </div>
+                <button @click="swapModal.visible = false" class="mt-4 w-full py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase">Cancel</button>
+             </div>
+        </div>
+    </transition>
+
+</div>
+
+<script>
+    const { createApp } = Vue;
+    const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
+
+    createApp({
+        data() { 
+            return { 
+                session: null, activeRoutine: { name: '', data: [] }, activeExerciseIdx: 0, stackTaken: false, 
+                sessionTimer: 0, sessionStartTime: null, sessionInterval: null, restTimer: 0, restTimerRunning: false, restInterval: null,
+                finishModal: false, exitModal: false, swapModal: { visible: false, targetMuscle: '', options: [], groupIdx: null, exIdx: null },
+                pickerModal: { visible: false, targetSet: null, weightValues: [], repsValues: [], weightVal: 0, repsVal: 0, targetWeightType: 'combined' },
+                libraryExercises: [], personalRecords: {}
+            } 
+        },
+        watch: {
+            activeRoutine: { handler(val) { if(val && val.name) localStorage.setItem('constellation_active_session', JSON.stringify({ activeRoutine: val, sessionStartTime: this.sessionStartTime, activeExerciseIdx: this.activeExerciseIdx, stackTaken: this.stackTaken })); }, deep: true },
+            stackTaken() { localStorage.setItem('constellation_active_session', JSON.stringify({ activeRoutine: this.activeRoutine, sessionStartTime: this.sessionStartTime, activeExerciseIdx: this.activeExerciseIdx, stackTaken: this.stackTaken })); },
+            activeExerciseIdx(newVal) { this.$nextTick(() => { const el = document.getElementById('cluster-' + newVal); if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }); }
+        },
+        async mounted() {
+            const { data: { session }, error } = await _client.auth.getSession();
+            if (error || !session) { window.location.href = 'index.html'; return; }
+            this.session = session;
+            const { data } = await _client.from('exercises').select('*').order('name'); this.libraryExercises = data || [];
+            
+            const savedSession = localStorage.getItem('constellation_active_session');
+            if (savedSession) {
+                try {
+                    const parsed = JSON.parse(savedSession);
+                    if(parsed.activeRoutine && parsed.activeRoutine.name) {
+                        this.activeRoutine = parsed.activeRoutine;
+                        this.sessionStartTime = parsed.sessionStartTime || Date.now();
+                        this.activeExerciseIdx = parsed.activeExerciseIdx || 0;
+                        this.stackTaken = parsed.stackTaken || false;
+                        this.startSessionTimer();
+                    } else { throw new Error("Invalid Session"); }
+                } catch (e) { window.location.href = 'gym.html'; }
+            } else { window.location.href = 'gym.html'; }
+            
+            this.$nextTick(() => { lucide.createIcons(); });
+        },
+        updated() { this.$nextTick(() => { lucide.createIcons(); }); },
+        methods: {
+            haptic() { if (navigator.vibrate) navigator.vibrate(10); },
+            isBodyWeight(type) { if(type === true) return true; if(!type) return false; const t = type.toString().toLowerCase(); return t === 'bodyweight' || t === 'body_weight' || t === 'bw' || t === 'true'; },
+            
+            openDualPicker(setObj, weightType) {
+                this.haptic(); this.pickerModal.targetSet = setObj; this.pickerModal.targetWeightType = weightType;
+                if(this.pickerModal.weightValues.length === 0) { for(let i=0; i<=500; i+=2.5) this.pickerModal.weightValues.push(i); for(let i=0; i<=100; i++) this.pickerModal.repsValues.push(i); }
+                let w = parseFloat(setObj.weight); if(isNaN(w)) w = parseFloat(setObj.prevWeight) || 0;
+                let r = parseInt(setObj.reps); if(isNaN(r)) r = parseInt(setObj.prevReps) || 0;
+                this.pickerModal.weightVal = w; this.pickerModal.repsVal = r; this.pickerModal.visible = true;
+                this.$nextTick(() => {
+                    const itemHeight = 50;
+                    if(!this.isBodyWeight(weightType)) { const wIndex = this.pickerModal.weightValues.indexOf(w); if(wIndex > -1 && this.$refs.weightWheel) this.$refs.weightWheel.scrollTop = wIndex * itemHeight; }
+                    const rIndex = this.pickerModal.repsValues.indexOf(r); if(rIndex > -1 && this.$refs.repsWheel) this.$refs.repsWheel.scrollTop = rIndex * itemHeight;
+                });
+            },
+            handleWeightScroll(e) { const idx = Math.round(e.target.scrollTop/50); const val = this.pickerModal.weightValues[idx]; if(val!==undefined && val!==this.pickerModal.weightVal){ this.pickerModal.weightVal=val; if(navigator.vibrate)navigator.vibrate(5); } },
+            handleRepsScroll(e) { const idx = Math.round(e.target.scrollTop/50); const val = this.pickerModal.repsValues[idx]; if(val!==undefined && val!==this.pickerModal.repsVal){ this.pickerModal.repsVal=val; if(navigator.vibrate)navigator.vibrate(5); } },
+            saveDualPicker() {
+                this.haptic();
+                if(this.pickerModal.targetSet) {
+                    this.pickerModal.targetSet.weight = this.isBodyWeight(this.pickerModal.targetWeightType) ? '' : this.pickerModal.weightVal;
+                    this.pickerModal.targetSet.reps = this.pickerModal.repsVal;
+                }
+                this.pickerModal.visible = false;
+            },
+            
+            openSwapModal(groupIdx, exIdx) {
+                this.haptic(); const group = this.activeRoutine.data[groupIdx]; const currentEx = group.exercises[exIdx];
+                const libraryEntry = this.libraryExercises.find(e => e.name === currentEx.name);
+                const targetMuscle = libraryEntry ? libraryEntry.muscle_group : null;
+                if(targetMuscle) { this.swapModal.targetMuscle = targetMuscle; this.swapModal.options = this.libraryExercises.filter(e => e.muscle_group === targetMuscle); }
+                else { this.swapModal.targetMuscle = 'All'; this.swapModal.options = this.libraryExercises; }
+                this.swapModal.groupIdx = groupIdx; this.swapModal.exIdx = exIdx; this.swapModal.visible = true;
+            },
+            async selectSwap(newExDef) {
+                this.haptic(); const { groupIdx, exIdx } = this.swapModal; const group = this.activeRoutine.data[groupIdx];
+                const newEx = { id: newExDef.id, name: newExDef.name, icon: newExDef.icon_name, weightType: (newExDef.is_bodyweight ? 'bodyweight' : 'combined'), personalRecord: 0, isLinked: group.exercises[exIdx].isLinked, sets: [] };
+                const { data: lastLog } = await _client.from('workout_logs').select('sets_data').eq('exercise_name', newEx.name).order('created_at', { ascending: false }).limit(1).single();
+                if(lastLog && lastLog.sets_data) newEx.sets = lastLog.sets_data.map(s => ({ weight: '', prevWeight: s.weight, reps: '', prevReps: s.reps, done: false, failure: false }));
+                const targetSets = group.exercises[exIdx].sets.length;
+                while(newEx.sets.length < targetSets) newEx.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
+                group.exercises[exIdx] = newEx; this.swapModal.visible = false;
+            },
+
+            startSessionTimer() { if (this.sessionInterval) clearInterval(this.sessionInterval); const tick = () => { const now = Date.now(); const seconds = Math.floor((now - this.sessionStartTime) / 1000); this.sessionTimer = seconds > 0 ? seconds : 0; }; tick(); this.sessionInterval = setInterval(tick, 1000); },
+            nextExercise() { if(this.activeExerciseIdx < this.activeRoutine.data.length - 1) this.activeExerciseIdx++; },
+            prevExercise() { if(this.activeExerciseIdx > 0) this.activeExerciseIdx--; },
+            getMaxSets(group) { if(!group || !group.exercises) return 0; return Math.max(...group.exercises.map(e => e.sets.length)); },
+            addSetToGroup(groupIdx) { const group = this.activeRoutine.data[groupIdx]; group.exercises.forEach(ex => { const prev = ex.sets.slice(-1)[0]; ex.sets.push({ weight: '', prevWeight: prev?.prevWeight||'', reps: '', prevReps: prev?.prevReps||'', done: false, failure: false }); }); },
+            toggleRestTimer() { this.haptic(); this.restTimerRunning = !this.restTimerRunning; if(this.restTimerRunning) { this.restTimer = 0; this.restInterval = setInterval(() => this.restTimer++, 1000); } else clearInterval(this.restInterval); },
+            formatTimer(s) { if(s < 0) s = 0; return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
+            
+            async confirmFinishSession() {
+                clearInterval(this.sessionInterval);
+                const flatLogs = [];
+                this.activeRoutine.data.forEach(group => {
+                    group.exercises.forEach(ex => {
+                        const validSets = ex.sets.filter(s => s.done);
+                        if (validSets.length > 0) flatLogs.push({ user_id: this.session.user.id, exercise_name: ex.name, protocol_name: this.activeRoutine.name, sets_data: validSets, duration_seconds: this.sessionTimer, created_at: new Date().toISOString() });
+                    });
+                });
+                if(flatLogs.length) await _client.from('workout_logs').insert(flatLogs);
+                if(this.stackTaken) { const { data: inv } = await _client.from('inventory').select('*'); if(inv && inv.length) { const updates = inv.map(i => _client.from('inventory').update({servings_left: Math.max(0, i.servings_left - 1)}).eq('id', i.id)); await Promise.all(updates); } }
+                
+                localStorage.removeItem('constellation_active_session');
+                window.location.href = 'gym.html';
+            },
+            discardSession() {
+                localStorage.removeItem('constellation_active_session');
+                window.location.href = 'gym.html';
+            }
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
