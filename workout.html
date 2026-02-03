@@ -12,13 +12,14 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         [v-cloak] { display: none !important; }
-        /* CHANGED: Removed overscroll-behavior-y: none to match gym.html fix */
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
         
         .glass-solid { background: #020617; border-bottom: 1px solid rgba(255,255,255,0.08); }
         .glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
         
-        .pt-safe-top { padding-top: env(safe-area-inset-top); }
+        /* DYNAMIC ISLAND FIX: Adds safe area + 20px breathing room */
+        .pt-safe-offset { padding-top: calc(env(safe-area-inset-top) + 20px); }
+        /* Footer Padding for Home Indicator */
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -52,7 +53,7 @@
 <body class="font-sans antialiased bg-slate-950">
 <div id="app" v-cloak class="min-h-screen flex flex-col bg-slate-950">
     
-    <div class="fixed top-0 left-0 right-0 glass-solid p-4 pt-safe-top z-40 shadow-2xl">
+    <div class="fixed top-0 left-0 right-0 glass-solid p-4 pt-safe-offset z-40 shadow-2xl">
         <div class="flex justify-between items-center">
             <div>
                 <div class="flex items-center gap-2 mb-1">
@@ -65,7 +66,7 @@
         </div>
     </div>
 
-    <div class="flex-1 p-4 space-y-6 pt-24 pb-32 scroll-smooth" id="session-container">
+    <div class="flex-1 p-4 space-y-6 pt-32 pb-32 scroll-smooth" id="session-container">
         <div v-for="(group, groupIdx) in activeRoutine.data" 
              :key="groupIdx" 
              :id="'cluster-' + groupIdx"
