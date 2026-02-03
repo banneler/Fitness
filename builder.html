@@ -23,7 +23,6 @@
         
         /* Layout */
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
-        .pt-safe-offset { padding-top: calc(env(safe-area-inset-top) + 20px); }
         
         /* Drag & Drop Visuals */
         .drag-handle { cursor: grab; touch-action: none; padding: 1rem; margin: -0.5rem; display: flex; align-items: center; justify-content: center; color: #64748b; transition: color 0.2s; }
@@ -53,7 +52,7 @@
     </style>
 </head>
 <body class="font-sans antialiased">
-<div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32 pt-safe-offset">
+<div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32 pt-16">
 
     <div v-if="loading" class="loading-mask">
         <div class="animate-pulse flex flex-col items-center gap-4">
