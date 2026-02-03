@@ -1,4 +1,4 @@
-const CACHE_NAME = 'constellation-v2'; // Increment this string manually on big updates!
+const CACHE_NAME = 'constellation-v2.1'; // Update this string when you push major changes
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -15,13 +15,11 @@ const CORE_ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js'
 ];
 
-// Install: Cache everything
 self.addEventListener('install', (e) => {
-  self.skipWaiting(); // Force new SW to take over immediately
+  self.skipWaiting();
   e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS)));
 });
 
-// Activate: Clean up old caches
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then(keys => Promise.all(
@@ -33,11 +31,10 @@ self.addEventListener('activate', (e) => {
   return self.clients.claim();
 });
 
-// Fetch: Smart Strategy
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
-  // Strategy 1: HTML files -> Network First (get latest), fall back to Cache (offline)
+  // HTML Files: Network First (Get fresh), Fallback to Cache (Offline support)
   if (e.request.mode === 'navigate' || url.pathname.endsWith('.html')) {
     e.respondWith(
       fetch(e.request)
@@ -51,7 +48,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Strategy 2: Static Assets (JS/CSS/Images) -> Cache First, fall back to Network
+  // Assets (JS/CSS/Images): Cache First (Speed), Fallback to Network
   e.respondWith(
     caches.match(e.request).then(response => response || fetch(e.request))
   );
