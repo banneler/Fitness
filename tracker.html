@@ -34,13 +34,22 @@
         .bar-grow { transform-origin: bottom; animation: grow 1s ease-out forwards; transform: scaleY(0); }
         @keyframes grow { to { transform: scaleY(1); } }
         .warning-overlay { mix-blend-mode: multiply; }
-        .matrix-cell { aspect-ratio: 1/1; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.01); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+        
+        /* Updated Matrix Cell for 7-col layout */
+        .matrix-cell { aspect-ratio: 1/1; border-radius: 6px; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.01); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
         .matrix-active { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3); color: #22c55e; }
 
         .modal-enter-active, .modal-leave-active { transition: all 0.3s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(20px); }
         .toast-enter-active, .toast-leave-active { transition: all 0.5s ease; }
         .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(20px); }
+        
+        /* Smooth Slide Down for Library */
+        .slide-down-enter-active, .slide-down-leave-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); max-height: 500px; opacity: 1; }
+        .slide-down-enter-from, .slide-down-leave-to { max-height: 0; opacity: 0; overflow: hidden; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="font-sans antialiased text-slate-200">
@@ -232,8 +241,8 @@
 
             <div v-if="view === 'motion'" class="space-y-6">
                 <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
-                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4 ml-1">Activity Spectrum (30D)</h3>
-                    <div class="grid grid-cols-6 gap-2">
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4 ml-1">Activity Spectrum (5 Weeks)</h3>
+                    <div class="grid grid-cols-7 gap-2">
                         <div v-for="day in activityMatrix" :key="day.date" class="matrix-cell" :class="{'matrix-active': day.active}">
                             <i v-if="day.active" :data-lucide="day.icon" class="w-4 h-4"></i>
                             <span v-else class="text-[6px] font-black text-slate-800">{{ day.dayNum }}</span>
@@ -270,21 +279,50 @@
 
             <div v-if="view === 'exercises'" class="space-y-6">
                 <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
-                    <div class="flex items-center gap-2 mb-6">
-                        <i data-lucide="microscope" class="w-5 h-5 text-pink-500"></i>
-                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Movement Analysis</h3>
+                    <div class="flex justify-between items-center cursor-pointer mb-6" @click="showMvmtList = !showMvmtList">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="microscope" class="w-5 h-5 text-pink-500"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Movement Analysis</h3>
+                        </div>
+                        <i :data-lucide="showMvmtList ? 'chevron-up' : 'chevron-down'" class="w-4 h-4 text-slate-500"></i>
                     </div>
                     
-                    <div class="relative mb-6">
-                        <input type="text" v-model="mvmtSearch" @input="filterExercises" placeholder="Select Movement..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 px-6 outline-none font-bold text-sm placeholder-slate-600 focus:ring-1 focus:ring-pink-500/50 transition-all text-white">
-                        <div v-if="mvmtSearch && showMvmtList" class="absolute left-0 right-0 mt-2 bg-slate-900 border border-white/10 rounded-2xl overflow-hidden z-20 max-h-48 overflow-y-auto shadow-2xl">
-                            <button v-for="ex in filteredExercises" :key="ex.id" @click="selectMovement(ex)" class="w-full text-left px-6 py-4 border-b border-white/5 hover:bg-white/5 text-xs font-bold uppercase transition-colors">
-                                {{ ex.name }}
-                            </button>
-                        </div>
-                    </div>
+                    <transition name="slide-down">
+                        <div v-if="!selectedMovement || showMvmtList" class="space-y-3 mb-6">
+                            <input type="text" v-model="mvmtSearch" placeholder="Search movement..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-pink-500 transition-colors">
+                            
+                            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                                <button @click="activeFilter = null" 
+                                        :class="!activeFilter ? 'bg-pink-600 text-white' : 'bg-slate-900 border border-white/10 text-slate-400 hover:text-white'" 
+                                        class="flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all">
+                                    All
+                                </button>
+                                <button v-for="m in muscleGroups" :key="m" 
+                                        @click="activeFilter = (activeFilter === m ? null : m)" 
+                                        :class="activeFilter === m ? 'bg-pink-600 text-white' : 'bg-slate-900 border border-white/10 text-slate-400 hover:text-white'" 
+                                        class="flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all">
+                                    {{ m }}
+                                </button>
+                            </div>
 
-                    <div v-if="selectedMovement" class="space-y-6">
+                            <div class="space-y-4 max-h-64 overflow-y-auto pr-1">
+                                <div v-for="(groupExercises, groupName) in groupedLibrary" :key="groupName">
+                                    <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1 sticky top-0 bg-[#0f172a] py-1 z-10">{{ groupName }}</h4>
+                                    <div class="space-y-2">
+                                        <button v-for="ex in groupExercises" :key="ex.id" @click="selectMovement(ex)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-950/30 flex justify-between items-center active:scale-95 transition-all text-left group hover:border-pink-500/30 hover:bg-pink-500/5">
+                                            <div class="flex items-center gap-3">
+                                                <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4 text-slate-500 group-hover:text-pink-500 transition-colors"></i>
+                                                <div class="text-xs font-bold text-white group-hover:text-pink-400 transition-colors">{{ ex.name }}</div>
+                                            </div>
+                                            <i data-lucide="arrow-right" class="w-3 h-3 text-slate-600 group-hover:text-pink-500 transition-colors"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </transition>
+
+                    <div v-if="selectedMovement" class="space-y-6 animate-fade-in">
                         <div class="flex justify-between items-center bg-slate-950/50 p-4 rounded-2xl border border-white/5">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center text-pink-500 border border-pink-500/20">
@@ -321,7 +359,6 @@
                             <div v-else class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-600 uppercase font-bold italic">Insufficient Data</div>
                         </div>
                     </div>
-                    <div v-else class="text-center py-8 text-slate-600 text-xs italic">Select a movement to analyze data stream.</div>
                 </section>
             </div>
         </main>
@@ -379,6 +416,7 @@
 <script>
     const { createApp } = Vue;
     const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
+    const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Cardio'];
 
     createApp({
         data() {
@@ -393,15 +431,14 @@
                 isAnalyzing: false, analysis: null,
                 
                 // MOVEMENT ANALYSIS
-                library: [], mvmtSearch: '', showMvmtList: false, filteredExercises: [],
+                library: [], mvmtSearch: '', showMvmtList: false, 
                 selectedMovement: null, mvmtHistory: [], mvmtChartMode: 'strength',
+                activeFilter: null, muscleGroups: MUSCLES,
                 mvmtChartPath: '', mvmtFillPath: '', mvmtPoints: [], mvmtStats: { max1RM: 0 }
             }
         },
         computed: {
-            currentWeight() { 
-                return this.weightHistory.length ? this.weightHistory[0].weight : '--'; 
-            },
+            currentWeight() { return this.weightHistory.length ? this.weightHistory[0].weight : '--'; },
             globalMaxMacros() {
                 const totals = [];
                 for(let i=6; i>=0; i--) {
@@ -413,11 +450,11 @@
                 return Math.max(...totals, 450); 
             },
             chartScale() { return 135 / this.globalMaxMacros; },
-            calculateProteinLineY() { return (this.targets.protein * this.chartScale) + 'px'; },
             activityMatrix() {
                 const days = [];
                 const now = new Date();
-                for(let i=29; i>=0; i--) {
+                // FIXED: 35 days (5 weeks)
+                for(let i=34; i>=0; i--) {
                     const d = new Date(); d.setDate(now.getDate() - i);
                     const ds = d.toLocaleDateString('en-CA');
                     const workout = this.rawWorkouts.find(w => w.created_at.startsWith(ds));
@@ -440,7 +477,7 @@
                             date: new Date(log.created_at).toLocaleDateString(), 
                             setCount: 0, 
                             tonnage: 0, 
-                            duration: log.duration_seconds || 0, // UPDATED: Use DB duration
+                            duration: log.duration_seconds || 0,
                             exercises: new Set() 
                         };
                         sessions.push(currentSession);
@@ -475,13 +512,37 @@
                 }
                 return days;
             },
-            formatDuration(s) {
-                if (!s) return '0 Min';
-                return `${Math.ceil(s / 60)} Min`;
+            // NEW: Grouped Library for Picker
+            groupedLibrary() {
+                let filtered = this.library;
+                if (this.activeFilter) {
+                    filtered = filtered.filter(ex => ex.muscle_group === this.activeFilter);
+                }
+                if(this.mvmtSearch) {
+                    const s = this.mvmtSearch.toLowerCase();
+                    filtered = filtered.filter(ex => ex.name.toLowerCase().includes(s));
+                }
+                const groups = {};
+                filtered.forEach(ex => {
+                    const g = ex.muscle_group || 'Uncategorized';
+                    if(!groups[g]) groups[g] = [];
+                    groups[g].push(ex);
+                });
+                return Object.keys(groups).sort().reduce((obj, key) => { 
+                    obj[key] = groups[key]; 
+                    return obj;
+                }, {});
+            },
+            // NEW: Filtered flat list (if you preferred that, but we used grouped)
+            filteredExercises() {
+                // Not used in the new template, can be removed, but harmless to keep
+                return this.library; 
             }
         },
         watch: {
-            mvmtChartMode() { this.calculateMvmtChart(); }
+            mvmtChartMode() { this.calculateMvmtChart(); },
+            // Re-render icons when list toggles
+            showMvmtList(val) { if(val) this.$nextTick(() => lucide.createIcons()); }
         },
         async mounted() {
             const { data: { session } } = await _client.auth.getSession();
@@ -509,16 +570,15 @@
                 const { data } = await _client.from('exercises').select('*').order('name');
                 this.library = data || [];
             },
+            // Note: filterExercises() is replaced by computed property logic
             filterExercises() {
-                if(this.mvmtSearch.length < 1) { this.showMvmtList = false; return; }
-                const s = this.mvmtSearch.toLowerCase();
-                this.filteredExercises = this.library.filter(e => e.name.toLowerCase().includes(s));
-                this.showMvmtList = true;
+               // No-op, handled by computed 'groupedLibrary' + v-model on input
+               this.showMvmtList = true;
             },
             async selectMovement(ex) {
                 this.selectedMovement = ex;
                 this.mvmtSearch = ex.name;
-                this.showMvmtList = false;
+                this.showMvmtList = false; // Close drawer
                 const { data } = await _client.from('workout_logs').select('*').eq('exercise_name', ex.name).order('created_at', { ascending: true }).limit(30);
                 this.mvmtHistory = data || [];
                 this.calculateMvmtChart();
@@ -690,7 +750,10 @@
                 }
                 this.streak = s;
             },
-            formatTUL(s) { return `${Math.floor(s/60)}m ${s%60}s`; }
+            formatDuration(s) { 
+                if (!s) return '0 Min';
+                return `${Math.ceil(s / 60)} Min`;
+            }
         }
     }).mount('#app');
 </script>
