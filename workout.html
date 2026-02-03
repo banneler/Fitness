@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,11 +13,17 @@
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+        
         .glass-solid { background: #020617; border-bottom: 1px solid rgba(255,255,255,0.08); }
         .glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        
         .pt-safe-top { padding-top: env(safe-area-inset-top); }
+        /* FIX: Added Safe Area Bottom class to match gym.html */
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
         /* Inputs */
         .custom-checkbox { appearance: none; background-color: #1e293b; width: 1.5rem; height: 1.5rem; border-radius: 0.5rem; display: grid; place-content: center; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1); }
         .custom-checkbox::before { content: ""; width: 0.75rem; height: 0.75rem; transform: scale(0); transition: 120ms transform ease-in-out; box-shadow: inset 1em 1em white; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
@@ -26,16 +31,19 @@
         .custom-checkbox:checked::before { transform: scale(1); }
         .failure-checkbox { appearance: none; width: 1.2rem; height: 1.2rem; background-color: #334155; -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain; mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>') no-repeat center / contain; transition: all 0.2s; }
         .failure-checkbox:checked { background-color: #ef4444; filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.8)); }
+        
         /* Cards */
         .exercise-card { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform, opacity, filter; }
         .exercise-blurred { opacity: 0.3; filter: grayscale(100%); transform: scale(0.96); pointer-events: none; }
         .exercise-active { opacity: 1; filter: none; transform: scale(1); border-color: rgba(59, 130, 246, 0.4); background: rgba(30, 41, 59, 0.6); box-shadow: 0 0 40px -10px rgba(59, 130, 246, 0.15); }
+        
         /* Wheel */
         .picker-container { height: 200px; position: relative; mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent); display: flex; }
         .wheel-col { flex: 1; overflow-y: scroll; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; text-align: center; }
         .wheel-item { height: 50px; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.5rem; color: #64748b; transition: all 0.2s; }
         .wheel-item-active { color: #3b82f6; font-size: 2rem; text-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
         .wheel-highlight { position: absolute; top: 50%; left: 0; right: 0; height: 50px; transform: translateY(-50%); border-top: 1px solid rgba(59, 130, 246, 0.3); border-bottom: 1px solid rgba(59, 130, 246, 0.3); pointer-events: none; background: rgba(59, 130, 246, 0.05); z-index: 10; }
+        
         /* Transitions */
         .modal-enter-active, .modal-leave-active { transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         .modal-enter-from, .modal-leave-to { opacity: 0; transform: translateY(100%); }
@@ -125,7 +133,7 @@
         <div class="h-10"></div>
     </div>
 
-    <div class="glass flex-none p-4 z-30">
+    <div class="glass flex-none px-6 py-4 safe-area-bottom z-30">
         <div class="grid grid-cols-4 gap-2 mb-3">
             <button @click="prevExercise" :disabled="activeExerciseIdx === 0" class="col-span-1 h-12 rounded-2xl bg-slate-800/80 flex items-center justify-center text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
             <button v-if="activeExerciseIdx < activeRoutine.data.length - 1" @click="nextExercise" class="col-span-2 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black uppercase tracking-wider text-sm shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Next</button>
@@ -181,7 +189,7 @@
     <transition name="modal">
         <div v-if="pickerModal.visible" class="fixed inset-0 z-[400] flex items-end justify-center">
             <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" @click="saveDualPicker"></div>
-            <div class="glass-solid w-full border-t border-blue-500/30 rounded-t-3xl p-6 relative bg-slate-900">
+            <div class="glass-solid w-full border-t border-blue-500/30 rounded-t-3xl p-6 relative pb-safe-bottom bg-slate-900">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-sm font-black uppercase italic text-blue-500">Edit Set</h3>
                     <button @click="saveDualPicker" class="text-xs font-bold uppercase text-white bg-blue-600 px-6 py-2 rounded-lg shadow-lg shadow-blue-900/20">Set</button>
