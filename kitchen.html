@@ -242,7 +242,7 @@
 
             <input type="file" ref="cameraInput" accept="image/*" capture="environment" class="hidden" @change="handleScan">
 
-            <input type="text" v-model="foodSearch" @input="filterMemory" placeholder="Search Neural Memory..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl py-5 px-6 outline-none font-black text-lg mb-6 placeholder-slate-700 focus:ring-1 focus:ring-green-500/50 transition-all">
+            <input type="text" v-model="foodSearch" @input="filterMemory" placeholder="Search or Add New..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl py-5 px-6 outline-none font-black text-lg mb-6 placeholder-slate-700 focus:ring-1 focus:ring-green-500/50 transition-all">
             
             <div v-if="showMemory && filteredMemory.length" class="glass rounded-2xl overflow-hidden mb-6 border-blue-500/20">
                 <button v-for="item in filteredMemory" :key="item.id" @click="selectFood(item)" class="w-full px-6 py-4 text-left border-b border-white/5 hover:bg-blue-500/10 flex justify-between font-black text-xs italic transition-colors">
@@ -298,7 +298,7 @@
             <div class="flex justify-between items-center mb-6">
                 <div class="flex items-center gap-2 opacity-60">
                     <i data-lucide="target" class="w-4 h-4 text-green-400"></i>
-                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Neural Targets</h3>
+                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Fuel Targets</h3>
                 </div>
                 <button @click="showTargetModal = true" class="text-[8px] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white transition-colors">Adjust Goals</button>
             </div>
