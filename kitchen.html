@@ -88,6 +88,34 @@
     </transition>
 
     <transition name="modal">
+        <div v-if="showTargetModal" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
+            <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="showTargetModal = false"></div>
+            <div class="glass w-full max-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl">
+                <h2 class="text-xl font-black italic uppercase text-white mb-6 tracking-tight">Sync Targets</h2>
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                        <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein (g)</span>
+                        <input type="number" v-model="targets.protein" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
+                    </div>
+                    <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                        <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calories</span>
+                        <input type="number" v-model="targets.cals" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
+                    </div>
+                    <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                        <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Carbs (g)</span>
+                        <input type="number" v-model="targets.carbs" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
+                    </div>
+                    <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                        <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Fat (g)</span>
+                        <input type="number" v-model="targets.fat" class="bg-transparent border-none text-2xl font-black w-full text-white p-0 focus:ring-0">
+                    </div>
+                </div>
+                <button @click="saveTargets" class="w-full py-5 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase shadow-lg active:scale-95 transition-all">Authorize Intelligence</button>
+            </div>
+        </div>
+    </transition>
+
+    <transition name="modal">
         <div v-if="showAddSuppModal" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
             <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="showAddSuppModal = false"></div>
             <div class="glass w-full max-w-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl">
@@ -191,6 +219,34 @@
                     <div class="progress-container">
                         <div class="progress-fill bg-yellow-500" :style="{ width: Math.min(100, (dailyTotals.fat/targets.fat)*100) + '%' }"></div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass p-6 rounded-[2.5rem] shadow-xl">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-2 opacity-60">
+                    <i data-lucide="target" class="w-4 h-4 text-green-400"></i>
+                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Neural Targets</h3>
+                </div>
+                <button @click="showTargetModal = true" class="text-[8px] font-black uppercase bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white transition-colors">Adjust Goals</button>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                    <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Protein Goal</span>
+                    <span class="text-xl font-black italic">{{ targets.protein }}g</span>
+                </div>
+                <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                    <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Calorie Goal</span>
+                    <span class="text-xl font-black italic">{{ targets.cals }}</span>
+                </div>
+                <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                    <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Carb Goal</span>
+                    <span class="text-xl font-black italic">{{ targets.carbs }}g</span>
+                </div>
+                <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                    <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Fat Goal</span>
+                    <span class="text-xl font-black italic">{{ targets.fat }}g</span>
                 </div>
             </div>
         </section>
@@ -324,6 +380,7 @@
                 showAddSuppModal: false,
                 deleteSuppModal: null,
                 deleteFuelModal: null,
+                showTargetModal: false, // NEW
                 session: null, 
                 foodSearch: '', 
                 foodEntry: { cals: '', protein: '', carbs: '', fat: '' }, 
@@ -389,6 +446,44 @@
                     this.targets.fat = data[0].target_fat || 80;
                 }
             },
+            // NEW: Logic to save targets
+            async saveTargets() {
+                const today = new Date().toLocaleDateString('en-CA');
+                const { data: existing } = await _client.from('daily_metrics')
+                    .select('id')
+                    .eq('user_id', this.session.user.id) 
+                    .gte('created_at', today)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                let error;
+                const payload = { 
+                    target_protein: this.targets.protein, 
+                    target_calories: this.targets.cals,
+                    target_carbs: this.targets.carbs,
+                    target_fat: this.targets.fat
+                };
+
+                if(existing && existing.length > 0) {
+                    const { error: err } = await _client.from('daily_metrics').update(payload).eq('id', existing[0].id);
+                    error = err;
+                } else {
+                    const { error: err } = await _client.from('daily_metrics').insert([{ 
+                        user_id: this.session.user.id, 
+                        ...payload,
+                    }]);
+                    error = err;
+                }
+
+                if(!error) { 
+                    this.showTargetModal = false;
+                    this.showToast("Goals Synced");
+                    await this.fetchTargets(); 
+                } else {
+                    console.error("Save failed:", error);
+                    alert("Could not save targets.");
+                }
+            },
             async initMemory() {
                 const { data } = await _client.from('food_memory').select('*').order('use_count', { ascending: false });
                 this.memory = data || [];
@@ -435,7 +530,6 @@
                     return;
                 }
                 
-                // FIXED: Round to Integer. Database rejects decimals.
                 const payload = { 
                     food_name: this.foodSearch.trim(), 
                     calories: Math.round(parseFloat(this.foodEntry.cals) || 0), 
