@@ -111,9 +111,10 @@
         </div>
     </transition>
 
-    <header class="flex justify-between items-start mb-8">
-        <div>
-            <h1 class="text-3xl font-black italic text-white uppercase mb-1">{{ timeGreeting }}</h1>
+    <header class="mb-8">
+        <h1 class="text-3xl font-black italic text-white uppercase mb-4">{{ timeGreeting }}</h1>
+        
+        <div class="flex justify-between items-end">
             <div class="flex flex-col gap-1">
                 <div class="flex items-center gap-2">
                     <span class="text-[10px] text-slate-500 font-black uppercase tracking-widest">{{ currentDate }}</span>
@@ -128,16 +129,15 @@
                 </a>
                 <span v-else class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Rest Day Protocol</span>
             </div>
-        </div>
-        
-        <div class="flex items-center gap-2">
-            <button @click="showSettingsModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-white">
-                <i data-lucide="settings" class="w-5 h-5"></i>
-            </button>
 
-            <button @click="logoutModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
-                <i data-lucide="log-out" class="w-5 h-5"></i>
-            </button>
+            <div class="flex items-center gap-2">
+                <button @click="showSettingsModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-white">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                </button>
+                <button @click="logoutModal = true" class="w-12 h-12 glass rounded-2xl flex items-center justify-center border border-white/5 shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500 hover:border-red-500/30">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>
+            </div>
         </div>
     </header>
 
