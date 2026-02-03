@@ -64,7 +64,7 @@
     <transition name="toast">
         <div v-if="toast.visible" class="fixed bottom-24 left-6 right-6 glass border-blue-500/30 p-4 rounded-2xl shadow-2xl z-[250] flex items-center gap-4">
             <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
-                <i data-lucide="check" class="w-5 h-5"></i>
+                <i :data-lucide="toast.icon || 'check'" class="w-5 h-5"></i>
             </div>
             <div>
                 <h4 class="text-sm font-black italic text-white uppercase">{{ toast.title }}</h4>
@@ -301,7 +301,7 @@
                 <div v-for="(groupExercises, groupName) in groupedLibrary" :key="groupName">
                     <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1">{{ groupName }}</h4>
                     <div class="space-y-2">
-                        <button v-for="ex in groupExercises" :key="ex.id" @click="editExercise(ex)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-900/50 flex justify-between items-center active:scale-95 transition-transform text-left group hover:border-blue-500/30 hover:bg-blue-500/5">
+                        <button v-for="ex in groupExercises" :key="ex.id" @click="attemptEditExercise(ex)" class="w-full p-3 rounded-xl border border-white/5 bg-slate-900/50 flex justify-between items-center active:scale-95 transition-transform text-left group hover:border-blue-500/30 hover:bg-blue-500/5">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 group-hover:text-blue-400 transition-colors">
                                     <i :data-lucide="ex.icon_name || 'dumbbell'" class="w-4 h-4"></i>
@@ -315,7 +315,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <i data-lucide="pencil" class="w-3 h-3 text-slate-600 group-hover:text-white"></i>
+                            <i v-if="ex.user_id === session.user.id" data-lucide="pencil" class="w-3 h-3 text-slate-600 group-hover:text-white"></i>
+                            <i v-else data-lucide="lock" class="w-3 h-3 text-slate-700"></i>
                         </button>
                     </div>
                 </div>
@@ -327,13 +328,11 @@
 
 <script>
     const { createApp } = Vue;
-    // --- SUPABASE CLIENT ---
     const _client = supabase.createClient(
         'https://mvoyrchefjcpjkdtezmz.supabase.co', 
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ'
     );
     
-    // --- CONSTANTS ---
     const ICONS = ['dumbbell', 'biceps-flexed', 'weight', 'disc', 'anchor', 'sword', 'shield', 'arrow-up-circle', 'arrow-down-circle', 'move', 'layers', 'columns-2', 'footprints', 'bike', 'waves', 'zap', 'activity', 'trophy'];
     const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes', 'Hips', 'Calves', 'Cardio'];
 
@@ -343,82 +342,40 @@
                 loading: true,
                 loadingText: 'Initializing Builder...',
                 session: null,
-                activeTab: 'routine', // 'routine' or 'exercise'
+                activeTab: 'routine',
                 showLibrary: false,
                 search: '',
-                activeFilter: null, // NEW: Muscle Group Filter
-                toast: { visible: false, title: '', message: '' },
+                activeFilter: null,
+                toast: { visible: false, title: '', message: '', icon: 'check' },
                 
-                // Data Stores
                 library: [],
                 iconLibrary: ICONS,
                 muscleGroups: MUSCLES,
 
-                // Routine Builder State
                 isEditing: false,
-                routine: { 
-                    id: null, 
-                    name: '', 
-                    icon: 'activity', 
-                    supersets: [] 
-                },
+                routine: { id: null, name: '', icon: 'activity', supersets: [] },
                 routineExercises: [], 
 
-                // Exercise Editor State
-                exerciseForm: { 
-                    id: null, 
-                    name: '', 
-                    group: '', 
-                    icon: 'dumbbell', 
-                    weight_type: 'combined',
-                    is_bodyweight: false, 
-                    is_static: false,
-                    static_weight: null 
-                }
+                exerciseForm: { id: null, name: '', group: '', icon: 'dumbbell', weight_type: 'combined', is_bodyweight: false, is_static: false, static_weight: null }
             }
         },
         computed: {
             groupedLibrary() {
                 let filtered = this.library;
-                
-                // NEW: Muscle Filter Logic
-                if (this.activeFilter) {
-                    filtered = filtered.filter(ex => ex.muscle_group === this.activeFilter);
-                }
-                
-                // Search Logic
-                if(this.search) {
-                    const s = this.search.toLowerCase();
-                    filtered = filtered.filter(ex => ex.name.toLowerCase().includes(s));
-                }
-                
-                // Group By Logic
+                if (this.activeFilter) filtered = filtered.filter(ex => ex.muscle_group === this.activeFilter);
+                if(this.search) filtered = filtered.filter(ex => ex.name.toLowerCase().includes(this.search.toLowerCase()));
                 const groups = {};
                 filtered.forEach(ex => {
                     const g = ex.muscle_group || 'Uncategorized';
                     if(!groups[g]) groups[g] = [];
                     groups[g].push(ex);
                 });
-                
-                // Sort keys
-                return Object.keys(groups).sort().reduce((obj, key) => { 
-                    obj[key] = groups[key]; 
-                    return obj;
-                }, {});
+                return Object.keys(groups).sort().reduce((obj, key) => { obj[key] = groups[key]; return obj; }, {});
             }
         },
         watch: {
-            activeTab(val) {
-                if(val === 'routine') {
-                    this.$nextTick(() => {
-                        this.initSortable();
-                        lucide.createIcons();
-                    });
-                }
-            },
-            showLibrary(val) {
-                if(val) this.$nextTick(() => lucide.createIcons());
-            }
+            activeTab(val) { if(val === 'routine') { this.$nextTick(() => { this.initSortable(); lucide.createIcons(); }); } },
+            showLibrary(val) { if(val) this.$nextTick(() => lucide.createIcons()); }
         },
         async mounted() {
             const { data: { session }, error } = await _client.auth.getSession();
@@ -427,7 +384,6 @@
 
             await this.fetchLibrary();
             
-            // Check URL for Edit Mode
             const urlParams = new URLSearchParams(window.location.search);
             const editId = urlParams.get('edit');
             if(editId) {
@@ -442,8 +398,8 @@
         },
         updated() { this.$nextTick(() => lucide.createIcons()); },
         methods: {
-            showToast(title, message) {
-                this.toast = { visible: true, title, message };
+            showToast(title, message, icon = 'check') {
+                this.toast = { visible: true, title, message, icon };
                 setTimeout(() => this.toast.visible = false, 3000);
             },
             
@@ -452,35 +408,35 @@
                 this.library = data || [];
             },
             
-            getExerciseName(id) {
-                const ex = this.library.find(e => e.id === id);
-                return ex ? ex.name : 'Unknown Exercise';
-            },
-            getExerciseIcon(id) {
-                const ex = this.library.find(e => e.id === id);
-                return ex ? ex.icon_name : 'dumbbell';
-            },
+            getExerciseName(id) { const ex = this.library.find(e => e.id === id); return ex ? ex.name : 'Unknown Exercise'; },
+            getExerciseIcon(id) { const ex = this.library.find(e => e.id === id); return ex ? ex.icon_name : 'dumbbell'; },
 
-            // ==========================
-            // ROUTINE BUILDER LOGIC
-            // ==========================
-            
             async loadRoutine(id) {
                 this.isEditing = true;
                 const { data, error } = await _client.from('routines').select('*').eq('id', id).single();
                 
-                if (error) {
-                    this.showToast("Error", "Could not load routine.");
-                    return;
-                }
+                if (error) { this.showToast("Error", "Could not load routine."); return; }
 
                 if (data) {
-                    this.routine = { 
-                        id: data.id, 
-                        name: data.name, 
-                        icon: data.icon_name, 
-                        supersets: (data.supersets && Array.isArray(data.supersets)) ? data.supersets : [] 
-                    };
+                    // SAFETY CHECK: If I don't own it, it becomes a CLONE immediately.
+                    if (data.user_id !== this.session.user.id) {
+                         this.isEditing = false; // It's a new routine now
+                         this.routine = { 
+                             id: null, // Clear ID to force INSERT
+                             name: data.name + ' (Clone)', 
+                             icon: data.icon_name, 
+                             supersets: data.supersets || [] 
+                         };
+                         this.showToast("Cloned", "Shared protocol copied as template.", "copy");
+                    } else {
+                         // I own it, normal edit mode
+                         this.routine = { 
+                             id: data.id, 
+                             name: data.name, 
+                             icon: data.icon_name, 
+                             supersets: data.supersets || [] 
+                         };
+                    }
 
                     this.routineExercises = (data.exercise_order || []).map(eid => ({
                         id: eid,
@@ -494,19 +450,12 @@
             initSortable() {
                 const el = this.$refs.sortableList;
                 if(!el) return;
-                
                 if(this.sortableInstance) this.sortableInstance.destroy();
-
                 this.sortableInstance = Sortable.create(el, {
-                    handle: '.drag-handle',
-                    animation: 200,
-                    ghostClass: 'sortable-ghost',
-                    dragClass: 'sortable-drag',
-                    forceFallback: true, 
+                    handle: '.drag-handle', animation: 200, ghostClass: 'sortable-ghost', dragClass: 'sortable-drag', forceFallback: true, 
                     onEnd: (evt) => {
                         const item = this.routineExercises.splice(evt.oldIndex, 1)[0];
                         this.routineExercises.splice(evt.newIndex, 0, item);
-                        
                         const ss = this.routine.supersets || [];
                         const affectedIndices = [evt.oldIndex, evt.newIndex];
                         this.routine.supersets = ss.filter(idx => !affectedIndices.includes(idx));
@@ -515,18 +464,8 @@
             },
 
             addExercise(id) {
-                this.routineExercises.push({
-                    id: id,
-                    uniqueKey: Math.random().toString(36).substring(2, 15)
-                });
-                
-                // NEW: Do NOT close library. Keep user in flow.
-                // this.showLibrary = false; <-- REMOVED
-                
-                this.$nextTick(() => {
-                    this.initSortable();
-                    this.showToast("Added", "Exercise added to sequence");
-                });
+                this.routineExercises.push({ id: id, uniqueKey: Math.random().toString(36).substring(2, 15) });
+                this.$nextTick(() => { this.initSortable(); this.showToast("Added", "Exercise added to sequence"); });
             },
 
             removeExercise(idx) {
@@ -534,41 +473,22 @@
                 this.routine.supersets = (this.routine.supersets || []).filter(i => i !== idx).map(i => i > idx ? i - 1 : i);
             },
 
-            isSuperset(idx) {
-                return (this.routine.supersets || []).includes(idx);
-            },
+            isSuperset(idx) { return (this.routine.supersets || []).includes(idx); },
 
             toggleSuperset(idx) {
                 if (!this.routine.supersets) this.routine.supersets = [];
                 const ss = this.routine.supersets;
-                
-                if (ss.includes(idx)) {
-                    ss.splice(ss.indexOf(idx), 1);
-                } else {
-                    ss.push(idx);
-                }
+                if (ss.includes(idx)) ss.splice(ss.indexOf(idx), 1); else ss.push(idx);
             },
 
             async saveRoutine() {
-                if (!this.routine.name) {
-                    this.showToast("Error", "Please name the protocol.");
-                    return;
-                }
-                
-                this.loading = true;
-                this.loadingText = "Saving Protocol...";
-
+                if (!this.routine.name) { this.showToast("Error", "Please name the protocol.", "alert-circle"); return; }
+                this.loading = true; this.loadingText = "Saving Protocol...";
                 const finalOrder = this.routineExercises.map(e => e.id);
-                const payload = {
-                    name: this.routine.name,
-                    icon_name: this.routine.icon,
-                    exercise_order: finalOrder,
-                    supersets: this.routine.supersets || [],
-                    user_id: this.session.user.id
-                };
-
+                const payload = { name: this.routine.name, icon_name: this.routine.icon, exercise_order: finalOrder, supersets: this.routine.supersets || [], user_id: this.session.user.id };
                 let error = null;
 
+                // Extra safety: If ID exists, ensure we are editing OUR OWN row (handled by RLS, but safe to be explicit)
                 if (this.routine.id) {
                     const { error: err } = await _client.from('routines').update(payload).eq('id', this.routine.id);
                     error = err;
@@ -576,14 +496,9 @@
                     const { error: err } = await _client.from('routines').insert([payload]);
                     error = err;
                 }
-
                 this.loading = false;
-                if (error) {
-                    console.error(error);
-                    this.showToast("Error", "Save failed. Check console.");
-                } else {
-                    window.location.href = 'gym.html';
-                }
+                if (error) { console.error(error); this.showToast("Error", "Save failed. Check console.", "alert-triangle"); } 
+                else { window.location.href = 'gym.html'; }
             },
 
             async deleteRoutine() {
@@ -593,22 +508,18 @@
                     window.location.href = 'gym.html';
                 }
             },
-
-            // ==========================
-            // EXERCISE EDITOR LOGIC
-            // ==========================
             
+            // NEW: Gatekeeper for Exercise Editing
+            attemptEditExercise(ex) {
+                if (ex.user_id !== this.session.user.id) {
+                    this.showToast("Locked", "Shared exercises cannot be modified.", "lock");
+                    return;
+                }
+                this.editExercise(ex);
+            },
+
             editExercise(ex) {
-                this.exerciseForm = { 
-                    id: ex.id, 
-                    name: ex.name, 
-                    group: ex.muscle_group, 
-                    icon: ex.icon_name, 
-                    weight_type: ex.weight_type,
-                    is_bodyweight: ex.is_bodyweight || false, 
-                    is_static: ex.is_static || false,
-                    static_weight: ex.static_weight || null
-                };
+                this.exerciseForm = { id: ex.id, name: ex.name, group: ex.muscle_group, icon: ex.icon_name, weight_type: ex.weight_type, is_bodyweight: ex.is_bodyweight || false, is_static: ex.is_static || false, static_weight: ex.static_weight || null };
                 window.scrollTo(0,0);
             },
 
@@ -617,27 +528,14 @@
             },
 
             async saveExercise() {
-                if (!this.exerciseForm.name || !this.exerciseForm.group) {
-                    this.showToast("Error", "Name and Muscle Group required.");
-                    return;
-                }
-
-                this.loading = true;
-                this.loadingText = "Updating Library...";
-
+                if (!this.exerciseForm.name || !this.exerciseForm.group) { this.showToast("Error", "Name and Muscle Group required.", "alert-circle"); return; }
+                this.loading = true; this.loadingText = "Updating Library...";
                 const payload = {
-                    name: this.exerciseForm.name,
-                    muscle_group: this.exerciseForm.group,
-                    icon_name: this.exerciseForm.icon,
-                    weight_type: this.exerciseForm.weight_type,
-                    is_bodyweight: this.exerciseForm.is_bodyweight, 
-                    is_static: this.exerciseForm.is_static,
-                    static_weight: this.exerciseForm.is_static ? this.exerciseForm.static_weight : null,
+                    name: this.exerciseForm.name, muscle_group: this.exerciseForm.group, icon_name: this.exerciseForm.icon, weight_type: this.exerciseForm.weight_type,
+                    is_bodyweight: this.exerciseForm.is_bodyweight, is_static: this.exerciseForm.is_static, static_weight: this.exerciseForm.is_static ? this.exerciseForm.static_weight : null,
                     user_id: this.session.user.id
                 };
-
                 let error = null;
-
                 if (this.exerciseForm.id) {
                     const { error: err } = await _client.from('exercises').update(payload).eq('id', this.exerciseForm.id);
                     error = err;
@@ -646,15 +544,12 @@
                     error = err;
                 }
 
-                if (error) {
-                    console.error(error);
-                    this.showToast("Error", "Could not save exercise.");
-                } else {
+                if (error) { console.error(error); this.showToast("Error", "Could not save exercise.", "alert-triangle"); } 
+                else {
                     this.showToast("Success", this.exerciseForm.id ? "Exercise updated." : "Exercise created.");
                     this.clearExerciseForm();
                     await this.fetchLibrary();
                 }
-                
                 this.loading = false;
             }
         }
