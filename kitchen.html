@@ -6,7 +6,7 @@
     <title>Kitchen | Constellation</title>
 
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Constellation">
     <link rel="manifest" href="manifest.json">
@@ -435,17 +435,15 @@
                     return;
                 }
                 
-                // FIXED: Ensure strict numeric values to avoid DB rejection
+                // FIXED: Round to Integer. Database rejects decimals.
                 const payload = { 
                     food_name: this.foodSearch.trim(), 
-                    calories: Number(this.foodEntry.cals) || 0, 
-                    protein: Number(this.foodEntry.protein) || 0, 
-                    carbs: Number(this.foodEntry.carbs) || 0, 
-                    fat: Number(this.foodEntry.fat) || 0, 
+                    calories: Math.round(parseFloat(this.foodEntry.cals) || 0), 
+                    protein: Math.round(parseFloat(this.foodEntry.protein) || 0), 
+                    carbs: Math.round(parseFloat(this.foodEntry.carbs) || 0), 
+                    fat: Math.round(parseFloat(this.foodEntry.fat) || 0), 
                     user_id: this.session.user.id 
                 };
-
-                console.log("Saving food payload:", payload);
 
                 const { error } = await _client.from('food_logs').insert([payload]);
                 
@@ -456,8 +454,8 @@
                     this.showMemory = false;
                     await Promise.all([this.fetchDailyLogs(), this.fetchRecentFoods()]);
                 } else {
-                    console.error("Save Error Details:", error.message, error.details);
-                    this.showToast("Error: " + error.message);
+                    console.error("Save Error Details:", error);
+                    this.showToast("Error: Check inputs");
                 }
             },
             openDeleteFuelModal(log) {
