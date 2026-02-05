@@ -466,6 +466,8 @@
                 this.toast.visible = true;
                 setTimeout(() => { this.toast.visible = false; }, 3000);
             },
+            
+            // NEW: AI TEXT HANDLER
             async handleAiText() {
                 if (!this.aiTextQuery) return;
                 
@@ -490,9 +492,10 @@
                         carbs: data.carbs || 0, 
                         fat: data.fat || 0 
                     };
-                    this.aiTextQuery = ''; 
+                    this.aiTextQuery = ''; // Reset
                 }
             },
+
             async fetchTargets() {
                 const { data } = await _client.from('daily_metrics')
                     .select('target_calories, target_protein, target_carbs, target_fat')
@@ -508,7 +511,10 @@
                 }
             },
             async saveTargets() {
-                const today = new Date().toLocaleDateString('en-CA');
+                const localMidnight = new Date();
+                localMidnight.setHours(0, 0, 0, 0);
+                const today = localMidnight.toISOString();
+
                 const { data: existing } = await _client.from('daily_metrics')
                     .select('id')
                     .eq('user_id', this.session.user.id) 
@@ -571,7 +577,10 @@
                 this.inventory = data || [];
             },
             async fetchDailyLogs() {
-                const today = new Date().toLocaleDateString('en-CA');
+                const localMidnight = new Date();
+                localMidnight.setHours(0, 0, 0, 0);
+                const today = localMidnight.toISOString();
+                
                 const { data } = await _client.from('food_logs').select('*').gte('created_at', today).order('created_at', { ascending: false });
                 this.dailyLogs = data || [];
             },
