@@ -222,7 +222,7 @@
                                 <rect :y="150 - day.p - day.c" width="28" :height="day.c" :fill="day.active ? '#10b981' : '#334155'" rx="2" class="bar-grow" style="animation-delay:0.1s" />
                                 <rect :y="150 - day.p - day.c - day.f" width="28" :height="day.f" :fill="day.active ? '#f59e0b' : '#475569'" rx="2" class="bar-grow" style="animation-delay:0.2s" />
                                 
-                                <rect v-if="day.isOver" :y="150 - day.p - day.c - day.f" width="28" :height="day.p + day.c + day.f" fill="#ef4444" fill-opacity="0.4" rx="2" class="bar-grow warning-overlay" />
+                                <rect v-if="day.isOver" :y="150 - day.p - day.c - day.f" width="28" :height="day.p + day.c + day.f" fill="#ef4444" fill-opacity="0.5" rx="2" class="bar-grow" />
                                 
                                 <text x="14" y="165" text-anchor="middle" font-size="8" :fill="day.isToday ? '#fff' : '#64748b'" font-weight="black" class="uppercase tracking-tighter">{{ day.label }}</text>
                             </g>
@@ -453,14 +453,32 @@
                 return latest ? latest.weight : '--'; 
             },
             globalMaxMacros() {
+                // 1. Group logs by LOCAL date (Timezone Fix)
+                const logsByDate = {};
+                this.weeklyLogs.forEach(l => {
+                    const localDate = new Date(l.created_at).toLocaleDateString('en-CA');
+                    if (!logsByDate[localDate]) logsByDate[localDate] = [];
+                    logsByDate[localDate].push(l);
+                });
+
                 const totals = [];
                 for(let i=6; i>=0; i--) {
                     const d = new Date(); d.setDate(d.getDate() - i);
-                    const ds = d.toLocaleDateString('en-CA'); 
-                    const logs = this.weeklyLogs.filter(l => l.created_at.startsWith(ds));
+                    const ds = d.toLocaleDateString('en-CA');
+                    const logs = logsByDate[ds] || [];
+                    
+                    // Sum of Mass (g) for that day
                     totals.push(logs.reduce((sum, l) => sum + (l.protein || 0) + (l.carbs || 0) + (l.fat || 0), 0));
                 }
-                return Math.max(...totals, 450); 
+
+                // 2. DYNAMIC CEILING LOGIC
+                // Calculate the "Perfect Day" mass (Targets) + 10% Buffer
+                const targetMass = (this.targets.protein || 0) + (this.targets.carbs || 0) + (this.targets.fat || 0);
+                const dynamicCeiling = targetMass * 1.1;
+
+                // Return max of (highest actual day OR dynamic ceiling)
+                // This ensures the graph is always scaled to at least your goal + 10%
+                return Math.max(...totals, dynamicCeiling); 
             },
             chartScale() { return 135 / this.globalMaxMacros; },
             activityMatrix() {
