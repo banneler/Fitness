@@ -217,9 +217,6 @@
                     </div>
                     <div class="h-44 w-full relative">
                         <svg class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
-                            <line v-if="targets.protein > 0" x1="0" :y1="150 - (targets.protein * chartScale)" x2="300" :y2="150 - (targets.protein * chartScale)" stroke="#22c55e" stroke-width="2" stroke-dasharray="6 3" />
-                            <text v-if="targets.protein > 0" x="295" :y="145 - (targets.protein * chartScale)" text-anchor="end" font-size="6" fill="#22c55e" font-weight="black" class="uppercase">Goal: {{targets.protein}}g</text>
-
                             <g v-for="(day, index) in weeklyMacrosFull" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
                                 <rect :y="150 - day.p" width="28" :height="day.p" :fill="day.active ? '#3b82f6' : '#1e293b'" rx="2" class="bar-grow" />
                                 <rect :y="150 - day.p - day.c" width="28" :height="day.c" :fill="day.active ? '#10b981' : '#334155'" rx="2" class="bar-grow" style="animation-delay:0.1s" />
@@ -229,6 +226,9 @@
                                 
                                 <text x="14" y="165" text-anchor="middle" font-size="8" :fill="day.isToday ? '#fff' : '#64748b'" font-weight="black" class="uppercase tracking-tighter">{{ day.label }}</text>
                             </g>
+
+                            <line v-if="targets.protein > 0" x1="0" :y1="150 - (targets.protein * chartScale)" x2="300" :y2="150 - (targets.protein * chartScale)" stroke="#22c55e" stroke-width="2" stroke-dasharray="6 3" />
+                            <text v-if="targets.protein > 0" x="295" :y="145 - (targets.protein * chartScale)" text-anchor="end" font-size="6" fill="#22c55e" font-weight="black" class="uppercase">Goal: {{targets.protein}}g</text>
                         </svg>
                     </div>
                 </section>
