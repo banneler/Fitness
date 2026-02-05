@@ -215,14 +215,35 @@
                             <div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div><span class="text-[6px] text-slate-500 font-black uppercase">Fat</span></div>
                         </div>
                     </div>
+                    <section class="glass p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                    <div class="flex justify-between items-end mb-6">
+                        <div class="flex items-center gap-2 opacity-60">
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-orange-400"></i>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">7-Day Fuel Composite</h3>
+                        </div>
+                        <div class="flex flex-col gap-1 items-end">
+                            <div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div><span class="text-[6px] text-slate-500 font-black uppercase">Protein</span></div>
+                            <div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div><span class="text-[6px] text-slate-500 font-black uppercase">Carbohydrates</span></div>
+                            <div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div><span class="text-[6px] text-slate-500 font-black uppercase">Fat</span></div>
+                        </div>
+                    </div>
                     <div class="h-44 w-full relative">
                         <svg class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
+                            <defs>
+                                <pattern id="hazardStripe" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                                    <rect width="4" height="8" transform="translate(0,0)" fill="#ef4444" fill-opacity="0.3"></rect>
+                                </pattern>
+                            </defs>
+                            
                             <g v-for="(day, index) in weeklyMacrosFull" :key="index" :transform="`translate(${index * 42 + 10}, 0)`">
                                 <rect :y="150 - day.p" width="28" :height="day.p" :fill="day.active ? '#3b82f6' : '#1e293b'" rx="2" class="bar-grow" />
                                 <rect :y="150 - day.p - day.c" width="28" :height="day.c" :fill="day.active ? '#10b981' : '#334155'" rx="2" class="bar-grow" style="animation-delay:0.1s" />
                                 <rect :y="150 - day.p - day.c - day.f" width="28" :height="day.f" :fill="day.active ? '#f59e0b' : '#475569'" rx="2" class="bar-grow" style="animation-delay:0.2s" />
                                 
-                                <rect v-if="day.isOver" :y="150 - day.p - day.c - day.f" width="28" :height="day.p + day.c + day.f" fill="#ef4444" fill-opacity="0.5" rx="2" class="bar-grow" />
+                                <g v-if="day.isOver">
+                                    <rect :y="150 - day.p - day.c - day.f" width="28" :height="day.p + day.c + day.f" fill="url(#hazardStripe)" rx="2" class="bar-grow" />
+                                    <rect :y="150 - day.p - day.c - day.f" width="28" :height="day.p + day.c + day.f" fill="none" stroke="#ef4444" stroke-width="1" rx="2" class="bar-grow" />
+                                </g>
                                 
                                 <text x="14" y="165" text-anchor="middle" font-size="8" :fill="day.isToday ? '#fff' : '#64748b'" font-weight="black" class="uppercase tracking-tighter">{{ day.label }}</text>
                             </g>
@@ -232,7 +253,7 @@
                         </svg>
                     </div>
                 </section>
-
+              
                 <section class="glass p-6 rounded-[2.5rem] shadow-xl space-y-6">
                     <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Growth Vectors</h3>
                     <div v-for="metric in ['waist', 'chest', 'arms', 'thigh']" :key="metric" class="space-y-2">
@@ -431,7 +452,7 @@
                 bodyMetrics: { waist: null, chest: null, arms: null, thigh: null },
                 
                 // Targets (Loaded via fetch, used for graph logic)
-                targets: { protein: 180, cals: 2500, carbs: 250, fat: 80 },
+                targets: { protein: 0, cals: 0, carbs: 0, fat: 0 },
                 
                 // CHARTS
                 chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0}, 
