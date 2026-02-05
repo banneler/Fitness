@@ -14,8 +14,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-    
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
@@ -31,13 +29,23 @@
         .silver-text { color: #cbd5e1; text-shadow: 0 0 10px rgba(203, 213, 225, 0.5); }
         .bronze-text { color: #fdba74; text-shadow: 0 0 10px rgba(253, 186, 116, 0.5); }
         
+        /* THE "SUPER-NOVA" FIRE ANIMATION */
+        /* This creates a massive, pulsing radioactive glow around the emoji */
+        @keyframes super-burn {
+            0% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.5)); }
+            50% { transform: scale(1.3); filter: drop-shadow(0 0 40px rgba(249, 115, 22, 1)); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.5)); }
+        }
+        
+        /* Smaller fire for the list */
         @keyframes pulse-orange {
             0%, 100% { filter: drop-shadow(0 0 2px #f97316); }
             50% { filter: drop-shadow(0 0 8px #f97316); }
         }
         .fire-anim { animation: pulse-orange 2s infinite; }
+        .super-fire { animation: super-burn 1.5s infinite ease-in-out; }
 
-        /* Smooth fade for the overlay */
+        /* Fade Transition for Overlay */
         .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
@@ -47,14 +55,10 @@
 
     <transition name="fade">
         <div v-if="showFire" class="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center pointer-events-none">
-            <lottie-player 
-                src="https://assets10.lottiefiles.com/packages/lf20_wdXBRc.json"
-                background="transparent" 
-                speed="1" 
-                style="width: 300px; height: 300px;" 
-                autoplay>
-            </lottie-player>
-            <div class="text-orange-500 font-black italic uppercase text-2xl tracking-widest mt-[-20px] animate-pulse">
+            <div class="text-[150px] super-fire leading-none">
+                🔥
+            </div>
+            <div class="text-orange-500 font-black italic uppercase text-2xl tracking-widest mt-8 animate-pulse">
                 Consistency is King
             </div>
         </div>
