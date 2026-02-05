@@ -29,7 +29,6 @@
         .silver-text { color: #cbd5e1; text-shadow: 0 0 10px rgba(203, 213, 225, 0.5); }
         .bronze-text { color: #fdba74; text-shadow: 0 0 10px rgba(253, 186, 116, 0.5); }
         
-        /* Fire Animation for Streaks */
         @keyframes pulse-orange {
             0%, 100% { filter: drop-shadow(0 0 2px #f97316); }
             50% { filter: drop-shadow(0 0 8px #f97316); }
@@ -80,7 +79,7 @@
                     <img v-if="user.avatar_url" :src="user.avatar_url" class="w-full h-full object-cover">
                     <span v-else class="font-black text-slate-500">{{ user.initials || '??' }}</span>
                 </div>
-                <div v-if="index === 0" class="absolute -top-4 -right-2 text-2xl rotate-12 z-10 drop-shadow-md">👑</div>
+                <div v-show="index === 0" class="absolute -top-4 -right-2 text-2xl rotate-12 z-10 drop-shadow-md">👑</div>
             </div>
 
             <div class="flex-1">
@@ -90,7 +89,7 @@
                 </div>
                 <div class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                     <span v-if="metric === 'volume'">Total Load</span>
-                    <span v-else-if="metric === 'sessions'">Workouts</span>
+                    <span v-else-if="metric === 'sessions'">Sessions</span>
                     <span v-else class="text-orange-400 flex items-center gap-1"><i data-lucide="flame" class="w-3 h-3"></i> Active Streak</span>
                 </div>
             </div>
@@ -127,7 +126,7 @@
             return {
                 session: null,
                 users: [],
-                metric: 'streak' // Default to streak because it's cool
+                metric: 'streak' 
             }
         },
         computed: {
