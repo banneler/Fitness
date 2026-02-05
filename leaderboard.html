@@ -65,11 +65,13 @@
                 {{ index + 1 }}
             </div>
 
-            <div class="w-12 h-12 rounded-full flex items-center justify-center bg-slate-800 border border-white/10 overflow-hidden relative">
-                <img v-if="user.avatar_url" :src="user.avatar_url" class="w-full h-full object-cover">
-                <span v-else class="font-black text-slate-500">{{ user.initials || '??' }}</span>
+            <div class="relative">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center bg-slate-800 border border-white/10 overflow-hidden">
+                    <img v-if="user.avatar_url" :src="user.avatar_url" class="w-full h-full object-cover">
+                    <span v-else class="font-black text-slate-500">{{ user.initials || '??' }}</span>
+                </div>
                 
-                <div v-if="index === 0" class="absolute -top-3 -right-1 text-2xl rotate-12">👑</div>
+                <div v-if="index === 0" class="absolute -top-4 -right-2 text-2xl rotate-12 z-10 drop-shadow-md">👑</div>
             </div>
 
             <div class="flex-1">
@@ -114,7 +116,7 @@
             return {
                 session: null,
                 users: [],
-                metric: 'volume' // 'volume' or 'sessions'
+                metric: 'volume' 
             }
         },
         computed: {
@@ -133,7 +135,6 @@
         },
         methods: {
             async fetchLeaderboard() {
-                // Fetch from our new SQL View
                 const { data, error } = await _client.from('leaderboard').select('*');
                 if (error) console.error(error);
                 else this.users = data || [];
@@ -145,7 +146,7 @@
                 if (index === 0) return 'rank-1 glass border-yellow-500/30';
                 if (index === 1) return 'rank-2 glass border-slate-400/30';
                 if (index === 2) return 'rank-3 glass border-orange-500/30';
-                return 'glass border-white/5 opacity-80'; // Peasant class
+                return 'glass border-white/5 opacity-80'; 
             },
             getRankColor(index) {
                 if (index === 0) return 'gold-text';
