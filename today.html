@@ -39,7 +39,6 @@
         .droplet-active { 
             fill: #3b82f6; 
             stroke: #3b82f6; 
-            /* Drop shadow creates the glow, overflow-visible on SVG prevents clipping */
             filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.8)); 
         }
         .droplet-inactive { stroke: #334155; fill: transparent; }
@@ -321,7 +320,7 @@
                 totalVolume: 0,
                 streak: 0, 
                 lowStockItems: [], 
-                resumeSessionName: null, // NEW
+                resumeSessionName: null, 
                 toast: { visible: false, title: '', message: '' }
             } 
         },
@@ -382,6 +381,13 @@
         },
         updated() { this.$nextTick(() => lucide.createIcons()); },
         methods: {
+            // FIX: Helper for Local Midnight Timezone correction
+            getLocalMidnightISO() {
+                const date = new Date();
+                date.setHours(0, 0, 0, 0); // Local Midnight
+                return date.toISOString(); // Convert to UTC
+            },
+
             async confirmLogout() {
                 await _client.auth.signOut();
                 window.location.href = 'index.html';
@@ -404,6 +410,7 @@
                 const { data } = await _client.from('daily_metrics')
                     .select('target_protein')
                     .eq('user_id', this.session.user.id)
+                    .not('target_protein', 'is', null) // FIX: Ignore empty logs
                     .order('created_at', { ascending: false })
                     .limit(1);
 
@@ -457,11 +464,13 @@
                 }
             },
             async fetchMetrics() {
-                const today = new Date().toLocaleDateString('en-CA');
+                // FIX: Use Local Midnight
+                const todayISO = this.getLocalMidnightISO();
+                
                 const { data: todayData } = await _client
                     .from('daily_metrics')
                     .select('*')
-                    .gte('created_at', today)
+                    .gte('created_at', todayISO)
                     .order('created_at', {ascending: false})
                     .limit(1);
 
@@ -481,7 +490,7 @@
                 const { data: prevData } = await _client
                     .from('daily_metrics')
                     .select('weight')
-                    .lt('created_at', today) 
+                    .lt('created_at', todayISO) 
                     .order('created_at', {ascending: false})
                     .limit(1);
                 
@@ -490,15 +499,19 @@
                 }
             },
             async fetchProtein() {
-                const today = new Date().toLocaleDateString('en-CA');
-                const { data } = await _client.from('food_logs').select('protein').gte('created_at', today);
+                // FIX: Use Local Midnight
+                const todayISO = this.getLocalMidnightISO();
+                
+                const { data } = await _client.from('food_logs').select('protein').gte('created_at', todayISO);
                 if (data) {
                     this.proteinCurrent = data.reduce((sum, item) => sum + (item.protein || 0), 0);
                 }
             },
             async fetchVolume() {
-                const today = new Date().toLocaleDateString('en-CA');
-                const { data } = await _client.from('workout_logs').select('sets_data').gte('created_at', today);
+                // FIX: Use Local Midnight
+                const todayISO = this.getLocalMidnightISO();
+                
+                const { data } = await _client.from('workout_logs').select('sets_data').gte('created_at', todayISO);
                 if (data) {
                     let vol = 0;
                     data.forEach(log => {
