@@ -509,12 +509,27 @@
                 return sessions.slice(0, 10);
             },
             // RESTORED: Logic for chart coloring
-            weeklyMacrosFull() {
+           weeklyMacrosFull() {
                 const days = [];
+                
+                // 1. Group logs by their LOCAL date bucket first
+                const logsByDate = {};
+                this.weeklyLogs.forEach(l => {
+                    // This converts UTC timestamp -> "2023-10-27" in YOUR local time
+                    const localDate = new Date(l.created_at).toLocaleDateString('en-CA');
+                    if (!logsByDate[localDate]) logsByDate[localDate] = [];
+                    logsByDate[localDate].push(l);
+                });
+
+                // 2. Build the last 7 days
                 for(let i=6; i>=0; i--) {
-                    const d = new Date(); d.setDate(d.getDate() - i);
-                    const ds = d.toLocaleDateString('en-CA'); 
-                    const logs = this.weeklyLogs.filter(l => l.created_at.startsWith(ds));
+                    const d = new Date(); 
+                    d.setDate(d.getDate() - i);
+                    const ds = d.toLocaleDateString('en-CA'); // Target Local Date
+                    
+                    // Grab logs that match this Local Date
+                    const logs = logsByDate[ds] || [];
+                    
                     const p = logs.reduce((sum, l) => sum + (l.protein || 0), 0);
                     const c = logs.reduce((sum, l) => sum + (l.carbs || 0), 0);
                     const f = logs.reduce((sum, l) => sum + (l.fat || 0), 0);
@@ -523,8 +538,8 @@
                     days.push({ 
                         label: d.toLocaleDateString('en-US', {weekday:'narrow'}), 
                         p: p * this.chartScale, c: c * this.chartScale, f: f * this.chartScale, 
-                        active: p >= this.targets.protein, // Restored
-                        isOver: totalCals > this.targets.cals, // Restored
+                        active: p >= this.targets.protein, 
+                        isOver: totalCals > this.targets.cals, 
                         isToday: ds === new Date().toLocaleDateString('en-CA') 
                     });
                 }
