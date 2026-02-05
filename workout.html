@@ -10,6 +10,9 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
@@ -123,7 +126,10 @@
                             </button>
                         </div>
 
-                        <div class="col-span-2 flex justify-center" v-if="ex.sets[i]"><input type="checkbox" v-model="ex.sets[i].done" @change="haptic" class="custom-checkbox"></div>
+                        <div class="col-span-2 flex justify-center" v-if="ex.sets[i]">
+                            <input type="checkbox" v-model="ex.sets[i].done" @change="handleSetComplete(ex, ex.sets[i])" class="custom-checkbox">
+                        </div>
+                        
                         <div class="col-span-1 flex justify-center" v-if="ex.sets[i]"><input type="checkbox" v-model="ex.sets[i].failure" @change="haptic" class="failure-checkbox"></div>
                     </div>
                 </template>
@@ -282,11 +288,37 @@
             haptic() { if (navigator.vibrate) navigator.vibrate(10); },
             isBodyWeight(type) { if(type === true) return true; if(!type) return false; const t = type.toString().toLowerCase(); return t === 'bodyweight' || t === 'body_weight' || t === 'bw' || t === 'true'; },
             
+            handleSetComplete(ex, set) {
+                this.haptic();
+                if(set.done) {
+                    const currentWeight = parseFloat(set.weight);
+                    // CHECK FOR PR: Must be valid number, must have previous PR > 0 (to avoid warmup celebrations), and must beat it.
+                    if(!isNaN(currentWeight) && ex.personalRecord > 0 && currentWeight > ex.personalRecord) {
+                        this.triggerConfetti();
+                    }
+                }
+            },
+            
+            triggerConfetti() {
+                confetti({
+                    particleCount: 150,
+                    spread: 100,
+                    origin: { y: 0.6 },
+                    colors: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'] // Blue, Red, Green, Gold
+                });
+            },
+
             openDualPicker(setObj, weightType) {
                 this.haptic(); this.pickerModal.targetSet = setObj; this.pickerModal.targetWeightType = weightType;
                 if(this.pickerModal.weightValues.length === 0) { for(let i=0; i<=500; i+=2.5) this.pickerModal.weightValues.push(i); for(let i=0; i<=100; i++) this.pickerModal.repsValues.push(i); }
-                let w = parseFloat(setObj.weight); if(isNaN(w)) w = parseFloat(setObj.prevWeight) || 0;
-                let r = parseInt(setObj.reps); if(isNaN(r)) r = parseInt(setObj.prevReps) || 0;
+                
+                // SMART INPUT LOGIC: Default to Previous Weight if current is empty
+                let w = parseFloat(setObj.weight); 
+                if(isNaN(w)) w = parseFloat(setObj.prevWeight) || 0; 
+                
+                let r = parseInt(setObj.reps); 
+                if(isNaN(r)) r = parseInt(setObj.prevReps) || 0;
+                
                 this.pickerModal.weightVal = w; this.pickerModal.repsVal = r; this.pickerModal.visible = true;
                 this.$nextTick(() => {
                     const itemHeight = 50;
