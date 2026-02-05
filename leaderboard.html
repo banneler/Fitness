@@ -37,8 +37,8 @@
         }
         .fire-anim { animation: pulse-orange 2s infinite; }
 
-        /* Fade Transition for the Overlay */
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+        /* Smooth fade for the overlay */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
 </head>
@@ -46,15 +46,15 @@
 <div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32 pt-16">
 
     <transition name="fade">
-        <div v-if="showFire" class="fixed inset-0 z-[200] bg-black/90 flex flex-col items-center justify-center">
+        <div v-if="showFire" class="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center pointer-events-none">
             <lottie-player 
-                src="https://lottie.host/57ac9728-6623-445e-b816-302a64319401/eX7Y6tQ2wR.json" 
+                src="https://assets10.lottiefiles.com/packages/lf20_wdXBRc.json"
                 background="transparent" 
                 speed="1" 
                 style="width: 300px; height: 300px;" 
                 autoplay>
             </lottie-player>
-            <div class="text-orange-500 font-black italic uppercase text-2xl tracking-widest mt-[-50px] animate-pulse">
+            <div class="text-orange-500 font-black italic uppercase text-2xl tracking-widest mt-[-20px] animate-pulse">
                 Consistency is King
             </div>
         </div>
@@ -171,7 +171,7 @@
                 session: null,
                 users: [],
                 metric: 'volume', // Default to Volume
-                showFire: false // Hidden by default
+                showFire: false
             }
         },
         computed: {
@@ -191,15 +191,15 @@
         },
         methods: {
             changeToStreak() {
-                if (this.metric === 'streak') return; // Don't replay if already there
+                if (this.metric === 'streak') return;
                 
                 this.metric = 'streak';
-                this.showFire = true; // Ignite the overlay
+                this.showFire = true;
                 
-                // Hide it after 2.5 seconds
+                // Hide animation after 2.2 seconds
                 setTimeout(() => {
                     this.showFire = false;
-                }, 2500);
+                }, 2200);
             },
             async fetchLeaderboard() {
                 const { data, error } = await _client.from('leaderboard').select('*');
