@@ -14,6 +14,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
@@ -34,10 +36,29 @@
             50% { filter: drop-shadow(0 0 8px #f97316); }
         }
         .fire-anim { animation: pulse-orange 2s infinite; }
+
+        /* Fade Transition for the Overlay */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
 </head>
 <body class="font-sans antialiased bg-slate-950">
 <div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32 pt-16">
+
+    <transition name="fade">
+        <div v-if="showFire" class="fixed inset-0 z-[200] bg-black/90 flex flex-col items-center justify-center">
+            <lottie-player 
+                src="https://lottie.host/57ac9728-6623-445e-b816-302a64319401/eX7Y6tQ2wR.json" 
+                background="transparent" 
+                speed="1" 
+                style="width: 300px; height: 300px;" 
+                autoplay>
+            </lottie-player>
+            <div class="text-orange-500 font-black italic uppercase text-2xl tracking-widest mt-[-50px] animate-pulse">
+                Consistency is King
+            </div>
+        </div>
+    </transition>
 
     <header class="mb-8 flex items-center justify-between">
         <div>
@@ -60,7 +81,7 @@
             <button @click="metric = 'sessions'" class="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all" :class="metric === 'sessions' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500'">
                 Consistency
             </button>
-            <button @click="metric = 'streak'" class="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1" :class="metric === 'streak' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-500'">
+            <button @click="changeToStreak" class="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1" :class="metric === 'streak' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-500'">
                 <span class="fire-anim" v-if="metric === 'streak'">🔥</span> Streak
             </button>
         </div>
@@ -149,7 +170,8 @@
             return {
                 session: null,
                 users: [],
-                metric: 'volume' // FIXED: Start with Volume
+                metric: 'volume', // Default to Volume
+                showFire: false // Hidden by default
             }
         },
         computed: {
@@ -168,6 +190,17 @@
             this.$nextTick(() => lucide.createIcons());
         },
         methods: {
+            changeToStreak() {
+                if (this.metric === 'streak') return; // Don't replay if already there
+                
+                this.metric = 'streak';
+                this.showFire = true; // Ignite the overlay
+                
+                // Hide it after 2.5 seconds
+                setTimeout(() => {
+                    this.showFire = false;
+                }, 2500);
+            },
             async fetchLeaderboard() {
                 const { data, error } = await _client.from('leaderboard').select('*');
                 if (error) console.error(error);
