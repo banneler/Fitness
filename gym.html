@@ -409,18 +409,42 @@
                 if (currentSession) pushSession(currentSession);
                 this.recentSessions = sessions.slice(0, 5);
             },
-            async generateAIWorkout() {
-                this.loading = true; this.loadingText = "Analyzing Biometrics...";
-                setTimeout(async () => {
-                    const fillerExercises = this.libraryExercises.slice(0, 3).map(e => e.id);
-                    if(fillerExercises.length) {
-                        await _client.from('routines').insert([{ name: 'AI Gap Filler', icon_name: 'zap', exercise_order: fillerExercises, user_id: this.session.user.id }]);
-                        await this.fetchRoutines();
-                        this.toast = { visible: true, title: 'AI Generated', message: 'Gap Filler Protocol Created' }; setTimeout(() => this.toast.visible = false, 3000);
-                    }
-                    this.loading = false;
-                }, 1000);
-            },
+          async generateAIWorkout() {
+    this.loading = true;
+    this.loadingText = "Analyzing Biometrics & Fatigue..."; // Cool loading text
+    
+    try {
+        // 1. Call the Edge Function
+        const { data, error } = await _client.functions.invoke('ai-workout-generator', {
+            body: { user_id: this.session.user.id }
+        });
+
+        if (error) throw error;
+
+        // 2. Insert the AI's Plan into the Database
+        const { error: insertError } = await _client.from('routines').insert([{
+            name: data.name,
+            icon_name: data.icon_name || 'sparkles',
+            exercise_order: data.exercise_order,
+            user_id: this.session.user.id
+        }]);
+
+        if (insertError) throw insertError;
+
+        // 3. Refresh UI
+        await this.fetchRoutines();
+        this.toast = { visible: true, title: 'AI Generated', message: `Created: ${data.name}` };
+        
+        // Auto-hide toast
+        setTimeout(() => this.toast.visible = false, 3000);
+
+    } catch (err) {
+        console.error(err);
+        this.toast = { visible: true, title: 'Error', message: 'Neural Link Failed' };
+    } finally {
+        this.loading = false;
+    }
+},
             getScheduleForDay(dayName) { const entry = this.schedule.find(s => s.day_of_week === dayName); return entry ? { name: entry.routines.name, icon_name: entry.routines.icon_name } : null; },
             openScheduleModal(dayObj) { this.scheduleModal = dayObj; },
             async saveSchedule(routine) {
