@@ -66,7 +66,6 @@
             </div>
 
             <div class="w-12 h-12 rounded-full flex items-center justify-center bg-slate-800 border border-white/10 overflow-hidden relative">
-                <img v-if="user.avatar_url" :src="user.avatar_url" class="w-full h-full object-cover">
                 <span v-else class="font-black text-slate-500">{{ user.initials || '??' }}</span>
                 
                 <div v-if="index === 0" class="absolute -top-3 -right-1 text-2xl rotate-12">👑</div>
