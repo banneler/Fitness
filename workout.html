@@ -457,7 +457,20 @@
             prevExercise() { if(this.activeExerciseIdx > 0) this.activeExerciseIdx--; },
             getMaxSets(group) { if(!group || !group.exercises) return 0; return Math.max(...group.exercises.map(e => e.sets.length)); },
             addSetToGroup(groupIdx) { const group = this.activeRoutine.data[groupIdx]; group.exercises.forEach(ex => { const prev = ex.sets.slice(-1)[0]; ex.sets.push({ weight: '', prevWeight: prev?.prevWeight||'', reps: '', prevReps: prev?.prevReps||'', done: false, failure: false }); }); },
-            toggleRestTimer() { this.haptic(); this.restTimerRunning = !this.restTimerRunning; if(this.restTimerRunning) { this.restTimer = 0; this.restInterval = setInterval(() => this.restTimer++, 1000); } else clearInterval(this.restInterval); },
+            toggleRestTimer() { 
+                this.haptic(); 
+                this.restTimerRunning = !this.restTimerRunning; 
+                if(this.restTimerRunning) { 
+                    const restStart = Date.now(); // Mark the exact millisecond
+                    this.restTimer = 0; 
+                    this.restInterval = setInterval(() => {
+                        // Calculate exact difference so backgrounding doesn't matter
+                        this.restTimer = Math.floor((Date.now() - restStart) / 1000);
+                    }, 1000); 
+                } else {
+                    clearInterval(this.restInterval); 
+                }
+            },
             formatTimer(s) { if(s < 0) s = 0; return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
             
             async confirmFinishSession() {
