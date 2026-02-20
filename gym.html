@@ -131,6 +131,24 @@
                 </button>
             </div>
 
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <button @click="startFreeflow" class="glass p-6 rounded-3xl text-left hover:border-purple-500/50 transition-all active:scale-95 group border-dashed border-slate-700 flex flex-col justify-between min-h-[160px]">
+                    <i data-lucide="zap" class="w-8 h-8 text-purple-500 group-hover:scale-110 transition-transform"></i>
+                    <div>
+                        <div class="font-black text-xl italic text-slate-400">FREEFLOW</div>
+                        <div class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Listen to the Iron</div>
+                    </div>
+                </button>
+
+                <a href="builder.html" class="glass p-6 rounded-3xl text-left hover:border-green-500/50 transition-all active:scale-95 group border-dashed border-slate-700 flex flex-col justify-between min-h-[160px]">
+                    <i data-lucide="plus-circle" class="w-8 h-8 text-green-500 group-hover:scale-110 transition-transform"></i>
+                    <div>
+                        <div class="font-black text-xl italic text-slate-400">NEW</div>
+                        <div class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Workout / Exercise</div>
+                    </div>
+                </a>
+            </div>
+
             <div class="grid grid-cols-2 gap-4 mb-8">
                 <button v-for="routine in filteredRoutines" :key="routine.id" @click="previewRoutine(routine)" class="glass p-6 rounded-3xl text-left hover:border-blue-500/50 transition-all active:scale-95 group relative overflow-hidden flex flex-col justify-between min-h-[160px]">
                     
@@ -153,14 +171,6 @@
                         </div>
                     </div>
                 </button>
-
-                <a href="builder.html" class="glass p-6 rounded-3xl text-left hover:border-green-500/50 transition-all active:scale-95 group border-dashed border-slate-700 flex flex-col justify-between min-h-[160px]">
-                    <i data-lucide="plus-circle" class="w-8 h-8 text-green-500 group-hover:scale-110 transition-transform"></i>
-                    <div>
-                        <div class="font-black text-xl italic text-slate-400">NEW</div>
-                        <div class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Workout / Exercise</div>
-                    </div>
-                </a>
             </div>
 
             <div class="glass rounded-[2.5rem] p-8 shadow-2xl pb-8">
@@ -195,9 +205,9 @@
             <a href="today.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="calendar" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Today</span></a>
             <a href="#" class="flex flex-col items-center tab-active text-blue-500"><i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Gym</span></a>
             <a href="leaderboard.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
-    <i data-lucide="trophy" class="w-6 h-6 mb-1"></i>
-    <span class="text-[8px] font-black uppercase italic tracking-widest">Rank</span>
-</a>
+                <i data-lucide="trophy" class="w-6 h-6 mb-1"></i>
+                <span class="text-[8px] font-black uppercase italic tracking-widest">Rank</span>
+            </a>
             <a href="kitchen.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="utensils" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Kitchen</span></a>
             <a href="tracker.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="line-chart" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Tracker</span></a>
         </nav>
@@ -355,6 +365,18 @@
         methods: {
             async confirmLogout() { await _client.auth.signOut(); window.location.href = 'index.html'; },
             
+            // NEW FREEFLOW TRIGGER
+            startFreeflow() {
+                const state = { 
+                    activeRoutine: { name: 'Freeflow Session', data: [] }, 
+                    sessionStartTime: Date.now(), 
+                    activeExerciseIdx: 0, 
+                    stackTaken: false 
+                };
+                localStorage.setItem('constellation_active_session', JSON.stringify(state));
+                window.location.href = 'workout.html';
+            },
+
             async fetchRoutines() { 
                 const { data } = await _client
                     .from('routines')
@@ -366,16 +388,13 @@
             async fetchExercises() { const { data } = await _client.from('exercises').select('*').order('name'); this.libraryExercises = data || []; },
             async fetchSchedule() { const { data } = await _client.from('schedule').select('*, routines(name, icon_name)').eq('user_id', this.session.user.id); this.schedule = data || []; },
             
-            // FIXED: Heatmap now uses strict UTC Math to prevent Timezone Drifts
             async fetchHistory() {
                 const { data: rawData } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false }).limit(300);
                 this.rawLogs = rawData || [];
                 
-                // Get Current Time in UTC to match Database
-                const now = new Date().getTime(); // Browser time (milliseconds)
+                const now = new Date().getTime(); 
                 const oneDay = 1000 * 60 * 60 * 24;
                 
-                // Reset Map
                 for(let m in this.muscleHeatmap) { this.muscleHeatmap[m].lastTrained = null; this.muscleHeatmap[m].status = 'fresh'; }
                 
                 this.rawLogs.forEach(log => {
@@ -383,7 +402,6 @@
                     if(exDef && exDef.muscle_group) {
                         let groupKey = exDef.muscle_group.toLowerCase();
                         if(this.muscleHeatmap[groupKey]) {
-                             // Crucial: Treat the DB time as the "Truth"
                              const logTime = new Date(log.created_at).getTime();
                              if(!this.muscleHeatmap[groupKey].lastTrained || logTime > this.muscleHeatmap[groupKey].lastTrained) {
                                  this.muscleHeatmap[groupKey].lastTrained = logTime;
@@ -392,29 +410,25 @@
                     }
                 });
 
-                // Apply Logic
                 for(let m in this.muscleHeatmap) {
                     if(this.muscleHeatmap[m].lastTrained) {
-                        // Math: (Now - WorkoutTime) / OneDayMilliseconds
                         const daysSince = (now - this.muscleHeatmap[m].lastTrained) / oneDay;
                         
-                        if(daysSince < 1.5) this.muscleHeatmap[m].status = 'recov'; // Red (0-36 hrs)
-                        else if(daysSince < 3.5) this.muscleHeatmap[m].status = 'tired'; // Purple (36-84 hrs)
-                        else if(daysSince < 6) this.muscleHeatmap[m].status = 'prime'; // Teal (3.5 - 6 days)
-                        else this.muscleHeatmap[m].status = 'fresh'; // Blue (6+ days)
+                        if(daysSince < 1.5) this.muscleHeatmap[m].status = 'recov'; 
+                        else if(daysSince < 3.5) this.muscleHeatmap[m].status = 'tired'; 
+                        else if(daysSince < 6) this.muscleHeatmap[m].status = 'prime'; 
+                        else this.muscleHeatmap[m].status = 'fresh'; 
                     }
                 }
 
                 if (!this.rawLogs.length) { this.recentSessions = []; return; }
                 
-                // Grouping Sessions Logic
                 const sessions = []; let currentSession = null;
                 const pushSession = (s) => { s.exerciseCount = s.exercises.size; delete s.exercises; sessions.push(s); };
                 
                 this.rawLogs.forEach((log) => {
                     const logTime = new Date(log.created_at).getTime();
                     
-                    // FIX: Ensure the display date is LOCAL TIME (User's Watch), not UTC
                     const displayDate = new Date(log.created_at).toLocaleDateString(); 
 
                     if (!currentSession) {
