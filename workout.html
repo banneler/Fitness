@@ -13,6 +13,8 @@
     
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/exercise-library.js"></script>
     <script src="js/exercise-history.js"></script>
     <script src="js/heatmap.js"></script>
     <script src="js/social.js"></script>
@@ -326,9 +328,9 @@
             this.profileName = profile?.full_name || '';
             const { data: streakLogs } = await _client.from('workout_logs').select('created_at').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(120);
             this.streak = FitnessSocial.calculateStreak(streakLogs || []);
-            const { data: historyLogs } = await _client.from('workout_logs').select('exercise_name, created_at').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(300);
+            const { data: historyLogs } = await _client.from('workout_logs').select('exercise_name, exercise_id, created_at').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(300);
             this.rawLogs = historyLogs || [];
-            const { data } = await _client.from('exercises').select('*').order('name'); this.libraryExercises = data || [];
+            this.libraryExercises = await FitnessExerciseLibrary.fetch(_client);
             
             const savedSession = localStorage.getItem('constellation_active_session');
             if (savedSession) {
@@ -569,7 +571,14 @@
                 this.activeRoutine.data.forEach(group => {
                     group.exercises.forEach(ex => {
                         const validSets = ex.sets.filter(s => s.done);
-                        if (validSets.length > 0) flatLogs.push({ user_id: this.session.user.id, exercise_name: ex.name, protocol_name: this.activeRoutine.name, sets_data: validSets, duration_seconds: this.sessionTimer, created_at: new Date().toISOString() });
+                        if (validSets.length > 0) {
+                            flatLogs.push(FitnessExerciseLibrary.logPayload(this.session.user.id, ex, {
+                                protocol_name: this.activeRoutine.name,
+                                sets_data: validSets,
+                                duration_seconds: this.sessionTimer,
+                                created_at: new Date().toISOString()
+                            }));
+                        }
                     });
                 });
                 if(flatLogs.length) await _client.from('workout_logs').insert(flatLogs);

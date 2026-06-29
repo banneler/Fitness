@@ -20,7 +20,9 @@ const FitnessHeatmap = {
         const oneDay = 86400000;
 
         (rawLogs || []).forEach(log => {
-            const exDef = (libraryExercises || []).find(e => e.name === log.exercise_name);
+            const exDef = typeof FitnessExerciseLibrary !== 'undefined'
+                ? FitnessExerciseLibrary.findForLog(libraryExercises, log)
+                : (libraryExercises || []).find(e => e.name === log.exercise_name);
             if (!exDef?.muscle_group) return;
             const key = exDef.muscle_group.toLowerCase();
             if (!statuses[key]) return;

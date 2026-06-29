@@ -15,6 +15,8 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="js/config.js"></script>
+    <script src="js/exercise-library.js"></script>
     <script src="js/exercise-history.js"></script>
     
     <style>
@@ -386,11 +388,11 @@
                 this.routines = data || []; 
             },
             
-            async fetchExercises() { const { data } = await _client.from('exercises').select('*').order('name'); this.libraryExercises = data || []; },
+            async fetchExercises() { this.libraryExercises = await FitnessExerciseLibrary.fetch(_client); },
             async fetchSchedule() { const { data } = await _client.from('schedule').select('*, routines(name, icon_name)').eq('user_id', this.session.user.id); this.schedule = data || []; },
             
             async fetchHistory() {
-                const { data: rawData } = await _client.from('workout_logs').select('*').order('created_at', { ascending: false }).limit(300);
+                const { data: rawData } = await _client.from('workout_logs').select('*').eq('user_id', this.session.user.id).order('created_at', { ascending: false }).limit(300);
                 this.rawLogs = rawData || [];
                 
                 const now = new Date().getTime(); 
@@ -399,7 +401,7 @@
                 for(let m in this.muscleHeatmap) { this.muscleHeatmap[m].lastTrained = null; this.muscleHeatmap[m].status = 'fresh'; }
                 
                 this.rawLogs.forEach(log => {
-                    const exDef = this.libraryExercises.find(e => e.name === log.exercise_name);
+                    const exDef = FitnessExerciseLibrary.findForLog(this.libraryExercises, log);
                     if(exDef && exDef.muscle_group) {
                         let groupKey = exDef.muscle_group.toLowerCase();
                         if(this.muscleHeatmap[groupKey]) {

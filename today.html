@@ -16,6 +16,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/exercise-library.js"></script>
     <script src="js/heatmap.js"></script>
     <script src="js/social.js"></script>
     <style>
@@ -471,12 +473,12 @@
             },
             async fetchHeatmapData() {
                 const uid = this.session.user.id;
-                const [logsRes, exRes] = await Promise.all([
-                    _client.from('workout_logs').select('exercise_name, created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(300),
-                    _client.from('exercises').select('*').order('name')
+                const [logsRes, library] = await Promise.all([
+                    _client.from('workout_logs').select('exercise_name, exercise_id, created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(300),
+                    FitnessExerciseLibrary.fetch(_client)
                 ]);
                 this.heatmapLogs = logsRes.data || [];
-                this.libraryExercises = exRes.data || [];
+                this.libraryExercises = library;
             },
             async shareTodayWorkout() {
                 if (!this.todayWorkoutLogs.length) {

@@ -16,6 +16,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/exercise-library.js"></script>
     <script src="js/heatmap.js"></script>
     <script src="js/social.js"></script>
     <style>
@@ -652,11 +654,14 @@
                 else if (result === 'clipboard') this.showToast('Copied!', 'Workout recap copied to clipboard.');
                 else if (result === 'failed') this.showToast('Share Failed', 'Try again from the workout finish screen.');
             },
-            async fetchLibrary() { const { data } = await _client.from('exercises').select('*').order('name'); this.library = data || []; },
+            async fetchLibrary() { this.library = await FitnessExerciseLibrary.fetch(_client); },
             filterExercises() { this.showMvmtList = true; },
             async selectMovement(ex) {
-                this.selectedMovement = ex; this.mvmtSearch = ex.name; this.showMvmtList = false; 
-                const { data } = await _client.from('workout_logs').select('*').eq('exercise_name', ex.name).order('created_at', { ascending: true }).limit(30);
+                this.selectedMovement = ex; this.mvmtSearch = ex.name; this.showMvmtList = false;
+                let q = _client.from('workout_logs').select('*').eq('user_id', this.session.user.id);
+                if (ex.id) q = q.eq('exercise_id', ex.id);
+                else q = q.eq('exercise_name', ex.name);
+                const { data } = await q.order('created_at', { ascending: true }).limit(30);
                 this.mvmtHistory = data || []; this.calculateMvmtChart();
             },
             calculateMvmtChart() {

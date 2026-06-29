@@ -16,6 +16,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/exercise-library.js"></script>
 
     <style>
         [v-cloak] { display: none !important; }
@@ -312,14 +314,16 @@
                                 </div>
                                 <div class="text-xs font-bold text-white group-hover:text-blue-200 transition-colors">
                                     {{ ex.name }}
-                                    <div class="flex gap-1 mt-0.5">
+                                    <div class="flex gap-1 mt-0.5 flex-wrap">
+                                        <span v-if="isStandardExercise(ex)" class="text-[8px] text-blue-400 uppercase tracking-wider">Standard</span>
+                                        <span v-else-if="canEditExercise(ex)" class="text-[8px] text-emerald-500 uppercase tracking-wider">Personal</span>
                                         <span v-if="ex.is_bodyweight" class="text-[8px] text-slate-500 uppercase tracking-wider">BW</span>
                                         <span v-if="ex.is_static" class="text-[8px] text-slate-500 uppercase tracking-wider">Static</span>
                                         <span v-if="ex.static_weight" class="text-[8px] text-blue-500 uppercase tracking-wider ml-1">({{ex.static_weight}}lbs)</span>
                                     </div>
                                 </div>
                             </div>
-                            <i v-if="ex.user_id === session.user.id" data-lucide="pencil" class="w-3 h-3 text-slate-600 group-hover:text-white"></i>
+                            <i v-if="canEditExercise(ex)" data-lucide="pencil" class="w-3 h-3 text-slate-600 group-hover:text-white"></i>
                             <i v-else data-lucide="lock" class="w-3 h-3 text-slate-700"></i>
                         </button>
                     </div>
@@ -408,12 +412,13 @@
             },
             
             async fetchLibrary() {
-                const { data } = await _client.from('exercises').select('*').order('name');
-                this.library = data || [];
+                this.library = await FitnessExerciseLibrary.fetch(_client);
             },
             
             getExerciseName(id) { const ex = this.library.find(e => e.id === id); return ex ? ex.name : 'Unknown Exercise'; },
             getExerciseIcon(id) { const ex = this.library.find(e => e.id === id); return ex ? ex.icon_name : 'dumbbell'; },
+            isStandardExercise(ex) { return FitnessExerciseLibrary.isStandard(ex); },
+            canEditExercise(ex) { return FitnessExerciseLibrary.canEdit(ex, this.session?.user?.id); },
 
             async loadRoutine(id) {
                 this.isEditing = true;
@@ -582,8 +587,8 @@
             },
             
             attemptEditExercise(ex) {
-                if (ex.user_id !== this.session.user.id) {
-                    this.showToast("Locked", "Shared exercises cannot be modified.", "lock");
+                if (!FitnessExerciseLibrary.canEdit(ex, this.session.user.id)) {
+                    this.showToast("Locked", FitnessExerciseLibrary.isStandard(ex) ? "Standard exercises cannot be modified." : "You can only edit your own exercises.", "lock");
                     return;
                 }
                 this.editExercise(ex);
@@ -617,7 +622,8 @@
 
                 if (error) { console.error(error); this.showToast("Error", "Could not save exercise.", "alert-triangle"); } 
                 else {
-                    this.showToast("Success", this.exerciseForm.id ? "Exercise updated." : "Exercise created.");
+                    const isAdmin = this.session.user.id === FitnessExerciseLibrary.standardOwnerId();
+                    this.showToast("Success", this.exerciseForm.id ? "Exercise updated." : (isAdmin ? "Added to standard library." : "Personal exercise created."));
                     this.clearExerciseForm();
                     await this.fetchLibrary();
                 }
