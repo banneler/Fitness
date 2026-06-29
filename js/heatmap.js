@@ -4,8 +4,8 @@
 const FitnessHeatmap = {
     MUSCLES: ['chest', 'back', 'shoulders', 'biceps', 'triceps', 'forearms', 'core', 'quads', 'hamstrings', 'glutes', 'calves', 'hips'],
     BODY_GROUPS: ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Hips'],
-    /** Gym page viewBox */
-    GYM_VIEWBOX: '0 130 612 590',
+    /** Gym page viewBox — shifted up vs raw SVG so the crown is not clipped at y=130 */
+    GYM_VIEWBOX: '0 95 612 635',
     /** Share card viewBox — shifted up vs gym so the crown isn't clipped at y=130 */
     SHARE_VIEWBOX: '0 95 612 635',
     _bodyMapSvg: null,
@@ -89,7 +89,7 @@ const FitnessHeatmap = {
         return raw
             .replace(
                 'viewBox="0 130 612 590"',
-                `viewBox="${this.GYM_VIEWBOX}" preserveAspectRatio="xMidYMid meet" style="height:300px;width:auto;display:block;margin:0 auto;filter:drop-shadow(0 0 25px rgba(59,130,246,0.4))"`
+                `viewBox="${this.GYM_VIEWBOX}" preserveAspectRatio="xMidYMin meet" style="height:300px;width:auto;display:block;margin:0 auto;overflow:visible;filter:drop-shadow(0 0 25px rgba(59,130,246,0.4))"`
             )
             .replace('</svg>', `<style>${style}</style></svg>`);
     },

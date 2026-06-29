@@ -206,6 +206,21 @@ const FitnessSocial = {
         return events;
     },
 
+    isArenaLeader(users, userId, metric) {
+        const sorted = this.sortLeaderboardByMetric(users, metric);
+        return sorted[0]?.user_id === userId;
+    },
+
+    buildCoronationEvent(metric) {
+        const meta = this.metricShareMeta(metric);
+        return {
+            metric,
+            title: meta.title,
+            color: meta.color,
+            emoji: this.contextEmoji(metric)
+        };
+    },
+
     buildShareStatHeroBlock({
         top,
         score,

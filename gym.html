@@ -106,8 +106,8 @@
                 </div>
             </header>
 
-            <div class="glass p-6 rounded-[2.5rem] mb-8 border-t-4 border-t-blue-500 shadow-xl relative overflow-hidden">
-                <div class="absolute inset-0 bg-blue-900/10 blur-3xl pointer-events-none"></div>
+            <div class="glass p-6 rounded-[2.5rem] mb-8 border-t-4 border-t-blue-500 shadow-xl relative">
+                <div class="absolute inset-0 bg-blue-900/10 blur-3xl pointer-events-none rounded-[2.5rem] overflow-hidden"></div>
                 <div class="flex items-center justify-between mb-6 relative z-10">
                     <div class="flex items-center gap-2 opacity-80">
                         <i data-lucide="flame" class="w-4 h-4 text-blue-400"></i>
@@ -119,7 +119,7 @@
                         <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span> Cold</span>
                     </div>
                 </div>
-                <div class="flex justify-center relative z-10 px-2">
+                <div class="flex justify-center relative z-10 px-2 pt-2 pb-1 overflow-visible">
                     <heatmap-svg :statuses="muscleHeatmap"></heatmap-svg>
                 </div>
             </div>
@@ -305,9 +305,9 @@
             }
         },
         template: `
-            <div class="flex justify-center w-full">
+            <div class="flex justify-center w-full overflow-visible py-1">
                 <div v-if="loadError" class="text-[10px] font-bold uppercase tracking-widest text-slate-500 py-12 text-center">Heatmap unavailable</div>
-                <div v-else v-html="svgHtml"></div>
+                <div v-else class="overflow-visible" v-html="svgHtml"></div>
             </div>
         `
     });
