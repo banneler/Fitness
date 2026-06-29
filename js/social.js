@@ -32,8 +32,12 @@ const FitnessSocial = {
         return this.formatSetLabel(set, isBodyWeight).text;
     },
 
+    isSetFailure(set) {
+        return !!set && (set.failure === true || set.failure === 1 || set.failure === 'true');
+    },
+
     failureSkullMarkup() {
-        return `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin:0 0 0 3px;line-height:0;"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M15 12h.01"/><path d="M9 12h.01"/><path d="M10 16v4"/><path d="M14 16v4"/><path d="M8 20v2h8v-2"/><path d="M12 3c-1.5 0-3 1-3 3v5h6V6c0-2-1.5-3-3-3z"/><circle cx="9" cy="12" r="1" fill="#f87171" stroke="none"/><circle cx="15" cy="12" r="1" fill="#f87171" stroke="none"/></svg></span>`;
+        return `<span style="display:inline-block;margin-left:5px;padding:1px 5px;border-radius:6px;background:rgba(239,68,68,0.28);color:#fca5a5;font-size:12px;font-weight:900;line-height:1;vertical-align:baseline;font-family:system-ui,-apple-system,sans-serif;">☠</span>`;
     },
 
     formatSetLabel(set, isBodyWeight) {
@@ -41,8 +45,9 @@ const FitnessSocial = {
         if (!reps) return null;
         const weight = parseFloat(set.weight);
         const wLabel = isNaN(weight) || weight === 0 ? 'BW' : weight;
-        const text = `${wLabel}×${reps}${set.failure ? ' ☠' : ''}`;
-        const html = set.failure ? `${wLabel}×${reps}${this.failureSkullMarkup()}` : `${wLabel}×${reps}`;
+        const failed = this.isSetFailure(set);
+        const text = `${wLabel}×${reps}${failed ? ' ☠' : ''}`;
+        const html = failed ? `${wLabel}×${reps}${this.failureSkullMarkup()}` : `${wLabel}×${reps}`;
         return { text, html };
     },
 
@@ -51,13 +56,21 @@ const FitnessSocial = {
         return formatted ? formatted.html : null;
     },
 
-    findSessionLogs(rawWorkouts, startTime, windowMs = 3600000) {
-        const t = parseInt(startTime, 10);
+    findSessionLogs(rawWorkouts, startTime, windowMs = 3600000, anchorId = null) {
+        let t = parseInt(startTime, 10);
+        if (anchorId && rawWorkouts?.length) {
+            const anchor = rawWorkouts.find(log => log.id === anchorId);
+            if (anchor) t = new Date(anchor.created_at).getTime();
+        }
         if (!t || !rawWorkouts?.length) return [];
-        return rawWorkouts.filter(log => {
+        const matched = rawWorkouts.filter(log => {
             const logTime = new Date(log.created_at).getTime();
             return Math.abs(logTime - t) <= windowMs;
         });
+        if (matched.length) return matched;
+        if (!anchorId) return [];
+        const anchor = rawWorkouts.find(log => log.id === anchorId);
+        return anchor ? [anchor] : [];
     },
 
     computeFromActiveRoutine(activeRoutine, sessionTimer) {

@@ -643,7 +643,7 @@
                 });
             },
             openRecap(session) {
-                window.location.href = `recap.html?t=${session.startTime}`;
+                window.location.href = `recap.html?t=${session.startTime}&id=${session.id}`;
             },
             async shareSessionWorkout(session) {
                 const logs = this.sessionLogs(session);

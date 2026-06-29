@@ -85,6 +85,8 @@
 
 <script>
 const { createApp } = Vue;
+const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
+
 createApp({
     data() {
         return {
@@ -100,7 +102,8 @@ createApp({
     async mounted() {
         const params = new URLSearchParams(window.location.search);
         const startTime = params.get('t');
-        if (!startTime) {
+        const anchorId = params.get('id');
+        if (!startTime && !anchorId) {
             this.error = 'No session specified.';
             this.loading = false;
             this.$nextTick(() => lucide.createIcons());
@@ -111,13 +114,15 @@ createApp({
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
 
-            const [{ data: profile }, { data: logs }, { data: library }] = await Promise.all([
-                _client.from('profiles').select('full_name').eq('id', session.user.id).single(),
-                _client.from('workout_logs').select('*').order('created_at', { ascending: false }),
-                _client.from('exercises').select('*')
+            const [{ data: profile }, { data: logs, error: logsError }, library] = await Promise.all([
+                _client.from('profiles').select('full_name').eq('id', session.user.id).maybeSingle(),
+                _client.from('workout_logs').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }),
+                FitnessExerciseLibrary.fetch(_client).catch(() => [])
             ]);
 
-            const sessionLogs = FitnessSocial.findSessionLogs(logs || [], startTime);
+            if (logsError) throw logsError;
+
+            const sessionLogs = FitnessSocial.findSessionLogs(logs || [], startTime, 3600000, anchorId);
             if (!sessionLogs.length) {
                 this.error = 'This workout session could not be loaded.';
                 this.loading = false;
