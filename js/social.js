@@ -29,11 +29,35 @@ const FitnessSocial = {
     },
 
     setLabel(set, isBodyWeight) {
+        return this.formatSetLabel(set, isBodyWeight).text;
+    },
+
+    failureSkullMarkup() {
+        return `<span style="display:inline-flex;align-items:center;vertical-align:middle;margin:0 0 0 3px;line-height:0;"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M15 12h.01"/><path d="M9 12h.01"/><path d="M10 16v4"/><path d="M14 16v4"/><path d="M8 20v2h8v-2"/><path d="M12 3c-1.5 0-3 1-3 3v5h6V6c0-2-1.5-3-3-3z"/><circle cx="9" cy="12" r="1" fill="#f87171" stroke="none"/><circle cx="15" cy="12" r="1" fill="#f87171" stroke="none"/></svg></span>`;
+    },
+
+    formatSetLabel(set, isBodyWeight) {
         const reps = parseInt(set.reps, 10) || 0;
         if (!reps) return null;
         const weight = parseFloat(set.weight);
         const wLabel = isNaN(weight) || weight === 0 ? 'BW' : weight;
-        return `${wLabel}×${reps}`;
+        const text = `${wLabel}×${reps}${set.failure ? ' ☠' : ''}`;
+        const html = set.failure ? `${wLabel}×${reps}${this.failureSkullMarkup()}` : `${wLabel}×${reps}`;
+        return { text, html };
+    },
+
+    setLabelHtml(set, isBodyWeight) {
+        const formatted = this.formatSetLabel(set, isBodyWeight);
+        return formatted ? formatted.html : null;
+    },
+
+    findSessionLogs(rawWorkouts, startTime, windowMs = 3600000) {
+        const t = parseInt(startTime, 10);
+        if (!t || !rawWorkouts?.length) return [];
+        return rawWorkouts.filter(log => {
+            const logTime = new Date(log.created_at).getTime();
+            return Math.abs(logTime - t) <= windowMs;
+        });
     },
 
     computeFromActiveRoutine(activeRoutine, sessionTimer) {
@@ -54,8 +78,8 @@ const FitnessSocial = {
                     const r = parseInt(s.reps, 10) || 0;
                     tonnage += w * r;
                     setCount++;
-                    const label = this.setLabel(s, ex.weightType === 'bodyweight' || ex.weightType === true);
-                    if (label) sets.push(label);
+                    const formatted = this.formatSetLabel(s, ex.weightType === 'bodyweight' || ex.weightType === true);
+                    if (formatted) sets.push(formatted);
                 });
                 if (sets.length) liftLines.push({ name: ex.name, sets });
             });
@@ -85,8 +109,8 @@ const FitnessSocial = {
                 const r = parseInt(s.reps, 10) || 0;
                 tonnage += w * r;
                 setCount++;
-                const label = this.setLabel(s);
-                if (label) sets.push(label);
+                const formatted = this.formatSetLabel(s);
+                if (formatted) sets.push(formatted);
             });
             if (sets.length) liftLines.push({ name: log.exercise_name, sets });
         });
@@ -110,7 +134,8 @@ const FitnessSocial = {
         if (liftLines?.length) {
             msg += '\n\n';
             liftLines.forEach(line => {
-                msg += `${line.name}: ${line.sets.join(', ')}\n`;
+                const setText = (s) => (typeof s === 'string' ? s : s.text);
+                msg += `${line.name}: ${line.sets.map(setText).join(', ')}\n`;
             });
         }
         msg += '\nThe Arena awaits 🏆';
@@ -397,7 +422,7 @@ const FitnessSocial = {
         const liftRows = (liftLines || []).map(line => `
             <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);">
                 <div style="font-size:10px;font-weight:800;color:#e2e8f0;text-transform:uppercase;font-style:italic;margin-bottom:3px;">${line.name}</div>
-                <div style="font-size:11px;font-weight:900;color:#3b82f6;letter-spacing:0.04em;">${line.sets.join('  ·  ')}</div>
+                <div style="font-size:11px;font-weight:900;color:#3b82f6;letter-spacing:0.04em;">${line.sets.map(s => (typeof s === 'string' ? s : s.html)).join('  ·  ')}</div>
             </div>`).join('');
 
         const streakBadgeHtml = streak > 0

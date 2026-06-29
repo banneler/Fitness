@@ -306,10 +306,14 @@
                     <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Performance Ledger</h3>
                     <div v-for="session in recentWorkouts" :key="session.id" class="bg-slate-950/40 p-5 rounded-3xl border border-white/5 mb-4 relative overflow-hidden">
                         <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h4 class="text-lg font-black italic text-slate-200 uppercase leading-none mb-1">{{ session.protocol_name }}</h4>
+                            <button type="button" @click="openRecap(session)" class="text-left flex-1 min-w-0 pr-3 active:opacity-80 transition-opacity group">
+                                <h4 class="text-lg font-black italic text-slate-200 uppercase leading-none mb-1 group-hover:text-blue-400 transition-colors">{{ session.protocol_name }}</h4>
                                 <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{{ session.date }}</p>
-                            </div>
+                                <p class="text-[8px] font-black text-blue-500/70 uppercase tracking-widest mt-2 flex items-center gap-1">
+                                    <i data-lucide="sparkles" class="w-3 h-3"></i>
+                                    View Recap
+                                </p>
+                            </button>
                             <div class="text-right">
                                 <span class="block text-xl font-black text-blue-400 leading-none">{{ session.tonnage.toLocaleString() }}</span>
                                 <span class="text-[7px] font-black text-slate-600 uppercase tracking-widest">LBS Tonnage</span>
@@ -637,6 +641,9 @@
                     const logTime = new Date(log.created_at).getTime();
                     return Math.abs(logTime - session.startTime) <= 3600000;
                 });
+            },
+            openRecap(session) {
+                window.location.href = `recap.html?t=${session.startTime}`;
             },
             async shareSessionWorkout(session) {
                 const logs = this.sessionLogs(session);
