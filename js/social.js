@@ -166,7 +166,7 @@ const FitnessSocial = {
             <div style="background:rgba(15,23,42,0.65);border-radius:18px;padding:16px;border:1px solid rgba(59,130,246,0.2);">
                 <div style="font-size:8px;font-weight:900;color:#3b82f6;letter-spacing:0.22em;margin-bottom:10px;">SYSTEM STATUS</div>
                 <div style="margin-bottom:10px;text-align:center;">${legend}</div>
-                <div style="height:158px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0 8px;">${bodySvgHtml || ''}</div>
+                <div style="width:100%;text-align:center;line-height:0;padding:4px 0 8px;">${bodySvgHtml || ''}</div>
             </div>
 
             <div style="text-align:center;margin-top:20px;font-size:9px;font-weight:900;color:#94a3b8;letter-spacing:0.28em;text-transform:uppercase;">The Arena Awaits 🏆</div>
@@ -303,6 +303,8 @@ const FitnessSocial = {
             items.push({
                 id: `comment-${row.id}`,
                 type: 'comment',
+                commentId: row.id,
+                authorUserId: row.author_user_id,
                 actorName: p.full_name || p.initials || 'Someone',
                 actorInitials: p.initials || '??',
                 context: row.context,

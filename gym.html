@@ -15,6 +15,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="js/exercise-history.js"></script>
     
     <style>
         [v-cloak] { display: none !important; }
@@ -528,9 +529,7 @@
 
                 for (let group of draftRoutine.data) {
                     for (let ex of group.exercises) {
-                        const { data: lastLog } = await _client.from('workout_logs').select('sets_data').eq('exercise_name', ex.name).order('created_at', { ascending: false }).limit(1).single();
-                        if(lastLog && lastLog.sets_data) ex.sets = lastLog.sets_data.map(s => ({ weight: '', prevWeight: s.weight, reps: '', prevReps: s.reps, done: false, failure: false }));
-                        while(ex.sets.length < 3) ex.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
+                        await FitnessExerciseHistory.initExerciseSets(_client, this.session.user.id, ex, 3);
                     }
                 }
 

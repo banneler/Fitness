@@ -150,6 +150,9 @@
                             </div>
                             <p class="text-xs text-slate-400 break-words">{{ comment.body }}</p>
                         </div>
+                        <button v-if="session && comment.author_user_id === session.user.id" @click="deleteComment(comment)" :disabled="socialBusy" class="flex-shrink-0 w-7 h-7 rounded-lg bg-slate-900/80 border border-white/5 flex items-center justify-center text-slate-500 hover:text-red-400 hover:border-red-500/30 active:scale-95 disabled:opacity-40" title="Delete comment">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
                     </div>
                     <div v-if="session" class="flex gap-2">
                         <input v-model="commentDraft[user.user_id]" @keyup.enter="postComment(user.user_id)" maxlength="280" placeholder="Send encouragement..." class="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500">
@@ -336,6 +339,19 @@
                 } catch (e) {
                     console.error(e);
                     this.showToast('Could not post comment');
+                }
+                this.socialBusy = false;
+            },
+            async deleteComment(comment) {
+                if (!this.session || comment.author_user_id !== this.session.user.id) return;
+                this.socialBusy = true;
+                try {
+                    const { error } = await _client.from('arena_comments').delete().eq('id', comment.id);
+                    if (error) throw error;
+                    await this.fetchSocial();
+                } catch (e) {
+                    console.error(e);
+                    this.showToast('Could not delete comment');
                 }
                 this.socialBusy = false;
             },

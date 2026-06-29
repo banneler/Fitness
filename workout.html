@@ -13,6 +13,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="js/exercise-history.js"></script>
     <script src="js/heatmap.js"></script>
     <script src="js/social.js"></script>
 
@@ -339,6 +340,7 @@
                         this.activeExerciseIdx = parsed.activeExerciseIdx || 0;
                         this.stackTaken = parsed.stackTaken || false;
                         this.startSessionTimer();
+                        await FitnessExerciseHistory.hydrateRoutine(_client, session.user.id, this.activeRoutine);
                     } else { throw new Error("Invalid Session"); }
                 } catch (e) { window.location.href = 'gym.html'; }
             } else { window.location.href = 'gym.html'; }
@@ -463,13 +465,8 @@
             async selectSwap(newExDef) {
                 const { groupIdx, exIdx } = this.swapModal; const group = this.activeRoutine.data[groupIdx];
                 const newEx = { id: newExDef.id, name: newExDef.name, icon: newExDef.icon_name, weightType: (newExDef.is_bodyweight ? 'bodyweight' : 'combined'), personalRecord: 0, isLinked: group.exercises[exIdx].isLinked, sets: [] };
-                
-                const { data: lastLog } = await _client.from('workout_logs').select('sets_data').eq('exercise_name', newEx.name).order('created_at', { ascending: false }).limit(1).single();
-                
-                if(lastLog && lastLog.sets_data) newEx.sets = lastLog.sets_data.map(s => ({ weight: '', prevWeight: s.weight, reps: '', prevReps: s.reps, done: false, failure: false }));
                 const targetSets = group.exercises[exIdx].sets.length;
-                while(newEx.sets.length < targetSets) newEx.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
-                
+                await FitnessExerciseHistory.initExerciseSets(_client, this.session.user.id, newEx, targetSets);
                 group.exercises[exIdx] = newEx; 
                 this.swapModal.visible = false;
             },
@@ -485,36 +482,7 @@
                     sets: [] 
                 };
 
-                const { data: history } = await _client.from('workout_logs')
-                    .select('sets_data')
-                    .eq('exercise_name', newEx.name)
-                    .order('created_at', { ascending: false });
-
-                let maxWeight = 0;
-                if (history) {
-                    history.forEach(log => {
-                        if (log.sets_data) {
-                            log.sets_data.forEach(s => {
-                                const w = parseFloat(s.weight) || 0;
-                                if (w > maxWeight) maxWeight = w;
-                            });
-                        }
-                    });
-                }
-                newEx.personalRecord = maxWeight;
-
-                const lastLog = history && history.length > 0 ? history[0] : null;
-                if (lastLog && lastLog.sets_data) {
-                    newEx.sets = lastLog.sets_data.map(s => ({ 
-                        weight: '', prevWeight: s.weight, 
-                        reps: '', prevReps: s.reps, 
-                        done: false, failure: false 
-                    }));
-                }
-
-                while (newEx.sets.length < 3) {
-                    newEx.sets.push({ weight: '', prevWeight: '', reps: '', prevReps: '', done: false, failure: false });
-                }
+                await FitnessExerciseHistory.initExerciseSets(_client, this.session.user.id, newEx, 3);
 
                 this.activeRoutine.data.push({ type: 'cluster', exercises: [newEx] });
                 this.swapModal.visible = false;
