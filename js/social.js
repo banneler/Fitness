@@ -156,8 +156,8 @@ const FitnessSocial = {
         return `<div style="background:${background};border-radius:22px;padding:18px 20px 20px;border:${border};text-align:center;margin-bottom:${marginBottom}px;box-sizing:border-box;"><div style="font-size:${topSize}px;font-weight:900;color:${topColor};letter-spacing:0.08em;line-height:1.2;margin:0 0 14px;">${top}</div><div style="font-size:${scoreSize}px;font-weight:900;font-style:italic;line-height:1;color:${scoreColor};margin:0 0 14px;transform:translateY(${scoreNudge}px);">${score}</div><div style="font-size:9px;font-weight:800;color:${bottomColor};letter-spacing:0.08em;line-height:1.2;margin:0;">${bottom}</div></div>`;
     },
 
-    buildShareDualLineCell(topLine, bottomLine, minHeight = 56) {
-        return `<div style="background:rgba(15,23,42,0.85);border-radius:14px;border:1px solid rgba(255,255,255,0.07);box-sizing:border-box;min-height:${minHeight}px;"><table role="presentation" style="width:100%;height:${minHeight}px;border-collapse:collapse;"><tr><td style="vertical-align:middle;text-align:center;padding:8px 10px;line-height:1.2;">${topLine}${bottomLine}</td></tr></table></div>`;
+    buildShareDualLineCell(topLine, bottomLine, minHeight = 56, padY = 14) {
+        return `<div style="background:rgba(15,23,42,0.85);border-radius:14px;border:1px solid rgba(255,255,255,0.07);box-sizing:border-box;height:${minHeight}px;text-align:center;padding:${padY}px 10px;line-height:1.2;overflow:hidden;">${topLine}${bottomLine}</div>`;
     },
 
     buildShareMetaCell(label, value, valueColor = '#e2e8f0') {
