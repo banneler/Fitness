@@ -117,6 +117,154 @@ const FitnessSocial = {
         return msg.trim();
     },
 
+    rankLabel(rank) {
+        if (rank === 0) return '1st';
+        if (rank === 1) return '2nd';
+        if (rank === 2) return '3rd';
+        return `#${rank + 1}`;
+    },
+
+    rankTheme(rank) {
+        if (rank === 0) return { accent: '#facc15', border: 'rgba(250,204,21,0.45)', glow: 'rgba(250,204,21,0.15)', label: 'GOLD' };
+        if (rank === 1) return { accent: '#cbd5e1', border: 'rgba(203,213,225,0.45)', glow: 'rgba(203,213,225,0.12)', label: 'SILVER' };
+        if (rank === 2) return { accent: '#fdba74', border: 'rgba(253,186,116,0.45)', glow: 'rgba(253,186,116,0.12)', label: 'BRONZE' };
+        return { accent: '#a855f7', border: 'rgba(168,85,247,0.35)', glow: 'rgba(168,85,247,0.12)', label: 'CONTENDER' };
+    },
+
+    metricShareMeta(metric) {
+        return ({
+            volume: { title: 'Volume Leader', subtitle: 'Iron moved this week', emoji: '🏋️', color: '#a855f7' },
+            sessions: { title: 'Consistency Leader', subtitle: 'Sessions this week', emoji: '📅', color: '#3b82f6' },
+            streak: { title: 'Streak Leader', subtitle: 'Active day streak', emoji: '🔥', color: '#f97316' }
+        })[metric] || { title: 'Arena Standings', subtitle: 'Last 7 days', emoji: '🏆', color: '#a855f7' };
+    },
+
+    buildStreakShareCardHtml({ athleteName, streakDays }) {
+        const who = athleteName || 'Athlete';
+        const days = parseInt(streakDays, 10) || 0;
+        return `<div style="width:380px;background:linear-gradient(165deg,#1c1917 0%,#020617 45%,#431407 100%);border-radius:28px;padding:28px 24px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid rgba(249,115,22,0.45);">
+            <div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;margin-bottom:6px;">BA FITNESS · THE ARENA</div>
+            <div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin-bottom:4px;">${who}</div>
+            <div style="font-size:11px;font-weight:800;color:#f97316;text-transform:uppercase;letter-spacing:0.14em;margin-bottom:22px;">Streak Champion</div>
+
+            <div style="background:rgba(15,23,42,0.65);border-radius:22px;padding:28px 20px;border:1px solid rgba(249,115,22,0.25);text-align:center;margin-bottom:20px;">
+                <div style="font-size:48px;line-height:1;margin-bottom:12px;">🔥</div>
+                <div style="font-size:56px;font-weight:900;font-style:italic;line-height:1;color:#f97316;text-shadow:0 0 30px rgba(249,115,22,0.45);">${days}</div>
+                <div style="font-size:10px;font-weight:900;color:#fdba74;letter-spacing:0.28em;margin-top:8px;">DAY STREAK</div>
+            </div>
+
+            <div style="background:rgba(249,115,22,0.08);border-radius:16px;padding:14px 16px;border:1px solid rgba(249,115,22,0.2);text-align:center;margin-bottom:8px;">
+                <div style="font-size:11px;font-weight:900;color:#fed7aa;letter-spacing:0.18em;text-transform:uppercase;font-style:italic;">Consistency is King</div>
+            </div>
+
+            <div style="text-align:center;margin-top:18px;font-size:9px;font-weight:900;color:#94a3b8;letter-spacing:0.28em;text-transform:uppercase;">The Arena Awaits 🏆</div>
+        </div>`;
+    },
+
+    buildRankingShareCardHtml({ athleteName, rank, metric, score, unit, metricLabel }) {
+        const who = athleteName || 'Athlete';
+        const theme = this.rankTheme(rank);
+        const meta = this.metricShareMeta(metric);
+        const rankText = this.rankLabel(rank).toUpperCase();
+        const placeLine = rank <= 2 ? `${rankText} PLACE` : `${rankText} IN THE ARENA`;
+
+        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#1e1b4b 100%);border-radius:28px;padding:28px 24px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid ${theme.border};">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+                <div>
+                    <div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;margin-bottom:6px;">BA FITNESS · THE ARENA</div>
+                    <div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;">${who}</div>
+                    <div style="font-size:11px;font-weight:800;color:${meta.color};text-transform:uppercase;letter-spacing:0.12em;margin-top:4px;">${meta.title}</div>
+                </div>
+                <div style="background:${theme.glow};border:1px solid ${theme.border};border-radius:12px;padding:8px 10px;text-align:center;min-width:52px;">
+                    <div style="font-size:18px;line-height:1;">${meta.emoji}</div>
+                    <div style="font-size:8px;font-weight:900;color:${theme.accent};margin-top:4px;letter-spacing:0.08em;">${theme.label}</div>
+                </div>
+            </div>
+
+            <div style="background:rgba(15,23,42,0.75);border-radius:22px;padding:24px 20px;border:1px solid rgba(255,255,255,0.08);text-align:center;margin-bottom:18px;">
+                <div style="font-size:13px;font-weight:900;color:${theme.accent};letter-spacing:0.22em;margin-bottom:8px;">${placeLine}</div>
+                <div style="font-size:52px;font-weight:900;font-style:italic;line-height:1;color:#ffffff;">${score}</div>
+                <div style="font-size:9px;font-weight:800;color:#64748b;letter-spacing:0.2em;margin-top:8px;">${unit} · ${meta.subtitle.toUpperCase()}</div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">
+                <div style="background:rgba(15,23,42,0.85);border-radius:14px;padding:12px 10px;border:1px solid rgba(255,255,255,0.07);text-align:center;">
+                    <div style="font-size:8px;font-weight:800;color:#64748b;letter-spacing:0.12em;margin-bottom:4px;">METRIC</div>
+                    <div style="font-size:11px;font-weight:900;color:${meta.color};text-transform:uppercase;">${metricLabel || meta.title}</div>
+                </div>
+                <div style="background:rgba(15,23,42,0.85);border-radius:14px;padding:12px 10px;border:1px solid rgba(255,255,255,0.07);text-align:center;">
+                    <div style="font-size:8px;font-weight:800;color:#64748b;letter-spacing:0.12em;margin-bottom:4px;">WINDOW</div>
+                    <div style="font-size:11px;font-weight:900;color:#e2e8f0;text-transform:uppercase;">Last 7 Days</div>
+                </div>
+            </div>
+
+            <div style="text-align:center;margin-top:18px;font-size:9px;font-weight:900;color:#94a3b8;letter-spacing:0.28em;text-transform:uppercase;">The Arena Awaits 🏆</div>
+        </div>`;
+    },
+
+    buildStreakFallbackText({ athleteName, streakDays }) {
+        const name = athleteName || 'I';
+        return `🔥 ${name} is on a ${streakDays}-day workout streak in BA Fitness!\n\nConsistency is king. See you in The Arena 🏆`;
+    },
+
+    buildRankingFallbackText({ athleteName, rank, metric, score, unit }) {
+        const name = athleteName || 'I';
+        const rankLabel = this.rankLabel(rank);
+        const meta = this.metricShareMeta(metric);
+        return `🏆 ${name} is sitting ${rankLabel} on the BA Fitness leaderboard!\n\n${score} ${unit.toLowerCase()} · ${meta.subtitle}\n\nCome get yours in The Arena 💪`;
+    },
+
+    async captureHtmlCard(html) {
+        if (typeof html2canvas === 'undefined') return null;
+        const host = document.createElement('div');
+        host.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
+        host.innerHTML = html;
+        document.body.appendChild(host);
+        try {
+            await new Promise(r => setTimeout(r, 150));
+            const canvas = await html2canvas(host.firstElementChild, {
+                backgroundColor: '#020617',
+                scale: 2,
+                useCORS: true,
+                logging: false
+            });
+            return await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.92));
+        } finally {
+            document.body.removeChild(host);
+        }
+    },
+
+    async shareImageCard({ html, fallbackText, filename = 'ba-fitness-arena.png' }) {
+        const blob = await this.captureHtmlCard(html);
+
+        if (blob && navigator.share) {
+            const file = new File([blob], filename, { type: 'image/png' });
+            const filePayload = { files: [file] };
+            if (!navigator.canShare || navigator.canShare(filePayload)) {
+                try {
+                    await navigator.share(filePayload);
+                    return 'shared-image';
+                } catch (err) {
+                    if (err?.name === 'AbortError') return 'cancelled';
+                }
+            }
+        }
+
+        return this.shareText(fallbackText);
+    },
+
+    async shareStreakCard(options) {
+        const html = this.buildStreakShareCardHtml(options);
+        const fallbackText = this.buildStreakFallbackText(options);
+        return this.shareImageCard({ html, fallbackText, filename: 'ba-fitness-streak.png' });
+    },
+
+    async shareRankingCard(options) {
+        const html = this.buildRankingShareCardHtml(options);
+        const fallbackText = this.buildRankingFallbackText(options);
+        return this.shareImageCard({ html, fallbackText, filename: 'ba-fitness-rank.png' });
+    },
+
     buildShareCardHtml({ athleteName, protocolName, durationSeconds, tonnage, setCount, exerciseCount, liftLines, streak, bodySvgHtml, heatmapStatuses }) {
         const who = athleteName || 'Athlete';
         const proto = protocolName || 'Workout';
@@ -166,7 +314,7 @@ const FitnessSocial = {
             <div style="background:rgba(15,23,42,0.65);border-radius:18px;padding:16px;border:1px solid rgba(59,130,246,0.2);">
                 <div style="font-size:8px;font-weight:900;color:#3b82f6;letter-spacing:0.22em;margin-bottom:10px;">SYSTEM STATUS</div>
                 <div style="margin-bottom:10px;text-align:center;">${legend}</div>
-                <div style="width:100%;text-align:center;line-height:0;padding:4px 0 8px;">${bodySvgHtml || ''}</div>
+                <div style="width:100%;text-align:center;line-height:0;padding:10px 0 8px;overflow:visible;">${bodySvgHtml || ''}</div>
             </div>
 
             <div style="text-align:center;margin-top:20px;font-size:9px;font-weight:900;color:#94a3b8;letter-spacing:0.28em;text-transform:uppercase;">The Arena Awaits 🏆</div>
@@ -189,22 +337,7 @@ const FitnessSocial = {
     async captureShareCard(options) {
         if (typeof html2canvas === 'undefined') return null;
         const enriched = await this.enrichShareOptions(options);
-        const host = document.createElement('div');
-        host.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
-        host.innerHTML = this.buildShareCardHtml(enriched);
-        document.body.appendChild(host);
-        try {
-            await new Promise(r => setTimeout(r, 150));
-            const canvas = await html2canvas(host.firstElementChild, {
-                backgroundColor: '#020617',
-                scale: 2,
-                useCORS: true,
-                logging: false
-            });
-            return await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.92));
-        } finally {
-            document.body.removeChild(host);
-        }
+        return this.captureHtmlCard(this.buildShareCardHtml(enriched));
     },
 
     async shareRecap(options) {

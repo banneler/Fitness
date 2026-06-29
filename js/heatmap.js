@@ -4,6 +4,8 @@
 const FitnessHeatmap = {
     MUSCLES: ['chest', 'back', 'shoulders', 'biceps', 'triceps', 'forearms', 'core', 'quads', 'hamstrings', 'glutes', 'calves', 'hips'],
     BODY_GROUPS: ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Hips'],
+    /** Share card viewBox — shifted up vs gym so the crown isn't clipped at y=130 */
+    SHARE_VIEWBOX: '0 95 612 635',
     _bodyMapSvg: null,
 
     defaultStatuses() {
@@ -69,10 +71,11 @@ const FitnessHeatmap = {
     async buildBodySvgHtml(statuses) {
         const raw = await this.loadBodyMapSvg();
         const style = this.buildStatusStyles(statuses || this.defaultStatuses());
+        const vb = this.SHARE_VIEWBOX;
         return raw
             .replace(
                 'viewBox="0 130 612 590"',
-                'viewBox="0 130 612 590" preserveAspectRatio="xMidYMid meet" style="width:100%;max-width:300px;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 0 16px rgba(59,130,246,0.35))"'
+                `viewBox="${vb}" preserveAspectRatio="xMidYMid meet" style="width:100%;max-width:300px;height:auto;display:block;margin:0 auto;overflow:visible;filter:drop-shadow(0 0 16px rgba(59,130,246,0.35))"`
             )
             .replace('</svg>', `<style>${style}</style></svg>`);
     },

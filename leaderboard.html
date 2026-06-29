@@ -13,6 +13,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="js/social.js"></script>
     
     <style>
@@ -356,21 +357,26 @@
                 this.socialBusy = false;
             },
             async shareStreak(user) {
-                const name = user.full_name || this.profileMap[user.user_id]?.full_name || 'I';
-                const text = `🔥 ${name} is on a ${user.current_streak}-day workout streak in BA Fitness!\n\nConsistency is king. See you in The Arena 🏆`;
-                const result = await FitnessSocial.shareText(text);
-                if (result === 'clipboard') this.showToast('Streak recap copied!');
+                const name = user.full_name || this.profileMap[user.user_id]?.full_name || 'Athlete';
+                const result = await FitnessSocial.shareStreakCard({
+                    athleteName: name,
+                    streakDays: user.current_streak
+                });
+                if (result === 'shared-image') this.showToast('Streak card sent!');
+                else if (result === 'clipboard') this.showToast('Streak recap copied!');
             },
             async shareRanking(user, rank) {
-                const name = user.full_name || 'I';
-                const rankLabel = rank === 0 ? '1st' : rank === 1 ? '2nd' : rank === 2 ? '3rd' : `#${rank + 1}`;
-                let stat = '';
-                if (this.metric === 'volume') stat = `${FitnessSocial.formatNumber(user.total_volume)} lbs moved this week`;
-                else if (this.metric === 'sessions') stat = `${user.sessions_count} sessions this week`;
-                else stat = `${user.current_streak}-day streak`;
-                const text = `🏆 ${name} is sitting ${rankLabel} on the BA Fitness leaderboard!\n\n${stat}\n\nCome get yours in The Arena 💪`;
-                const result = await FitnessSocial.shareText(text);
-                if (result === 'clipboard') this.showToast('Ranking recap copied!');
+                const name = user.full_name || 'Athlete';
+                const result = await FitnessSocial.shareRankingCard({
+                    athleteName: name,
+                    rank,
+                    metric: this.metric,
+                    score: this.getScore(user),
+                    unit: this.getUnit(),
+                    metricLabel: this.getMetricLabel()
+                });
+                if (result === 'shared-image') this.showToast('Rank card sent!');
+                else if (result === 'clipboard') this.showToast('Ranking recap copied!');
             },
             getScore(user) {
                 if (this.metric === 'volume') return this.formatNumber(user.total_volume);
