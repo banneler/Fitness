@@ -156,12 +156,26 @@ const FitnessSocial = {
         return `<div style="background:${background};border-radius:22px;padding:18px 20px 20px;border:${border};text-align:center;margin-bottom:${marginBottom}px;box-sizing:border-box;"><div style="font-size:${topSize}px;font-weight:900;color:${topColor};letter-spacing:0.08em;line-height:1.2;margin:0 0 14px;">${top}</div><div style="font-size:${scoreSize}px;font-weight:900;font-style:italic;line-height:1;color:${scoreColor};margin:0 0 14px;transform:translateY(${scoreNudge}px);">${score}</div><div style="font-size:9px;font-weight:800;color:${bottomColor};letter-spacing:0.08em;line-height:1.2;margin:0;">${bottom}</div></div>`;
     },
 
-    buildShareMiniStatCell(value, label) {
-        return `<div style="background:rgba(15,23,42,0.85);border-radius:14px;border:1px solid rgba(255,255,255,0.07);text-align:center;box-sizing:border-box;"><table role="presentation" style="width:100%;border-collapse:collapse;"><tr><td style="padding:14px 8px 6px;font-size:17px;font-weight:900;line-height:1;color:#ffffff;">${value}</td></tr><tr><td style="padding:0 8px 14px;font-size:6px;font-weight:800;color:#64748b;letter-spacing:0.08em;line-height:1;">${label}</td></tr></table></div>`;
+    buildShareDualLineCell(topLine, bottomLine, minHeight = 56) {
+        return `<div style="background:rgba(15,23,42,0.85);border-radius:14px;border:1px solid rgba(255,255,255,0.07);box-sizing:border-box;min-height:${minHeight}px;"><table role="presentation" style="width:100%;height:${minHeight}px;border-collapse:collapse;"><tr><td style="vertical-align:middle;text-align:center;padding:8px 10px;line-height:1.2;">${topLine}${bottomLine}</td></tr></table></div>`;
     },
 
-    buildShareCardHeader({ kicker = 'BA FITNESS · THE ARENA', name, subtitle, subtitleColor, nameNudge = -10, marginBottom = 14, streakBadgeHtml = '' }) {
-        const textBlock = `<div style="line-height:1;"><div style="font-size:8px;font-weight:900;letter-spacing:0.08em;color:#64748b;text-transform:uppercase;line-height:1;margin:0 0 2px;">${kicker}</div><div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1;color:#ffffff;margin:0 0 2px;transform:translateY(${nameNudge}px);">${name}</div><div style="font-size:11px;font-weight:800;color:${subtitleColor};text-transform:uppercase;letter-spacing:0.08em;line-height:1;margin:0;transform:translateY(${nameNudge}px);">${subtitle}</div></div>`;
+    buildShareMetaCell(label, value, valueColor = '#e2e8f0') {
+        return this.buildShareDualLineCell(
+            `<div style="font-size:8px;font-weight:800;color:#64748b;letter-spacing:0.08em;margin-bottom:4px;">${label}</div>`,
+            `<div style="font-size:11px;font-weight:900;color:${valueColor};text-transform:uppercase;">${value}</div>`
+        );
+    },
+
+    buildShareMiniStatCell(value, label) {
+        return this.buildShareDualLineCell(
+            `<div style="font-size:17px;font-weight:900;line-height:1;color:#ffffff;margin-bottom:4px;">${value}</div>`,
+            `<div style="font-size:6px;font-weight:800;color:#64748b;letter-spacing:0.08em;line-height:1;">${label}</div>`
+        );
+    },
+
+    buildShareCardHeader({ kicker = 'BA FITNESS · THE ARENA', name, subtitle, subtitleColor, nameGap = 3, marginBottom = 14, streakBadgeHtml = '' }) {
+        const textBlock = `<div style="line-height:1;"><div style="font-size:8px;font-weight:900;letter-spacing:0.08em;color:#64748b;text-transform:uppercase;line-height:1;margin:0 0 ${nameGap}px;">${kicker}</div><div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin:0 0 ${nameGap}px;">${name}</div><div style="font-size:11px;font-weight:800;color:${subtitleColor};text-transform:uppercase;letter-spacing:0.08em;line-height:1;margin:0;">${subtitle}</div></div>`;
         if (streakBadgeHtml) {
             return `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:${marginBottom}px;">${textBlock}${streakBadgeHtml}</div>`;
         }
@@ -214,7 +228,7 @@ const FitnessSocial = {
             scoreNudge: -22
         });
 
-        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#1e1b4b 100%);border-radius:28px;padding:10px 22px 22px;font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:white;box-sizing:border-box;border:1px solid ${theme.border};overflow:hidden;line-height:1;">${header}${hero}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;"><div style="background:rgba(15,23,42,0.85);border-radius:14px;padding:12px 10px;border:1px solid rgba(255,255,255,0.07);text-align:center;"><div style="font-size:8px;font-weight:800;color:#64748b;letter-spacing:0.08em;margin-bottom:4px;">METRIC</div><div style="font-size:11px;font-weight:900;color:${meta.color};text-transform:uppercase;">${metricLabel || meta.title}</div></div><div style="background:rgba(15,23,42,0.85);border-radius:14px;padding:12px 10px;border:1px solid rgba(255,255,255,0.07);text-align:center;"><div style="font-size:8px;font-weight:800;color:#64748b;letter-spacing:0.08em;margin-bottom:4px;">WINDOW</div><div style="font-size:11px;font-weight:900;color:#e2e8f0;text-transform:uppercase;">Last 7 Days</div></div></div><div style="text-align:center;margin-top:18px;font-size:9px;font-weight:900;color:#94a3b8;letter-spacing:0.08em;text-transform:uppercase;">The Arena Awaits 🏆</div></div>`;
+        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#1e1b4b 100%);border-radius:28px;padding:10px 22px 22px;font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:white;box-sizing:border-box;border:1px solid ${theme.border};overflow:hidden;line-height:1;">${header}${hero}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">${this.buildShareMetaCell('METRIC', metricLabel || meta.title, meta.color)}${this.buildShareMetaCell('WINDOW', 'Last 7 Days', '#e2e8f0')}</div><div style="text-align:center;margin-top:18px;font-size:9px;font-weight:900;color:#94a3b8;letter-spacing:0.08em;text-transform:uppercase;">The Arena Awaits 🏆</div></div>`;
     },
 
     buildStreakFallbackText({ athleteName, streakDays }) {
@@ -304,7 +318,7 @@ const FitnessSocial = {
             </div>`).join('');
 
         const streakBadgeHtml = streak > 0
-            ? `<div style="background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.35);border-radius:12px;padding:8px 10px;text-align:center;transform:translateY(-10px);"><div style="font-size:16px;line-height:1;">🔥</div><div style="font-size:10px;font-weight:900;color:#f97316;margin-top:2px;">${streak} DAY</div></div>`
+            ? `<div style="background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.35);border-radius:12px;padding:8px 10px;text-align:center;"><div style="font-size:16px;line-height:1;">🔥</div><div style="font-size:10px;font-weight:900;color:#f97316;margin-top:2px;">${streak} DAY</div></div>`
             : '';
         const header = this.buildShareCardHeader({
             kicker: 'BA FITNESS',
