@@ -73,7 +73,65 @@
             50% { transform: rotate(-6deg) scale(0.92); filter: drop-shadow(0 0 28px rgba(239, 68, 68, 0.75)); }
             75% { transform: rotate(6deg) scale(1.06); filter: drop-shadow(0 0 36px rgba(168, 85, 247, 0.8)); }
         }
-        .overthrow-crown { animation: crown-stolen 1.15s ease-in-out infinite; }
+        .overthrow-crown-shake { animation: crown-stolen 0.55s ease-in-out infinite; }
+
+        @keyframes overthrow-phase-in {
+            from { opacity: 0; transform: scale(0.92); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .overthrow-phase-in { animation: overthrow-phase-in 0.35s ease-out forwards; }
+
+        @keyframes king-flee {
+            0% { left: 50%; transform: translateX(-50%) scale(1); opacity: 1; }
+            12% { left: 48%; transform: translateX(-50%) scale(1.05); }
+            100% { left: -30%; transform: translateX(-50%) scale(0.75); opacity: 0; }
+        }
+        @keyframes king-run-bob {
+            0%, 100% { transform: translateY(0) rotate(-4deg); }
+            50% { transform: translateY(-14px) rotate(4deg); }
+        }
+        @keyframes crown-tilt {
+            0%, 100% { transform: translateX(-50%) rotate(-18deg); }
+            50% { transform: translateX(-50%) rotate(8deg); }
+        }
+        @keyframes dust-trail {
+            0% { opacity: 0; transform: translateX(0) scale(0.6); }
+            20% { opacity: 0.85; transform: translateX(-20px) scale(1); }
+            100% { opacity: 0; transform: translateX(-80px) scale(1.2); }
+        }
+
+        .overthrow-flee-stage {
+            width: 100%;
+            height: 9rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .overthrow-king-runner {
+            position: absolute;
+            bottom: 0;
+            animation: king-flee 2.4s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
+        }
+        .overthrow-king-body {
+            font-size: 6.5rem;
+            line-height: 1;
+            animation: king-run-bob 0.28s ease-in-out infinite;
+            display: block;
+        }
+        .overthrow-king-crown {
+            position: absolute;
+            top: -0.15rem;
+            left: 50%;
+            font-size: 2.75rem;
+            line-height: 1;
+            animation: crown-tilt 0.28s ease-in-out infinite;
+        }
+        .overthrow-king-dust {
+            position: absolute;
+            right: -0.5rem;
+            bottom: 1.25rem;
+            font-size: 1.75rem;
+            animation: dust-trail 0.45s ease-out infinite;
+        }
 
         @keyframes overthrow-pulse {
             0%, 100% { opacity: 0.35; }
@@ -86,15 +144,34 @@
 <div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32 pt-16">
     
     <transition name="fade">
-        <div v-if="arenaOverthrow" @click="dismissArenaOverthrow" class="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center px-8 cursor-pointer">
+        <div v-if="arenaOverthrow" @click="dismissArenaOverthrow" class="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center px-8 cursor-pointer overflow-hidden">
             <div class="absolute inset-0 overthrow-glow pointer-events-none" :style="{ background: `radial-gradient(circle at 50% 40%, ${arenaOverthrow.color}33, transparent 65%)` }"></div>
-            <div class="text-[130px] overthrow-crown leading-none relative z-10 select-none">👑</div>
-            <div class="text-2xl font-black italic uppercase tracking-[0.2em] mt-8 animate-pulse relative z-10" :style="{ color: arenaOverthrow.color }">Crown Stolen</div>
-            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 relative z-10 text-center leading-relaxed">
-                <span class="text-white">{{ arenaOverthrow.usurperName }}</span> took {{ arenaOverthrow.title }}
-                <span class="ml-1">{{ arenaOverthrow.emoji }}</span>
-            </p>
-            <p class="text-[9px] text-slate-600 font-black uppercase tracking-[0.35em] mt-10 relative z-10">The Arena Awaits · Tap to Continue</p>
+
+            <div v-if="arenaOverthrowPhase === 'shake'" class="flex flex-col items-center relative z-10 overthrow-phase-in">
+                <div class="text-[130px] overthrow-crown-shake leading-none select-none">👑</div>
+                <div class="text-2xl font-black italic uppercase tracking-[0.2em] mt-8 animate-pulse" :style="{ color: arenaOverthrow.color }">Crown Stolen</div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 text-center leading-relaxed">
+                    <span class="text-white">{{ arenaOverthrow.usurperName }}</span> took {{ arenaOverthrow.title }}
+                    <span class="ml-1">{{ arenaOverthrow.emoji }}</span>
+                </p>
+            </div>
+
+            <div v-else class="flex flex-col items-center relative z-10 w-full overthrow-phase-in">
+                <div class="text-xl font-black italic uppercase tracking-[0.15em] mb-2 animate-pulse" :style="{ color: arenaOverthrow.color }">Off With His Crown</div>
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-8 text-center">
+                    <span class="text-white">{{ arenaOverthrow.usurperName }}</span> rules the arena now {{ arenaOverthrow.emoji }}
+                </p>
+                <div class="overthrow-flee-stage">
+                    <div class="overthrow-king-runner">
+                        <div class="relative inline-block">
+                            <span class="overthrow-king-crown">👑</span>
+                            <span class="overthrow-king-body">🤴</span>
+                            <span class="overthrow-king-dust">💨</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-[9px] text-slate-600 font-black uppercase tracking-[0.35em] mt-10">The Arena Awaits · Tap to Continue</p>
+            </div>
         </div>
     </transition>
 
@@ -422,7 +499,9 @@
                 socialBusy: false,
                 arenaOverthrow: null,
                 arenaOverthrowQueue: [],
+                arenaOverthrowPhase: 'shake',
                 arenaOverthrowTimer: null,
+                arenaOverthrowPhaseTimer: null,
                 FitnessSocial
             } 
         },
@@ -626,13 +705,20 @@
                     this.arenaOverthrow = null;
                     return;
                 }
-                this.arenaOverthrow = this.arenaOverthrowQueue.shift();
                 clearTimeout(this.arenaOverthrowTimer);
-                this.arenaOverthrowTimer = setTimeout(() => this.dismissArenaOverthrow(), 2800);
+                clearTimeout(this.arenaOverthrowPhaseTimer);
+                this.arenaOverthrowPhase = 'shake';
+                this.arenaOverthrow = this.arenaOverthrowQueue.shift();
+                this.arenaOverthrowPhaseTimer = setTimeout(() => {
+                    this.arenaOverthrowPhase = 'flee';
+                }, 1500);
+                this.arenaOverthrowTimer = setTimeout(() => this.dismissArenaOverthrow(), 4500);
             },
             dismissArenaOverthrow() {
                 clearTimeout(this.arenaOverthrowTimer);
+                clearTimeout(this.arenaOverthrowPhaseTimer);
                 this.arenaOverthrow = null;
+                this.arenaOverthrowPhase = 'shake';
                 setTimeout(() => this.showNextArenaOverthrow(), 450);
             },
             async fetchArenaCheers() {
