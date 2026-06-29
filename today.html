@@ -25,6 +25,7 @@
         .tab-active { color: #3b82f6; }
         .tab-active i { stroke-width: 3px; filter: drop-shadow(0 0 8px #3b82f6); }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .comment-gif { display: block; }
         
         /* Custom Range Slider */
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
@@ -206,7 +207,7 @@
                                     <i data-lucide="message-circle" class="w-3 h-3 text-blue-400"></i>
                                     On your {{ FitnessSocial.contextLabel(item.context) }}
                                 </p>
-                                <p class="text-sm text-slate-300 italic leading-snug pr-8">"{{ item.body }}"</p>
+                                <div class="text-sm text-slate-300 leading-snug pr-8" v-html="FitnessSocial.renderCommentHtml(item.body)"></div>
                                 <button v-if="item.authorUserId === session.user.id" @click="deleteArenaComment(item)" :disabled="socialBusy" class="absolute top-0 right-0 w-7 h-7 rounded-lg bg-slate-900/80 border border-white/5 flex items-center justify-center text-slate-500 hover:text-red-400 hover:border-red-500/30 active:scale-95 disabled:opacity-40" title="Delete comment">
                                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                                 </button>

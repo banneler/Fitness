@@ -14,6 +14,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="js/giphy-config.js"></script>
     <script src="js/social.js"></script>
     
     <style>
@@ -51,6 +52,8 @@
         .like-btn-active i { fill: #f472b6; }
         .tab-active { color: #a855f7; }
         .tab-active i { stroke-width: 3px; filter: drop-shadow(0 0 8px #a855f7); }
+        .comment-gif { display: block; }
+        .comment-text { white-space: pre-wrap; }
     </style>
 </head>
 <body class="font-sans antialiased bg-slate-950">
@@ -149,15 +152,23 @@
                                 <span class="text-[10px] font-black text-slate-300 uppercase">{{ authorName(comment.author_user_id) }}</span>
                                 <span class="text-[8px] text-slate-600">{{ FitnessSocial.formatCommentTime(comment.created_at) }}</span>
                             </div>
-                            <p class="text-xs text-slate-400 break-words">{{ comment.body }}</p>
+                            <div class="text-xs text-slate-400 break-words" v-html="renderCommentHtml(comment.body)"></div>
                         </div>
                         <button v-if="session && comment.author_user_id === session.user.id" @click="deleteComment(comment)" :disabled="socialBusy" class="flex-shrink-0 w-7 h-7 rounded-lg bg-slate-900/80 border border-white/5 flex items-center justify-center text-slate-500 hover:text-red-400 hover:border-red-500/30 active:scale-95 disabled:opacity-40" title="Delete comment">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
-                    <div v-if="session" class="flex gap-2">
-                        <input v-model="commentDraft[user.user_id]" @keyup.enter="postComment(user.user_id)" maxlength="280" placeholder="Send encouragement..." class="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500">
-                        <button @click="postComment(user.user_id)" :disabled="!commentDraft[user.user_id]?.trim() || socialBusy" class="px-4 py-2 rounded-xl bg-purple-600 text-white text-[10px] font-black uppercase disabled:opacity-40 active:scale-95">Post</button>
+                    <div v-if="session" class="space-y-2">
+                        <div v-if="commentDraftPreview(user.user_id)" class="pl-1">
+                            <img :src="commentDraftPreview(user.user_id)" alt="" class="max-w-[100px] max-h-[100px] rounded-xl object-cover border border-white/10">
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="openGifPicker(user.user_id)" :disabled="socialBusy" class="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-950 border border-white/10 flex items-center justify-center text-slate-400 hover:text-purple-400 hover:border-purple-500/40 active:scale-95 disabled:opacity-40" title="Add GIF">
+                                <i data-lucide="image" class="w-4 h-4"></i>
+                            </button>
+                            <input v-model="commentDraft[user.user_id]" @keyup.enter="postComment(user.user_id)" maxlength="280" placeholder="Send encouragement..." class="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500">
+                            <button @click="postComment(user.user_id)" :disabled="!canPostComment(user.user_id) || socialBusy" class="px-4 py-2 rounded-xl bg-purple-600 text-white text-[10px] font-black uppercase disabled:opacity-40 active:scale-95">Post</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -171,6 +182,27 @@
         <a href="kitchen.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="utensils" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Kitchen</span></a>
         <a href="tracker.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="line-chart" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Tracker</span></a>
     </nav>
+
+    <div v-if="gifPickerTarget" class="fixed inset-0 z-[200] flex items-end justify-center bg-black/75 backdrop-blur-sm" @click.self="closeGifPicker">
+        <div class="w-full max-w-lg bg-slate-900 rounded-t-3xl border-t border-white/10 shadow-2xl flex flex-col max-h-[72vh] safe-area-bottom">
+            <div class="flex items-center gap-2 p-4 border-b border-white/5">
+                <input v-model="gifSearch" @input="onGifSearchInput" @keyup.enter="loadGifs(gifSearch)" type="search" placeholder="Search GIFs..." class="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500">
+                <button @click="closeGifPicker" class="w-10 h-10 rounded-xl bg-slate-950 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white active:scale-95">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto no-scrollbar p-4 pt-3">
+                <div v-if="gifLoading" class="text-center text-slate-500 text-sm py-10">Loading GIFs...</div>
+                <div v-else-if="gifResults.length === 0" class="text-center text-slate-500 text-sm py-10">No GIFs found</div>
+                <div v-else class="grid grid-cols-3 gap-2">
+                    <button v-for="gif in gifResults" :key="gif.id" @click="selectGif(gif)" class="rounded-xl overflow-hidden border border-white/5 bg-slate-950 active:scale-95 transition-transform">
+                        <img :src="gif.previewUrl" :alt="gif.title" class="w-full h-24 object-cover">
+                    </button>
+                </div>
+            </div>
+            <p class="text-[9px] text-slate-600 text-center pb-4 px-4 uppercase tracking-widest font-bold">Powered by GIPHY</p>
+        </div>
+    </div>
 
 </div>
 
@@ -194,6 +226,11 @@
                 socialBusy: false,
                 socialUnavailable: false,
                 toast: '',
+                gifPickerTarget: null,
+                gifSearch: '',
+                gifResults: [],
+                gifLoading: false,
+                gifSearchTimer: null,
                 FitnessSocial
             };
         },
@@ -324,7 +361,7 @@
             },
             async postComment(targetUserId) {
                 const body = (this.commentDraft[targetUserId] || '').trim();
-                if (!body || !this.session || this.socialUnavailable) return;
+                if (!FitnessSocial.commentHasContent(body) || !this.session || this.socialUnavailable) return;
                 this.socialBusy = true;
                 try {
                     const { error } = await _client.from('arena_comments').insert({
@@ -395,6 +432,57 @@
             },
             formatNumber(num) {
                 return FitnessSocial.formatNumber(num);
+            },
+            renderCommentHtml(body) {
+                return FitnessSocial.renderCommentHtml(body);
+            },
+            canPostComment(userId) {
+                return FitnessSocial.commentHasContent(this.commentDraft[userId] || '');
+            },
+            commentDraftPreview(userId) {
+                const { gifIds } = FitnessSocial.parseCommentBody(this.commentDraft[userId] || '');
+                return gifIds.length ? FitnessSocial.gifCommentUrl(gifIds[0]) : null;
+            },
+            giphyConfigured() {
+                return !!FitnessSocial.giphyApiKey();
+            },
+            openGifPicker(userId) {
+                if (!this.giphyConfigured()) {
+                    this.showToast('Add GIPHY API key in js/giphy-config.js');
+                    return;
+                }
+                this.gifPickerTarget = userId;
+                this.gifSearch = '';
+                this.loadGifs('');
+            },
+            closeGifPicker() {
+                this.gifPickerTarget = null;
+                this.gifResults = [];
+                this.gifSearch = '';
+                if (this.gifSearchTimer) clearTimeout(this.gifSearchTimer);
+            },
+            onGifSearchInput() {
+                if (this.gifSearchTimer) clearTimeout(this.gifSearchTimer);
+                this.gifSearchTimer = setTimeout(() => this.loadGifs(this.gifSearch), 350);
+            },
+            async loadGifs(query) {
+                if (!this.giphyConfigured()) return;
+                this.gifLoading = true;
+                try {
+                    this.gifResults = await FitnessSocial.searchGifs(query);
+                } catch (e) {
+                    console.error(e);
+                    this.gifResults = [];
+                    this.showToast('GIF search failed');
+                }
+                this.gifLoading = false;
+            },
+            selectGif(gif) {
+                const uid = this.gifPickerTarget;
+                if (!uid || !gif?.id) return;
+                const parsed = FitnessSocial.parseCommentBody(this.commentDraft[uid] || '');
+                this.commentDraft[uid] = FitnessSocial.encodeGifComment(gif.id, parsed.text);
+                this.closeGifPicker();
             },
             getRankClass(index) {
                 if (index === 0) return 'rank-1 glass border-yellow-500/30';

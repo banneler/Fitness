@@ -12,7 +12,9 @@ Progressive overload PWA — Vue 3 + Supabase.
 Share uses `html2canvas` to render a single recap **image** (stats, all lifts, real body heatmap SVG). No separate text message — image only, with plain-text fallback if sharing fails.
 
 ### Arena cheers & comments
-Likes and comments on leaderboard rows (Volume, Consistency, Streak tabs).
+Likes and comments on leaderboard rows (Volume, Consistency, Streak tabs). Comments support text plus GIFs via an in-app Giphy picker.
+
+**Giphy setup:** get a free API key at [developers.giphy.com](https://developers.giphy.com/dashboard/) and paste it into `js/giphy-config.js` as `window.GIPHY_API_KEY`. Restrict the key to your app domain in the Giphy dashboard when you deploy.
 
 **One-time setup:** run `supabase/social_schema.sql` in the Supabase SQL Editor to create `arena_likes` and `arena_comments` with RLS policies.
 

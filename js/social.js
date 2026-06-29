@@ -384,6 +384,86 @@ const FitnessSocial = {
         return ({ volume: '🏋️', sessions: '📅', streak: '🔥' })[context] || '💪';
     },
 
+    giphyApiKey() {
+        return (typeof window !== 'undefined' && window.GIPHY_API_KEY || '').trim();
+    },
+
+    gifCommentUrl(gifId) {
+        return `https://media.giphy.com/media/${gifId}/giphy.gif`;
+    },
+
+    parseCommentBody(body) {
+        const raw = body || '';
+        const gifIds = [];
+        const text = raw
+            .replace(/\[gif:([a-zA-Z0-9]+)\]/g, (_, id) => {
+                gifIds.push(id);
+                return ' ';
+            })
+            .replace(/\s+/g, ' ')
+            .trim();
+        return { text, gifIds };
+    },
+
+    encodeGifComment(gifId, text = '') {
+        const id = String(gifId || '').replace(/[^a-zA-Z0-9]/g, '');
+        if (!id) return (text || '').trim();
+        const cleanText = (text || '').trim();
+        return cleanText ? `${cleanText} [gif:${id}]` : `[gif:${id}]`;
+    },
+
+    commentHasContent(body) {
+        const { text, gifIds } = this.parseCommentBody(body);
+        return !!text || gifIds.length > 0;
+    },
+
+    escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    },
+
+    renderCommentHtml(body) {
+        const { text, gifIds } = this.parseCommentBody(body);
+        if (!text && !gifIds.length) return this.escapeHtml(body || '');
+
+        let html = '';
+        if (text) {
+            html += `<span class="comment-text">${this.escapeHtml(text)}</span>`;
+        }
+        gifIds.forEach(id => {
+            if (!/^[a-zA-Z0-9]+$/.test(id)) return;
+            const url = this.gifCommentUrl(id);
+            html += `<img src="${this.escapeHtml(url)}" alt="" class="comment-gif mt-1.5 max-w-[140px] max-h-[140px] rounded-xl object-cover border border-white/10" loading="lazy">`;
+        });
+        return html;
+    },
+
+    async searchGifs(query) {
+        const key = this.giphyApiKey();
+        if (!key) throw new Error('GIPHY_API_KEY missing');
+
+        const trimmed = (query || '').trim();
+        const endpoint = trimmed
+            ? `https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(key)}&q=${encodeURIComponent(trimmed)}&limit=24&rating=pg&lang=en`
+            : `https://api.giphy.com/v1/gifs/trending?api_key=${encodeURIComponent(key)}&limit=24&rating=pg`;
+
+        const res = await fetch(endpoint);
+        if (!res.ok) throw new Error('Giphy request failed');
+
+        const json = await res.json();
+        return (json.data || []).map(gif => ({
+            id: gif.id,
+            title: gif.title || 'GIF',
+            previewUrl: gif.images?.fixed_height_small?.url
+                || gif.images?.downsized_medium?.url
+                || gif.images?.fixed_height?.url
+                || gif.images?.original?.url
+        })).filter(gif => gif.previewUrl && gif.id);
+    },
+
     groupComments(comments) {
         const grouped = {};
         (comments || []).forEach(row => {
