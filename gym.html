@@ -528,9 +528,9 @@
     });
 
     try {
-        app.config.errorHandler = (err) => {
+        app.config.errorHandler = (err, instance) => {
             console.error(err);
-            const root = app._instance?.proxy;
+            const root = instance?.$root;
             if (root) {
                 root.bootError = err?.message || 'Gym failed to render.';
                 root.bootReady = false;
