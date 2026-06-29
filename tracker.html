@@ -15,6 +15,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="js/social.js"></script>
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
@@ -318,6 +319,10 @@
                                 <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">{{ session.exercises.size }} Ex • {{ session.setCount }} Sets</span>
                             </div>
                         </div>
+                        <button @click="shareSessionWorkout(session)" class="mt-4 w-full py-3 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-blue-600/30">
+                            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                            Share Workout
+                        </button>
                     </div>
                 </section>
             </div>
@@ -443,7 +448,7 @@
         data() {
             return {
                 initialLoading: true, logoutModal: false,
-                view: 'intel', session: null, streak: 0,
+                view: 'intel', session: null, streak: 0, profileName: '',
                 toast: { visible: false, title: '', message: '' },
                 
                 // DATA
@@ -606,6 +611,8 @@
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
+            const { data: profile } = await _client.from('profiles').select('full_name').eq('id', session.user.id).single();
+            this.profileName = profile?.full_name || '';
             await Promise.all([this.fetchDailyMetrics(), this.fetchWeeklyLogs(), this.fetchWorkouts(), this.fetchBodyHistory(), this.fetchLibrary()]);
             
             if (this.bodyHistory.length) {
@@ -619,6 +626,27 @@
         methods: {
             async handleLogout() { await _client.auth.signOut(); window.location.href = 'index.html'; },
             showToast(title, message) { this.toast = { visible: true, title, message }; setTimeout(() => this.toast.visible = false, 3000); },
+            sessionLogs(session) {
+                return this.rawWorkouts.filter(log => {
+                    const logTime = new Date(log.created_at).getTime();
+                    return Math.abs(logTime - session.startTime) <= 3600000;
+                });
+            },
+            async shareSessionWorkout(session) {
+                const logs = this.sessionLogs(session);
+                const stats = FitnessSocial.computeFromSessionLogs(logs, {
+                    protocol_name: session.protocol_name,
+                    duration: session.duration
+                });
+                const text = FitnessSocial.buildRecap({
+                    athleteName: this.profileName,
+                    streak: this.streak,
+                    ...stats
+                });
+                const result = await FitnessSocial.shareText(text);
+                if (result === 'clipboard') this.showToast('Copied!', 'Workout recap copied to clipboard.');
+                else if (result === 'failed') this.showToast('Share Failed', 'Try again from the workout finish screen.');
+            },
             async fetchLibrary() { const { data } = await _client.from('exercises').select('*').order('name'); this.library = data || []; },
             filterExercises() { this.showMvmtList = true; },
             async selectMovement(ex) {

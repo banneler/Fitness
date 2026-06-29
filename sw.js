@@ -1,4 +1,4 @@
-const CACHE_NAME = 'constellation-v2.1'; // Update this string when you push major changes
+const CACHE_NAME = 'constellation-v2.2';
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -8,6 +8,8 @@ const CORE_ASSETS = [
   '/tracker.html',
   '/workout.html',
   '/builder.html',
+  '/leaderboard.html',
+  '/js/social.js',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/vue@3/dist/vue.global.prod.js',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',

@@ -12,10 +12,12 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="js/social.js"></script>
 
     <style>
         [v-cloak] { display: none !important; }
-        body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; height: 100dvh; overflow: hidden; }
+        html { height: 100%; }
         
         .glass-solid { background: #020617; border-bottom: 1px solid rgba(255,255,255,0.08); }
         .glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
@@ -52,9 +54,9 @@
     </style>
 </head>
 <body class="font-sans antialiased bg-slate-950">
-<div id="app" v-cloak class="min-h-screen flex flex-col bg-slate-950">
+<div id="app" v-cloak class="h-full flex flex-col bg-slate-950 overflow-hidden">
     
-    <div class="fixed top-0 left-0 right-0 glass-solid p-4 pt-16 z-40 shadow-2xl">
+    <header class="flex-shrink-0 glass-solid p-4 pt-16 z-40 shadow-2xl">
         <div class="flex justify-between items-center">
             <div>
                 <div class="flex items-center gap-2 mb-1">
@@ -65,9 +67,9 @@
             </div>
             <div class="font-mono text-2xl font-bold text-slate-300 tracking-tight">{{ formatTimer(sessionTimer) }}</div>
         </div>
-    </div>
+    </header>
 
-    <div class="flex-1 p-4 space-y-6 pt-32 pb-32 scroll-smooth" id="session-container">
+    <main class="flex-1 overflow-y-auto overscroll-contain p-4 space-y-6 scroll-smooth no-scrollbar" id="session-container">
         
         <div v-for="(group, groupIdx) in activeRoutine.data" 
              :key="groupIdx" 
@@ -113,17 +115,17 @@
                         <div class="col-span-1 flex justify-center"><i :data-lucide="ex.icon || 'dumbbell'" class="w-3 h-3 text-slate-600"></i></div>
                         
                         <div class="col-span-4" v-if="ex.sets[i]">
-                            <button v-if="!isBodyWeight(ex.weightType)" @click="openDualPicker(ex.sets[i], ex.weightType)" class="w-full bg-slate-950/50 border border-white/5 rounded-lg h-10 flex flex-col items-center justify-center text-center transition-all hover:bg-slate-900 relative active:scale-95 focus:ring-1 focus:ring-blue-500">
-                                <span class="leading-none text-sm font-bold" :class="ex.sets[i].weight !== '' ? 'text-white' : 'text-slate-600'">{{ ex.sets[i].weight !== '' ? ex.sets[i].weight : (ex.sets[i].prevWeight || '-') }}</span>
-                                <span v-if="ex.sets[i].prevWeight" class="leading-none text-[8px] font-bold text-slate-700 mt-0.5 uppercase tracking-tight">Last: {{ ex.sets[i].prevWeight }}</span>
+                            <button v-if="!isBodyWeight(ex.weightType)" @click="openDualPicker(ex.sets[i], ex.weightType, ex, i)" class="w-full bg-slate-950/50 border border-white/5 rounded-lg h-10 flex flex-col items-center justify-center text-center transition-all hover:bg-slate-900 relative active:scale-95 focus:ring-1 focus:ring-blue-500">
+                                <span class="leading-none text-sm font-bold" :class="hasCurrentValue(ex.sets[i].weight) ? 'text-white' : 'text-slate-600'">{{ displayCurrentOrGhost(ex.sets[i].weight, ex.sets[i].prevWeight) }}</span>
+                                <span v-if="hasPrevValue(ex.sets[i].prevWeight)" class="leading-none text-[8px] font-bold text-slate-700 mt-0.5 uppercase tracking-tight">Last: {{ ex.sets[i].prevWeight }}</span>
                             </button>
                             <div v-else class="w-full bg-slate-900/30 border border-white/5 rounded-lg h-10 flex items-center justify-center text-center font-black text-[10px] text-slate-600 tracking-wider cursor-not-allowed">BW</div>
                         </div>
 
                         <div class="col-span-3" v-if="ex.sets[i]">
-                            <button @click="openDualPicker(ex.sets[i], ex.weightType)" class="w-full bg-slate-950/50 border border-white/5 rounded-lg h-10 flex flex-col items-center justify-center text-center transition-all hover:bg-slate-900 relative active:scale-95 focus:ring-1 focus:ring-blue-500">
-                                <span class="leading-none text-sm font-bold" :class="ex.sets[i].reps ? 'text-white' : 'text-slate-600'">{{ ex.sets[i].reps ? ex.sets[i].reps : (ex.sets[i].prevReps || '-') }}</span>
-                                <span v-if="ex.sets[i].prevReps" class="leading-none text-[8px] font-bold text-slate-700 mt-0.5 uppercase tracking-tight">Last: {{ ex.sets[i].prevReps }}</span>
+                            <button @click="openDualPicker(ex.sets[i], ex.weightType, ex, i)" class="w-full bg-slate-950/50 border border-white/5 rounded-lg h-10 flex flex-col items-center justify-center text-center transition-all hover:bg-slate-900 relative active:scale-95 focus:ring-1 focus:ring-blue-500">
+                                <span class="leading-none text-sm font-bold" :class="hasCurrentValue(ex.sets[i].reps) ? 'text-white' : 'text-slate-600'">{{ displayCurrentOrGhost(ex.sets[i].reps, ex.sets[i].prevReps) }}</span>
+                                <span v-if="hasPrevValue(ex.sets[i].prevReps)" class="leading-none text-[8px] font-bold text-slate-700 mt-0.5 uppercase tracking-tight">Last: {{ ex.sets[i].prevReps }}</span>
                             </button>
                         </div>
 
@@ -147,9 +149,9 @@
             <span class="text-[10px] font-black uppercase tracking-[0.2em]">Add Movement</span>
         </button>
 
-    </div>
+    </main>
 
-    <div class="fixed bottom-0 left-0 right-0 glass px-6 py-4 safe-area-bottom z-40">
+    <footer class="flex-shrink-0 glass px-6 py-4 safe-area-bottom z-40 border-t border-white/5">
         <div class="grid grid-cols-4 gap-2 mb-3">
             <button @click="prevExercise" :disabled="activeExerciseIdx === 0" class="col-span-1 h-12 rounded-2xl bg-slate-800/80 flex items-center justify-center text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
             <button v-if="activeExerciseIdx < activeRoutine.data.length - 1" @click="nextExercise" class="col-span-2 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black uppercase tracking-wider text-sm shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Next</button>
@@ -161,8 +163,9 @@
             </button>
         </div>
         <button @click="exitModal = true" class="w-full py-2 text-[10px] text-slate-500 font-black uppercase hover:text-white transition-colors">Exit Workout</button>
-    </div>
+    </footer>
 
+    <teleport to="body">
     <transition name="modal">
         <div v-if="finishModal" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
             <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="finishModal = false"></div>
@@ -181,11 +184,24 @@
                     <input v-if="saveAsRoutine" type="text" v-model="newRoutineName" placeholder="Enter Protocol Name" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-3 text-xs font-bold text-white outline-none focus:border-purple-500 transition-colors">
                 </div>
 
-                <label class="flex items-center gap-3 p-4 bg-slate-900/50 rounded-xl mb-6 cursor-pointer border border-white/5">
+                <div v-if="shareToast" class="mb-4 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-center">
+                    <p class="text-[10px] font-bold text-blue-300">{{ shareToast }}</p>
+                </div>
+
+                <div v-if="sessionRecapPreview" class="mb-6 p-4 rounded-xl bg-slate-900/50 border border-green-500/20">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-green-500 mb-2">Recap Preview</p>
+                    <pre class="text-[10px] text-slate-400 whitespace-pre-wrap font-sans leading-relaxed">{{ sessionRecapPreview }}</pre>
+                </div>
+
+                <label class="flex items-center gap-3 p-4 bg-slate-900/50 rounded-xl mb-4 cursor-pointer border border-white/5">
                     <div class="relative"><input type="checkbox" v-model="stackTaken" @change="haptic" class="sr-only peer"><div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div></div>
                     <span class="text-[10px] font-black uppercase tracking-widest flex-1"><span class="block text-slate-400">Inventory</span><span :class="stackTaken ? 'text-blue-400' : 'text-slate-600'">Log Stack Consumption?</span></span>
                 </label>
                 <div class="space-y-3">
+                    <button @click="shareWorkout" class="w-full py-4 rounded-xl bg-blue-600 text-white font-black text-sm uppercase shadow-lg shadow-blue-900/20 hover:bg-blue-500 transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i>
+                        Share with Buddies
+                    </button>
                     <button @click="confirmFinishSession" class="w-full py-4 rounded-xl bg-green-600 text-white font-black text-sm uppercase shadow-lg shadow-green-900/20 hover:bg-green-500 transition-all active:scale-95">Save Workout</button>
                     <button @click="finishModal = false" class="w-full py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">Resume Training</button>
                 </div>
@@ -257,6 +273,7 @@
              </div>
         </div>
     </transition>
+    </teleport>
 
 </div>
 
@@ -275,18 +292,42 @@
                 saveAsRoutine: false,     // New: toggle to save Freeflow as a Protocol
                 newRoutineName: '',       // New: custom Protocol name
                 pickerModal: { visible: false, targetSet: null, weightValues: [], repsValues: [], weightVal: 0, repsVal: 0, targetWeightType: 'combined' },
-                libraryExercises: [], personalRecords: {}
+                libraryExercises: [], personalRecords: {},
+                profileName: '', streak: 0, shareToast: ''
             } 
+        },
+        computed: {
+            sessionRecapStats() {
+                return FitnessSocial.computeFromActiveRoutine(this.activeRoutine, this.sessionTimer);
+            },
+            sessionRecapPreview() {
+                if (!this.sessionRecapStats.setCount) return '';
+                return FitnessSocial.buildRecap({
+                    athleteName: this.profileName,
+                    streak: this.streak,
+                    ...this.sessionRecapStats
+                });
+            }
         },
         watch: {
             activeRoutine: { handler(val) { if(val && val.name) localStorage.setItem('constellation_active_session', JSON.stringify({ activeRoutine: val, sessionStartTime: this.sessionStartTime, activeExerciseIdx: this.activeExerciseIdx, stackTaken: this.stackTaken })); }, deep: true },
             stackTaken() { localStorage.setItem('constellation_active_session', JSON.stringify({ activeRoutine: this.activeRoutine, sessionStartTime: this.sessionStartTime, activeExerciseIdx: this.activeExerciseIdx, stackTaken: this.stackTaken })); },
-            activeExerciseIdx(newVal) { this.$nextTick(() => { const el = document.getElementById('cluster-' + newVal); if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }); }
+            activeExerciseIdx(newVal) {
+                this.$nextTick(() => {
+                    const container = document.getElementById('session-container');
+                    const el = document.getElementById('cluster-' + newVal);
+                    if (el && container) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+            }
         },
         async mounted() {
             const { data: { session }, error } = await _client.auth.getSession();
             if (error || !session) { window.location.href = 'index.html'; return; }
             this.session = session;
+            const { data: profile } = await _client.from('profiles').select('full_name').eq('id', session.user.id).single();
+            this.profileName = profile?.full_name || '';
+            const { data: streakLogs } = await _client.from('workout_logs').select('created_at').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(120);
+            this.streak = FitnessSocial.calculateStreak(streakLogs || []);
             const { data } = await _client.from('exercises').select('*').order('name'); this.libraryExercises = data || [];
             
             const savedSession = localStorage.getItem('constellation_active_session');
@@ -309,6 +350,21 @@
         methods: {
             haptic() { if (navigator.vibrate) navigator.vibrate(10); },
             isBodyWeight(type) { if(type === true) return true; if(!type) return false; const t = type.toString().toLowerCase(); return t === 'bodyweight' || t === 'body_weight' || t === 'bw' || t === 'true'; },
+            hasPrevValue(val) { return val !== '' && val !== null && val !== undefined; },
+            hasCurrentValue(val) { return val !== '' && val !== null && val !== undefined; },
+            displayCurrentOrGhost(current, prev) {
+                if (this.hasCurrentValue(current)) return current;
+                if (this.hasPrevValue(prev)) return prev;
+                return '-';
+            },
+            inheritFromPriorSets(sets, setIdx, field, parser) {
+                if (!sets || setIdx <= 0) return NaN;
+                for (let j = setIdx - 1; j >= 0; j--) {
+                    const parsed = parser(sets[j]?.[field]);
+                    if (!isNaN(parsed)) return parsed;
+                }
+                return NaN;
+            },
             
             handleSetComplete(ex, set) {
                 this.haptic();
@@ -329,15 +385,19 @@
                 });
             },
 
-            openDualPicker(setObj, weightType) {
+            openDualPicker(setObj, weightType, ex = null, setIdx = 0) {
                 this.haptic(); this.pickerModal.targetSet = setObj; this.pickerModal.targetWeightType = weightType;
                 if(this.pickerModal.weightValues.length === 0) { for(let i=0; i<=1000; i+=2.5) this.pickerModal.weightValues.push(i); for(let i=0; i<=100; i++) this.pickerModal.repsValues.push(i); }
                 
-                let w = parseFloat(setObj.weight); 
-                if(isNaN(w)) w = parseFloat(setObj.prevWeight) || 0; 
+                let w = parseFloat(setObj.weight);
+                if (isNaN(w) && ex) w = this.inheritFromPriorSets(ex.sets, setIdx, 'weight', parseFloat);
+                if (isNaN(w)) w = parseFloat(setObj.prevWeight);
+                if (isNaN(w)) w = 0;
                 
-                let r = parseInt(setObj.reps); 
-                if(isNaN(r)) r = parseInt(setObj.prevReps) || 0;
+                let r = parseInt(setObj.reps, 10);
+                if (isNaN(r) && ex) r = this.inheritFromPriorSets(ex.sets, setIdx, 'reps', v => parseInt(v, 10));
+                if (isNaN(r)) r = parseInt(setObj.prevReps, 10);
+                if (isNaN(r)) r = 0;
                 
                 this.pickerModal.weightVal = w; this.pickerModal.repsVal = r; this.pickerModal.visible = true;
                 this.$nextTick(() => {
@@ -472,6 +532,25 @@
                 }
             },
             formatTimer(s) { if(s < 0) s = 0; return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
+
+            async shareWorkout() {
+                this.haptic();
+                const stats = this.sessionRecapStats;
+                if (!stats.setCount) {
+                    this.shareToast = 'Log at least one completed set to share.';
+                    return;
+                }
+                const text = FitnessSocial.buildRecap({
+                    athleteName: this.profileName,
+                    streak: this.streak,
+                    ...stats
+                });
+                const result = await FitnessSocial.shareText(text);
+                if (result === 'clipboard') this.shareToast = 'Recap copied to clipboard!';
+                else if (result === 'failed') this.shareToast = 'Could not open share — try copying from preview.';
+                else this.shareToast = '';
+                if (this.shareToast) setTimeout(() => { this.shareToast = ''; }, 3000);
+            },
             
             async confirmFinishSession() {
                 clearInterval(this.sessionInterval);

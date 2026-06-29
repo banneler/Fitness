@@ -13,14 +13,15 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="js/social.js"></script>
     
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* Rank Gradients */
         .rank-1 { background: linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(234, 179, 8, 0.05)); border: 1px solid rgba(234, 179, 8, 0.3); }
         .rank-2 { background: linear-gradient(135deg, rgba(148, 163, 184, 0.2), rgba(148, 163, 184, 0.05)); border: 1px solid rgba(148, 163, 184, 0.3); }
         .rank-3 { background: linear-gradient(135deg, rgba(180, 83, 9, 0.2), rgba(180, 83, 9, 0.05)); border: 1px solid rgba(180, 83, 9, 0.3); }
@@ -29,15 +30,12 @@
         .silver-text { color: #cbd5e1; text-shadow: 0 0 10px rgba(203, 213, 225, 0.5); }
         .bronze-text { color: #fdba74; text-shadow: 0 0 10px rgba(253, 186, 116, 0.5); }
         
-        /* THE "SUPER-NOVA" FIRE ANIMATION */
-        /* This creates a massive, pulsing radioactive glow around the emoji */
         @keyframes super-burn {
             0% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.5)); }
             50% { transform: scale(1.3); filter: drop-shadow(0 0 40px rgba(249, 115, 22, 1)); }
             100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.5)); }
         }
         
-        /* Smaller fire for the list */
         @keyframes pulse-orange {
             0%, 100% { filter: drop-shadow(0 0 2px #f97316); }
             50% { filter: drop-shadow(0 0 8px #f97316); }
@@ -45,9 +43,13 @@
         .fire-anim { animation: pulse-orange 2s infinite; }
         .super-fire { animation: super-burn 1.5s infinite ease-in-out; }
 
-        /* Fade Transition for Overlay */
         .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+        .like-btn-active { color: #f472b6; }
+        .like-btn-active i { fill: #f472b6; }
+        .tab-active { color: #a855f7; }
+        .tab-active i { stroke-width: 3px; filter: drop-shadow(0 0 8px #a855f7); }
     </style>
 </head>
 <body class="font-sans antialiased bg-slate-950">
@@ -55,12 +57,14 @@
 
     <transition name="fade">
         <div v-if="showFire" class="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center pointer-events-none">
-            <div class="text-[150px] super-fire leading-none">
-                🔥
-            </div>
-            <div class="text-orange-500 font-black italic uppercase text-2xl tracking-widest mt-8 animate-pulse">
-                Consistency is King
-            </div>
+            <div class="text-[150px] super-fire leading-none">🔥</div>
+            <div class="text-orange-500 font-black italic uppercase text-2xl tracking-widest mt-8 animate-pulse">Consistency is King</div>
+        </div>
+    </transition>
+
+    <transition name="fade">
+        <div v-if="toast" class="fixed top-6 left-6 right-6 glass border-purple-500/30 p-4 rounded-2xl shadow-2xl z-[250] text-center">
+            <p class="text-xs font-bold text-purple-300">{{ toast }}</p>
         </div>
     </transition>
 
@@ -77,82 +81,83 @@
     </header>
 
     <main class="space-y-4">
-        
         <div class="glass p-1 rounded-xl flex mb-6">
-            <button @click="metric = 'volume'" class="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all" :class="metric === 'volume' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500'">
-                Volume
-            </button>
-            <button @click="metric = 'sessions'" class="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all" :class="metric === 'sessions' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500'">
-                Consistency
-            </button>
+            <button @click="setMetric('volume')" class="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all" :class="metric === 'volume' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500'">Volume</button>
+            <button @click="setMetric('sessions')" class="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all" :class="metric === 'sessions' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500'">Consistency</button>
             <button @click="changeToStreak" class="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1" :class="metric === 'streak' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-500'">
                 <span class="fire-anim" v-if="metric === 'streak'">🔥</span> Streak
             </button>
         </div>
 
-        <div v-if="metric === 'volume'" class="space-y-4">
-            <div v-for="(user, index) in sortedUsers" :key="user.user_id" class="relative p-4 rounded-3xl flex items-center gap-4" :class="getRankClass(index)">
-                <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center font-black italic text-lg" :class="getRankColor(index)">{{ index + 1 }}</div>
-                <div class="relative">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center bg-slate-800 border border-white/10 overflow-hidden">
-                        <img v-if="user.avatar_url" :src="user.avatar_url" class="w-full h-full object-cover">
-                        <span v-else class="font-black text-slate-500">{{ user.initials || '??' }}</span>
+        <p v-if="socialUnavailable" class="text-[10px] text-amber-500/80 font-bold uppercase tracking-wider text-center px-4">
+            Cheers & comments need the arena tables — run supabase/social_schema.sql
+        </p>
+
+        <div class="space-y-4">
+            <div v-for="(user, index) in sortedUsers" :key="user.user_id" class="relative p-4 rounded-3xl flex flex-col gap-3" :class="getRankClass(index)">
+                <div class="flex items-center gap-4">
+                    <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center font-black italic text-lg" :class="getRankColor(index)">{{ index + 1 }}</div>
+                    <div class="relative">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center bg-slate-800 border border-white/10 overflow-hidden">
+                            <img v-if="user.avatar_url" :src="user.avatar_url" class="w-full h-full object-cover">
+                            <span v-else class="font-black text-slate-500">{{ user.initials || '??' }}</span>
+                        </div>
+                        <div v-show="index === 0" class="absolute -top-4 -right-2 text-2xl rotate-12 z-10 drop-shadow-md">👑</div>
                     </div>
-                    <div v-show="index === 0" class="absolute -top-4 -right-2 text-2xl rotate-12 z-10 drop-shadow-md">👑</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-bold text-white uppercase italic text-sm truncate">{{ user.full_name || 'Anonymous' }}</span>
+                            <span v-if="user.user_id === session?.user?.id" class="text-[8px] bg-white/10 px-1.5 py-0.5 rounded text-slate-400 font-bold uppercase">You</span>
+                        </div>
+                        <div class="text-[10px] font-bold uppercase tracking-wider" :class="metric === 'streak' ? 'text-orange-400 flex items-center gap-1' : 'text-slate-500'">
+                            <span v-if="metric === 'streak'" class="fire-anim">🔥</span>
+                            {{ getMetricLabel() }}
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <div class="font-black italic text-xl" :class="metric === 'streak' ? 'text-orange-500 fire-anim' : 'text-white'">{{ getScore(user) }}</div>
+                        <div class="text-[8px] text-slate-500 font-bold uppercase tracking-widest">{{ getUnit() }}</div>
+                    </div>
                 </div>
-                <div class="flex-1">
-                    <div class="flex items-center gap-2"><span class="font-bold text-white uppercase italic text-sm">{{ user.full_name || 'Anonymous' }}</span><span v-if="user.user_id === session?.user?.id" class="text-[8px] bg-white/10 px-1.5 py-0.5 rounded text-slate-400 font-bold uppercase">You</span></div>
-                    <div class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Load</div>
+
+                <div v-if="session" class="flex items-center gap-2 pt-1 border-t border-white/5">
+                    <button @click="toggleLike(user.user_id)" :disabled="socialBusy" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/50 border border-white/5 transition-all active:scale-95 disabled:opacity-50" :class="isLiked(user.user_id) ? 'like-btn-active border-pink-500/30' : 'text-slate-400 hover:text-pink-400'">
+                        <i data-lucide="heart" class="w-4 h-4"></i>
+                        <span class="text-[10px] font-black">{{ likeCount(user.user_id) || '' }}</span>
+                    </button>
+                    <button @click="toggleComments(user.user_id)" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/50 border border-white/5 text-slate-400 hover:text-blue-400 transition-all active:scale-95">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i>
+                        <span class="text-[10px] font-black">{{ commentCount(user.user_id) || '' }}</span>
+                    </button>
+                    <button v-if="user.user_id === session.user.id && metric === 'streak' && user.current_streak > 0" @click="shareStreak(user)" class="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 transition-all active:scale-95">
+                        <i data-lucide="share" class="w-3.5 h-3.5"></i>
+                        <span class="text-[9px] font-black uppercase">Share</span>
+                    </button>
+                    <button v-else-if="user.user_id === session.user.id" @click="shareRanking(user, index)" class="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 transition-all active:scale-95">
+                        <i data-lucide="share" class="w-3.5 h-3.5"></i>
+                        <span class="text-[9px] font-black uppercase">Share</span>
+                    </button>
                 </div>
-                <div class="text-right">
-                    <div class="font-black italic text-xl text-white">{{ formatNumber(user.total_volume) }}</div>
-                    <div class="text-[8px] text-slate-500 font-bold uppercase tracking-widest">LBS</div>
+
+                <div v-if="expandedUser === user.user_id" class="space-y-3 pt-1">
+                    <div v-if="commentsFor(user.user_id).length === 0" class="text-[10px] text-slate-600 italic px-1">No cheers yet — be the first!</div>
+                    <div v-for="comment in commentsFor(user.user_id)" :key="comment.id" class="flex gap-2 items-start">
+                        <div class="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-[9px] font-black text-slate-400 flex-shrink-0">{{ authorInitials(comment.author_user_id) }}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-[10px] font-black text-slate-300 uppercase">{{ authorName(comment.author_user_id) }}</span>
+                                <span class="text-[8px] text-slate-600">{{ FitnessSocial.formatCommentTime(comment.created_at) }}</span>
+                            </div>
+                            <p class="text-xs text-slate-400 break-words">{{ comment.body }}</p>
+                        </div>
+                    </div>
+                    <div v-if="session" class="flex gap-2">
+                        <input v-model="commentDraft[user.user_id]" @keyup.enter="postComment(user.user_id)" maxlength="280" placeholder="Send encouragement..." class="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500">
+                        <button @click="postComment(user.user_id)" :disabled="!commentDraft[user.user_id]?.trim() || socialBusy" class="px-4 py-2 rounded-xl bg-purple-600 text-white text-[10px] font-black uppercase disabled:opacity-40 active:scale-95">Post</button>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <div v-else-if="metric === 'sessions'" class="space-y-4">
-            <div v-for="(user, index) in sortedUsers" :key="user.user_id" class="relative p-4 rounded-3xl flex items-center gap-4" :class="getRankClass(index)">
-                <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center font-black italic text-lg" :class="getRankColor(index)">{{ index + 1 }}</div>
-                <div class="relative">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center bg-slate-800 border border-white/10 overflow-hidden">
-                        <img v-if="user.avatar_url" :src="user.avatar_url" class="w-full h-full object-cover">
-                        <span v-else class="font-black text-slate-500">{{ user.initials || '??' }}</span>
-                    </div>
-                    <div v-show="index === 0" class="absolute -top-4 -right-2 text-2xl rotate-12 z-10 drop-shadow-md">👑</div>
-                </div>
-                <div class="flex-1">
-                    <div class="flex items-center gap-2"><span class="font-bold text-white uppercase italic text-sm">{{ user.full_name || 'Anonymous' }}</span><span v-if="user.user_id === session?.user?.id" class="text-[8px] bg-white/10 px-1.5 py-0.5 rounded text-slate-400 font-bold uppercase">You</span></div>
-                    <div class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Sessions</div>
-                </div>
-                <div class="text-right">
-                    <div class="font-black italic text-xl text-white">{{ user.sessions_count }}</div>
-                    <div class="text-[8px] text-slate-500 font-bold uppercase tracking-widest">SESSIONS</div>
-                </div>
-            </div>
-        </div>
-
-        <div v-else class="space-y-4">
-            <div v-for="(user, index) in sortedUsers" :key="user.user_id" class="relative p-4 rounded-3xl flex items-center gap-4" :class="getRankClass(index)">
-                <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center font-black italic text-lg" :class="getRankColor(index)">{{ index + 1 }}</div>
-                <div class="relative">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center bg-slate-800 border border-white/10 overflow-hidden">
-                        <img v-if="user.avatar_url" :src="user.avatar_url" class="w-full h-full object-cover">
-                        <span v-else class="font-black text-slate-500">{{ user.initials || '??' }}</span>
-                    </div>
-                    <div v-show="index === 0" class="absolute -top-4 -right-2 text-2xl rotate-12 z-10 drop-shadow-md">👑</div>
-                </div>
-                <div class="flex-1">
-                    <div class="flex items-center gap-2"><span class="font-bold text-white uppercase italic text-sm">{{ user.full_name || 'Anonymous' }}</span><span v-if="user.user_id === session?.user?.id" class="text-[8px] bg-white/10 px-1.5 py-0.5 rounded text-slate-400 font-bold uppercase">You</span></div>
-                    <div class="text-[10px] text-slate-500 font-bold uppercase tracking-wider text-orange-400 flex items-center gap-1"><span class="fire-anim">🔥</span> Active Streak</div>
-                </div>
-                <div class="text-right">
-                    <div class="font-black italic text-xl text-orange-500 fire-anim">{{ user.current_streak }}</div>
-                    <div class="text-[8px] text-slate-500 font-bold uppercase tracking-widest">DAYS</div>
-                </div>
-            </div>
-        </div>
-
     </main>
 
     <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-between px-6 py-4 safe-area-bottom z-[100]">
@@ -174,9 +179,19 @@
             return {
                 session: null,
                 users: [],
-                metric: 'volume', // Default to Volume
-                showFire: false
-            }
+                metric: 'volume',
+                showFire: false,
+                likes: [],
+                comments: [],
+                profileMap: {},
+                myLikeKeys: new Set(),
+                commentDraft: {},
+                expandedUser: null,
+                socialBusy: false,
+                socialUnavailable: false,
+                toast: '',
+                FitnessSocial
+            };
         },
         computed: {
             sortedUsers() {
@@ -185,30 +200,161 @@
                     if (this.metric === 'sessions') return b.sessions_count - a.sessions_count;
                     return b.current_streak - a.current_streak;
                 });
+            },
+            groupedComments() {
+                return FitnessSocial.groupComments(this.comments);
+            },
+            likeCounts() {
+                const counts = {};
+                this.likes.forEach(row => {
+                    counts[row.target_user_id] = (counts[row.target_user_id] || 0) + 1;
+                });
+                return counts;
+            }
+        },
+        watch: {
+            metric() {
+                this.expandedUser = null;
+                this.fetchSocial();
             }
         },
         async mounted() {
             const { data: { session } } = await _client.auth.getSession();
+            if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
-            await this.fetchLeaderboard();
+            await Promise.all([this.fetchLeaderboard(), this.fetchProfiles(), this.fetchSocial()]);
             this.$nextTick(() => lucide.createIcons());
         },
+        updated() { this.$nextTick(() => lucide.createIcons()); },
         methods: {
+            setMetric(m) {
+                if (this.metric === m) return;
+                this.metric = m;
+            },
             changeToStreak() {
                 if (this.metric === 'streak') return;
-                
                 this.metric = 'streak';
                 this.showFire = true;
-                
-                // Hide animation after 2.2 seconds
-                setTimeout(() => {
-                    this.showFire = false;
-                }, 2200);
+                setTimeout(() => { this.showFire = false; }, 2200);
             },
             async fetchLeaderboard() {
                 const { data, error } = await _client.from('leaderboard').select('*');
                 if (error) console.error(error);
                 else this.users = data || [];
+            },
+            async fetchProfiles() {
+                const { data } = await _client.from('profiles').select('id, full_name, initials');
+                const map = {};
+                (data || []).forEach(p => { map[p.id] = p; });
+                this.profileMap = map;
+            },
+            async fetchSocial() {
+                if (!this.session) return;
+                const [likesRes, commentsRes] = await Promise.all([
+                    _client.from('arena_likes').select('id, target_user_id, actor_user_id, context').eq('context', this.metric),
+                    _client.from('arena_comments').select('id, target_user_id, author_user_id, body, created_at, context').eq('context', this.metric).order('created_at', { ascending: true })
+                ]);
+                if (likesRes.error?.code === '42P01' || commentsRes.error?.code === '42P01') {
+                    this.socialUnavailable = true;
+                    return;
+                }
+                this.socialUnavailable = false;
+                this.likes = likesRes.data || [];
+                this.comments = commentsRes.data || [];
+                const mine = new Set();
+                this.likes.forEach(row => {
+                    if (row.actor_user_id === this.session.user.id) {
+                        mine.add(FitnessSocial.likeKey(row.target_user_id, row.context));
+                    }
+                });
+                this.myLikeKeys = mine;
+            },
+            likeCount(userId) {
+                return this.likeCounts[userId] || 0;
+            },
+            commentCount(userId) {
+                return (this.groupedComments[userId] || []).length;
+            },
+            isLiked(userId) {
+                return this.myLikeKeys.has(FitnessSocial.likeKey(userId, this.metric));
+            },
+            commentsFor(userId) {
+                return this.groupedComments[userId] || [];
+            },
+            authorName(userId) {
+                return this.profileMap[userId]?.full_name || 'Athlete';
+            },
+            authorInitials(userId) {
+                return this.profileMap[userId]?.initials || '??';
+            },
+            toggleComments(userId) {
+                this.expandedUser = this.expandedUser === userId ? null : userId;
+            },
+            showToast(msg) {
+                this.toast = msg;
+                setTimeout(() => { this.toast = ''; }, 2500);
+            },
+            async toggleLike(targetUserId) {
+                if (!this.session || this.socialUnavailable) return;
+                this.socialBusy = true;
+                const key = FitnessSocial.likeKey(targetUserId, this.metric);
+                try {
+                    if (this.myLikeKeys.has(key)) {
+                        await _client.from('arena_likes').delete()
+                            .eq('target_user_id', targetUserId)
+                            .eq('actor_user_id', this.session.user.id)
+                            .eq('context', this.metric);
+                    } else {
+                        await _client.from('arena_likes').insert({
+                            target_user_id: targetUserId,
+                            actor_user_id: this.session.user.id,
+                            context: this.metric
+                        });
+                    }
+                    await this.fetchSocial();
+                } catch (e) {
+                    console.error(e);
+                    this.showToast('Could not update cheer');
+                }
+                this.socialBusy = false;
+            },
+            async postComment(targetUserId) {
+                const body = (this.commentDraft[targetUserId] || '').trim();
+                if (!body || !this.session || this.socialUnavailable) return;
+                this.socialBusy = true;
+                try {
+                    const { error } = await _client.from('arena_comments').insert({
+                        target_user_id: targetUserId,
+                        author_user_id: this.session.user.id,
+                        context: this.metric,
+                        body
+                    });
+                    if (error) throw error;
+                    this.commentDraft[targetUserId] = '';
+                    this.expandedUser = targetUserId;
+                    await this.fetchSocial();
+                } catch (e) {
+                    console.error(e);
+                    this.showToast('Could not post comment');
+                }
+                this.socialBusy = false;
+            },
+            async shareStreak(user) {
+                const name = user.full_name || this.profileMap[user.user_id]?.full_name || 'I';
+                const text = `🔥 ${name} is on a ${user.current_streak}-day workout streak in BA Fitness!\n\nConsistency is king. See you in The Arena 🏆`;
+                const result = await FitnessSocial.shareText(text);
+                if (result === 'clipboard') this.showToast('Streak recap copied!');
+            },
+            async shareRanking(user, rank) {
+                const name = user.full_name || 'I';
+                const rankLabel = rank === 0 ? '1st' : rank === 1 ? '2nd' : rank === 2 ? '3rd' : `#${rank + 1}`;
+                let stat = '';
+                if (this.metric === 'volume') stat = `${FitnessSocial.formatNumber(user.total_volume)} lbs moved this week`;
+                else if (this.metric === 'sessions') stat = `${user.sessions_count} sessions this week`;
+                else stat = `${user.current_streak}-day streak`;
+                const text = `🏆 ${name} is sitting ${rankLabel} on the BA Fitness leaderboard!\n\n${stat}\n\nCome get yours in The Arena 💪`;
+                const result = await FitnessSocial.shareText(text);
+                if (result === 'clipboard') this.showToast('Ranking recap copied!');
             },
             getScore(user) {
                 if (this.metric === 'volume') return this.formatNumber(user.total_volume);
@@ -220,14 +366,19 @@
                 if (this.metric === 'sessions') return 'SESSIONS';
                 return 'DAYS';
             },
+            getMetricLabel() {
+                if (this.metric === 'volume') return 'Total Load';
+                if (this.metric === 'sessions') return 'Sessions';
+                return 'Active Streak';
+            },
             formatNumber(num) {
-                return num ? parseInt(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '0';
+                return FitnessSocial.formatNumber(num);
             },
             getRankClass(index) {
                 if (index === 0) return 'rank-1 glass border-yellow-500/30';
                 if (index === 1) return 'rank-2 glass border-slate-400/30';
                 if (index === 2) return 'rank-3 glass border-orange-500/30';
-                return 'glass border-white/5 opacity-80'; 
+                return 'glass border-white/5 opacity-80';
             },
             getRankColor(index) {
                 if (index === 0) return 'gold-text';
