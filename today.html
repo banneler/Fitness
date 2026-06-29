@@ -15,6 +15,8 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="js/heatmap.js"></script>
     <script src="js/social.js"></script>
     <style>
         [v-cloak] { display: none !important; }
@@ -228,7 +230,10 @@
                 </div>
             </div>
 
-            <div class="glass p-5 rounded-3xl border-t-4 border-t-orange-500">
+            <div class="glass p-5 rounded-3xl border-t-4 border-t-orange-500 relative">
+                <button v-if="totalVolume > 0" @click="shareTodayWorkout" class="absolute top-3 right-3 w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 active:scale-95 transition-all hover:bg-orange-500/20" title="Share workout">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                </button>
                 <div class="flex items-center gap-2 mb-3 opacity-60">
                     <i data-lucide="dumbbell" class="w-4 h-4 text-orange-400"></i>
                     <span class="text-[9px] font-black uppercase tracking-widest">Iron Volume</span>
@@ -368,6 +373,9 @@
                 proteinTarget: null,
                 proteinCurrent: 0,
                 totalVolume: 0,
+                todayWorkoutLogs: [],
+                heatmapLogs: [],
+                libraryExercises: [],
                 streak: 0, 
                 lowStockItems: [], 
                 resumeSessionName: null, 
@@ -398,6 +406,9 @@
                     color: diff > 0 ? 'text-red-400' : 'text-green-400',
                     icon: diff > 0 ? '↑' : '↓'
                 };
+            },
+            muscleHeatmap() {
+                return FitnessHeatmap.compute(this.heatmapLogs, this.libraryExercises);
             }
         },
         async mounted() {
@@ -427,7 +438,8 @@
                 this.fetchStreak(),
                 this.fetchLowStock(),
                 this.fetchProfile(),
-                this.fetchArenaCheers()
+                this.fetchArenaCheers(),
+                this.fetchHeatmapData()
             ]);
             
             this.$nextTick(() => lucide.createIcons());
@@ -451,6 +463,37 @@
             },
             formatNumber(num) {
                 return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            },
+            async fetchHeatmapData() {
+                const uid = this.session.user.id;
+                const [logsRes, exRes] = await Promise.all([
+                    _client.from('workout_logs').select('exercise_name, created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(300),
+                    _client.from('exercises').select('*').order('name')
+                ]);
+                this.heatmapLogs = logsRes.data || [];
+                this.libraryExercises = exRes.data || [];
+            },
+            async shareTodayWorkout() {
+                if (!this.todayWorkoutLogs.length) {
+                    this.showToast('Nothing to Share', 'Log a workout first, then share from here.');
+                    return;
+                }
+                const sorted = [...this.todayWorkoutLogs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                const latestTime = new Date(sorted[0].created_at).getTime();
+                const sessionLogs = sorted.filter(log => Math.abs(new Date(log.created_at).getTime() - latestTime) <= 3600000);
+                const duration = Math.max(...sessionLogs.map(l => l.duration_seconds || 0), 0);
+                const protocolName = sessionLogs[0]?.protocol_name || this.todaysWorkout || 'Today\'s Training';
+                const stats = FitnessSocial.computeFromSessionLogs(sessionLogs, { protocol_name: protocolName, duration });
+                const result = await FitnessSocial.shareRecap({
+                    athleteName: this.profile.full_name,
+                    streak: this.streak,
+                    heatmapStatuses: this.muscleHeatmap,
+                    ...stats
+                });
+                if (result === 'shared-image') this.showToast('Sent!', 'Recap card shared with your crew.');
+                else if (result === 'shared') this.showToast('Sent!', 'Workout recap shared.');
+                else if (result === 'clipboard') this.showToast('Copied!', 'Workout recap copied to clipboard.');
+                else if (result === 'failed') this.showToast('Share Failed', 'Could not open share sheet.');
             },
             async fetchSchedule() {
                 const dayName = new Date().toLocaleDateString('en-US', {weekday:'short'}); 
@@ -583,21 +626,24 @@
                 }
             },
             async fetchVolume() {
-                // FIX: Use Local Midnight
                 const todayISO = this.getLocalMidnightISO();
-                
-                const { data } = await _client.from('workout_logs').select('sets_data').gte('created_at', todayISO);
-                if (data) {
-                    let vol = 0;
-                    data.forEach(log => {
-                        if (log.sets_data) {
-                            log.sets_data.forEach(set => {
-                                if (set.weight > 0 && set.reps > 0) vol += (set.weight * set.reps);
-                            });
-                        }
+
+                const { data } = await _client.from('workout_logs')
+                    .select('*')
+                    .eq('user_id', this.session.user.id)
+                    .gte('created_at', todayISO)
+                    .order('created_at', { ascending: false });
+
+                this.todayWorkoutLogs = data || [];
+                let vol = 0;
+                this.todayWorkoutLogs.forEach(log => {
+                    (log.sets_data || []).forEach(set => {
+                        const w = parseFloat(set.weight) || 0;
+                        const r = parseInt(set.reps, 10) || 0;
+                        if (w > 0 && r > 0) vol += w * r;
                     });
-                    this.totalVolume = vol;
-                }
+                });
+                this.totalVolume = vol;
             },
             async saveWater(level) {
                 const newVal = this.metrics.water_intake === level ? 0 : level;

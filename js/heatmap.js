@@ -1,8 +1,10 @@
 /**
- * Muscle heatmap computation + compact grid for share cards.
+ * Muscle heatmap computation + body map SVG for share cards.
  */
 const FitnessHeatmap = {
     MUSCLES: ['chest', 'back', 'shoulders', 'biceps', 'triceps', 'forearms', 'core', 'quads', 'hamstrings', 'glutes', 'calves', 'hips'],
+    BODY_GROUPS: ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Hips'],
+    _bodyMapSvg: null,
 
     defaultStatuses() {
         const map = {};
@@ -43,27 +45,49 @@ const FitnessHeatmap = {
     },
 
     statusLabel(status) {
-        return ({ recov: 'RECOVERING', tired: 'FATIGUED', prime: 'PRIME', fresh: 'COLD' })[status] || 'COLD';
+        return ({ recov: 'RECOVERING', tired: 'FATIGUED', prime: 'PRIME', cold: 'COLD', fresh: 'COLD' })[status] || 'COLD';
     },
 
-    buildGridHtml(statuses) {
-        return this.MUSCLES.map(m => {
-            const s = statuses[m]?.status || 'fresh';
+    async loadBodyMapSvg() {
+        if (this._bodyMapSvg) return this._bodyMapSvg;
+        const res = await fetch('body-map.svg');
+        this._bodyMapSvg = await res.text();
+        return this._bodyMapSvg;
+    },
+
+    buildStatusStyles(statuses) {
+        let css = '#Base path{fill:#1e293b;stroke:rgba(255,255,255,0.12);stroke-width:1px}';
+        this.BODY_GROUPS.forEach(id => {
+            const s = statuses?.[id.toLowerCase()]?.status || 'fresh';
             const color = this.statusColor(s);
-            const label = this.statusLabel(s);
-            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-                <span style="font-size:9px;font-weight:800;color:#64748b;letter-spacing:0.12em;text-transform:uppercase;">${m}</span>
-                <span style="font-size:9px;font-weight:900;color:${color};letter-spacing:0.08em;">● ${label}</span>
-            </div>`;
-        }).join('');
+            const opacity = s === 'prime' ? '1' : '0.88';
+            css += `#${id} path{fill:${color}!important;opacity:${opacity}}`;
+        });
+        return css;
     },
 
-    countByStatus(statuses) {
+    async buildBodySvgHtml(statuses) {
+        const raw = await this.loadBodyMapSvg();
+        const style = this.buildStatusStyles(statuses || this.defaultStatuses());
+        return raw
+            .replace(
+                'viewBox="0 130 612 590"',
+                'viewBox="0 130 612 590" style="width:100%;height:220px;display:block;filter:drop-shadow(0 0 18px rgba(59,130,246,0.4))"'
+            )
+            .replace('</svg>', `<style>${style}</style></svg>`);
+    },
+
+    legendHtml(statuses) {
         const counts = { recov: 0, tired: 0, prime: 0, fresh: 0 };
         this.MUSCLES.forEach(m => {
-            const s = statuses[m]?.status || 'fresh';
+            const s = statuses?.[m]?.status || 'fresh';
             counts[s] = (counts[s] || 0) + 1;
         });
-        return counts;
+        return [
+            { c: '#ef4444', l: 'RECOVERING' },
+            { c: '#a855f7', l: 'FATIGUED' },
+            { c: '#2dd4bf', l: 'PRIME' },
+            { c: '#3b82f6', l: 'COLD' }
+        ].map(x => `<span style="font-size:7px;font-weight:800;color:${x.c};margin-right:10px;letter-spacing:0.06em;">● ${x.l}</span>`).join('');
     }
 };

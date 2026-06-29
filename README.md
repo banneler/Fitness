@@ -7,8 +7,9 @@ Progressive overload PWA — Vue 3 + Supabase.
 ### Share workout
 - **Finish modal** (`workout.html`) — "Share with Buddies" opens native share with a styled recap card **image** (includes muscle heatmap grid) plus a formatted text message. Falls back to SMS or clipboard.
 - **Tracker → Motion → Performance Ledger** — same share flow for past sessions.
+- **Today → Iron Volume card** — share icon appears when you've logged volume today; shares your most recent session from today with the heatmap recap card.
 
-Share uses `html2canvas` to render the heatmap card; on iOS/Android, Messages receives both the image and text when the device supports `navigator.share({ files })`.
+Share uses `html2canvas` to render a single recap **image** (stats, all lifts, real body heatmap SVG). No separate text message — image only, with plain-text fallback if sharing fails.
 
 ### Arena cheers & comments
 Likes and comments on leaderboard rows (Volume, Consistency, Streak tabs).

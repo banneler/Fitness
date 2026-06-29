@@ -647,7 +647,8 @@
                     heatmapStatuses,
                     ...stats
                 });
-                if (result === 'shared-image') this.showToast('Sent!', 'Recap + heatmap shared with your crew.');
+                if (result === 'shared-image') this.showToast('Sent!', 'Recap card shared with your crew.');
+                else if (result === 'shared') this.showToast('Sent!', 'Workout recap shared.');
                 else if (result === 'clipboard') this.showToast('Copied!', 'Workout recap copied to clipboard.');
                 else if (result === 'failed') this.showToast('Share Failed', 'Try again from the workout finish screen.');
             },
