@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.469.0"></script>
     <script src="js/config.js"></script>
     <script src="js/exercise-library.js"></script>
     <script src="js/routine-library.js"></script>
@@ -28,7 +28,9 @@
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
         
         /* Layout */
-        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        /* Solid panels — no backdrop-filter (breaks Android Chrome compositing) */
+        .glass { background: rgba(15, 23, 42, 0.96); border: 1px solid rgba(255,255,255,0.08); }
+        .solid-panel { background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.08); }
         .pt-safe-fixed { padding-top: 5rem; } 
         
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -70,7 +72,7 @@
     </div>
 
     <div v-if="bootError && !loading" class="fixed inset-0 bg-slate-950 z-[1000] flex items-center justify-center p-8">
-        <div class="glass max-w-sm w-full rounded-3xl p-8 text-center border border-red-500/20">
+        <div class="solid-panel max-w-sm w-full rounded-3xl p-8 text-center border border-red-500/20">
             <i data-lucide="alert-triangle" class="w-10 h-10 text-red-400 mx-auto mb-4"></i>
             <h2 class="text-lg font-black italic uppercase text-white mb-2">Couldn't Load Gym</h2>
             <p class="text-xs text-slate-400 mb-6">{{ bootError }}</p>
@@ -93,7 +95,7 @@
         </div>
     </transition>
 
-    <div class="flex flex-col h-full w-full">
+    <div v-if="bootReady && !loading && !bootError" class="flex flex-col h-full w-full">
         <div class="flex-1 overflow-y-auto no-scrollbar">
             <header class="flex justify-between items-center mb-6">
                 <div>
@@ -107,7 +109,7 @@
             </header>
 
             <div class="glass p-6 rounded-[2.5rem] mb-8 border-t-4 border-t-blue-500 shadow-xl relative">
-                <div class="absolute inset-0 bg-blue-900/10 blur-3xl pointer-events-none rounded-[2.5rem] overflow-hidden"></div>
+                <div class="absolute inset-0 bg-blue-900/10 pointer-events-none rounded-[2.5rem] overflow-hidden"></div>
                 <div class="flex items-center justify-between mb-6 relative z-10">
                     <div class="flex items-center gap-2 opacity-80">
                         <i data-lucide="flame" class="w-4 h-4 text-blue-400"></i>
@@ -120,7 +122,8 @@
                     </div>
                 </div>
                 <div class="flex justify-center relative z-10 px-2 pt-2 pb-1 overflow-visible">
-                    <heatmap-svg :statuses="muscleHeatmap"></heatmap-svg>
+                    <div v-if="heatmapError" class="text-[10px] font-bold uppercase tracking-widest text-slate-500 py-12 text-center">Heatmap unavailable</div>
+                    <div v-else class="overflow-visible" v-html="heatmapHtml"></div>
                 </div>
             </div>
 
@@ -282,39 +285,12 @@
 </div>
 
 <script>
-    const { createApp, defineComponent } = Vue;
+    const { createApp } = Vue;
     const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
     const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Hips', 'Cardio'];
 
-    const HeatmapSvg = defineComponent({
-        props: ['statuses'],
-        data() { return { svgHtml: '', loadError: false }; },
-        watch: {
-            statuses: { deep: true, handler() { this.refresh(); } }
-        },
-        async mounted() { await this.refresh(); },
-        methods: {
-            async refresh() {
-                try {
-                    this.svgHtml = await FitnessHeatmap.buildGymBodySvgHtml(this.statuses);
-                    this.loadError = false;
-                } catch (err) {
-                    console.error(err);
-                    this.loadError = true;
-                }
-            }
-        },
-        template: `
-            <div class="flex justify-center w-full overflow-visible py-1">
-                <div v-if="loadError" class="text-[10px] font-bold uppercase tracking-widest text-slate-500 py-12 text-center">Heatmap unavailable</div>
-                <div v-else class="overflow-visible" v-html="svgHtml"></div>
-            </div>
-        `
-    });
-
     const app = createApp({
-        components: { 'heatmap-svg': HeatmapSvg },
-        data() { return { loading: true, loadingText: 'Loading Data', bootError: null, routines: [], libraryExercises: [], schedule: [], recentSessions: [], rawLogs: [], muscleHeatmap: FitnessHeatmap.defaultStatuses(), scheduleModal: null, previewModal: null, toast: { visible: false, title: '', message: '' }, session: null, resumeSessionName: null, activeFilter: null, muscleGroups: MUSCLES } },
+        data() { return { loading: true, bootReady: false, loadingText: 'Loading Data', bootError: null, routines: [], libraryExercises: [], schedule: [], recentSessions: [], rawLogs: [], muscleHeatmap: FitnessHeatmap.defaultStatuses(), heatmapHtml: '', heatmapError: false, scheduleModal: null, previewModal: null, toast: { visible: false, title: '', message: '' }, session: null, resumeSessionName: null, activeFilter: null, muscleGroups: MUSCLES } },
         computed: {
             upcomingDays() {
                 const days = [];
@@ -347,8 +323,13 @@
         methods: {
             async boot() {
                 this.loading = true;
+                this.bootReady = false;
                 this.bootError = null;
                 try {
+                    if (typeof FitnessRoutineLibrary === 'undefined' || typeof FitnessHeatmap === 'undefined') {
+                        throw new Error('App scripts failed to load. Tap Clear Cache & Reload below.');
+                    }
+
                     const { data: { session }, error } = await _client.auth.getSession();
                     if (error || !session) { window.location.href = 'index.html'; return; }
                     this.session = session;
@@ -366,12 +347,24 @@
                     await Promise.all([this.fetchExercises(), this.fetchSchedule()]);
                     await this.fetchRoutines();
                     await this.fetchHistory();
+                    this.bootReady = true;
                 } catch (err) {
                     console.error(err);
                     this.bootError = err.message || 'Something went wrong loading your protocols.';
+                    this.bootReady = false;
                 } finally {
                     this.loading = false;
-                    this.$nextTick(() => lucide.createIcons());
+                    this.$nextTick(() => { try { lucide.createIcons(); } catch (e) { console.warn(e); } });
+                }
+            },
+            async refreshHeatmap() {
+                try {
+                    this.heatmapHtml = await FitnessHeatmap.buildGymBodySvgHtml(this.muscleHeatmap);
+                    this.heatmapError = false;
+                } catch (err) {
+                    console.error(err);
+                    this.heatmapError = true;
+                    this.heatmapHtml = '';
                 }
             },
             retryBoot() { this.boot(); },
@@ -406,9 +399,11 @@
             async fetchSchedule() { const { data } = await _client.from('schedule').select('*, routines(name, icon_name)').eq('user_id', this.session.user.id); this.schedule = data || []; },
             
             async fetchHistory() {
-                const { data: rawData } = await _client.from('workout_logs').select('*').eq('user_id', this.session.user.id).order('created_at', { ascending: false }).limit(300);
+                const { data: rawData, error } = await _client.from('workout_logs').select('*').eq('user_id', this.session.user.id).order('created_at', { ascending: false }).limit(300);
+                if (error) throw error;
                 this.rawLogs = rawData || [];
                 this.muscleHeatmap = FitnessHeatmap.compute(this.rawLogs, this.libraryExercises);
+                await this.refreshHeatmap();
 
                 if (!this.rawLogs.length) { this.recentSessions = []; return; }
                 
@@ -469,7 +464,11 @@
                     this.loading = false;
                 }
             },
-            getScheduleForDay(dayName) { const entry = this.schedule.find(s => s.day_of_week === dayName); return entry ? { name: entry.routines.name, icon_name: entry.routines.icon_name } : null; },
+            getScheduleForDay(dayName) {
+                const entry = this.schedule.find(s => s.day_of_week === dayName);
+                if (!entry?.routines) return null;
+                return { name: entry.routines.name, icon_name: entry.routines.icon_name };
+            },
             openScheduleModal(dayObj) { this.scheduleModal = dayObj; },
             async saveSchedule(routine) {
                 if (!this.scheduleModal) return;
@@ -529,6 +528,15 @@
     });
 
     try {
+        app.config.errorHandler = (err) => {
+            console.error(err);
+            const root = app._instance?.proxy;
+            if (root) {
+                root.bootError = err?.message || 'Gym failed to render.';
+                root.bootReady = false;
+                root.loading = false;
+            }
+        };
         app.mount('#app');
     } catch (err) {
         console.error(err);
@@ -537,7 +545,15 @@
     }
 
     window.addEventListener('error', (e) => {
-        if (document.getElementById('app').__vue_app__) return;
+        if (document.getElementById('app').__vue_app__) {
+            const root = document.getElementById('app').__vue_app__._instance?.proxy;
+            if (root && !root.bootError) {
+                root.bootError = e.message || 'Unexpected error loading Gym.';
+                root.bootReady = false;
+                root.loading = false;
+            }
+            return;
+        }
         document.getElementById('app').style.display = 'none';
         document.getElementById('boot-fallback').classList.remove('hidden');
     });

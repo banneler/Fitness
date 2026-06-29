@@ -20,8 +20,11 @@ const FitnessRoutineLibrary = {
             .from('routines')
             .select('*, profiles(initials)')
             .order('created_at');
-        if (error) throw error;
-        return data || [];
+        if (!error) return data || [];
+
+        const fallback = await client.from('routines').select('*').order('created_at');
+        if (fallback.error) throw fallback.error;
+        return fallback.data || [];
     },
 
     sortForDisplay(routines, userId) {
