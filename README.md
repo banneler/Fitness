@@ -14,7 +14,7 @@ Share uses `html2canvas` to render a single recap **image** (stats, all lifts, r
 ### Arena cheers & comments
 Likes and comments on leaderboard rows (Volume, Consistency, Streak tabs). Comments support text plus GIFs via an in-app Giphy picker.
 
-**Giphy setup:** get a free API key at [developers.giphy.com](https://developers.giphy.com/dashboard/) and paste it into `js/giphy-config.js` as `window.GIPHY_API_KEY`. Restrict the key to your app domain in the Giphy dashboard when you deploy.
+**Giphy setup:** get a free API key at [developers.giphy.com](https://developers.giphy.com/dashboard/) and paste it into `js/giphy-config.js` as `window.GIPHY_API_KEY`. Optional: change `window.GIPHY_DEFAULT_SEARCH` (default `gym workout fitness`) for the GIFs shown when the picker first opens — search still queries all of Giphy. Restrict the API key to your app domain in the Giphy dashboard when you deploy.
 
 **One-time setup:** run `supabase/social_schema.sql` in the Supabase SQL Editor to create `arena_likes` and `arena_comments` with RLS policies.
 

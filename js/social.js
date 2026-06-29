@@ -441,14 +441,17 @@ const FitnessSocial = {
         return html;
     },
 
+    giphyDefaultSearch() {
+        return (typeof window !== 'undefined' && window.GIPHY_DEFAULT_SEARCH || 'gym workout fitness').trim();
+    },
+
     async searchGifs(query) {
         const key = this.giphyApiKey();
         if (!key) throw new Error('GIPHY_API_KEY missing');
 
         const trimmed = (query || '').trim();
-        const endpoint = trimmed
-            ? `https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(key)}&q=${encodeURIComponent(trimmed)}&limit=24&rating=pg&lang=en`
-            : `https://api.giphy.com/v1/gifs/trending?api_key=${encodeURIComponent(key)}&limit=24&rating=pg`;
+        const searchQuery = trimmed || this.giphyDefaultSearch();
+        const endpoint = `https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(key)}&q=${encodeURIComponent(searchQuery)}&limit=24&rating=pg&lang=en`;
 
         const res = await fetch(endpoint);
         if (!res.ok) throw new Error('Giphy request failed');
