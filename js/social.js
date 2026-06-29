@@ -142,10 +142,7 @@ const FitnessSocial = {
     buildStreakShareCardHtml({ athleteName, streakDays }) {
         const who = athleteName || 'Athlete';
         const days = parseInt(streakDays, 10) || 0;
-        return `<div style="width:380px;background:linear-gradient(165deg,#1c1917 0%,#020617 45%,#431407 100%);border-radius:28px;padding:18px 24px 24px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid rgba(249,115,22,0.45);">
-            <div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;margin-bottom:4px;">BA FITNESS · THE ARENA</div>
-            <div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin-bottom:2px;">${who}</div>
-            <div style="font-size:11px;font-weight:800;color:#f97316;text-transform:uppercase;letter-spacing:0.14em;margin-bottom:16px;">Streak Champion</div>
+        return `<div style="width:380px;background:linear-gradient(165deg,#1c1917 0%,#020617 45%,#431407 100%);border-radius:28px;padding:12px 22px 22px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid rgba(249,115,22,0.45);overflow:hidden;line-height:1.15;"><div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;line-height:1;margin:0 0 3px;">BA FITNESS · THE ARENA</div><div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin:0 0 2px;">${who}</div><div style="font-size:11px;font-weight:800;color:#f97316;text-transform:uppercase;letter-spacing:0.14em;line-height:1;margin:0 0 14px;">Streak Champion</div>
 
             <div style="background:rgba(15,23,42,0.65);border-radius:22px;padding:28px 20px;border:1px solid rgba(249,115,22,0.25);text-align:center;margin-bottom:20px;">
                 <div style="font-size:48px;line-height:1;margin-bottom:12px;">🔥</div>
@@ -168,15 +165,14 @@ const FitnessSocial = {
         const rankText = this.rankLabel(rank).toUpperCase();
         const placeLine = rank <= 2 ? `${rankText} PLACE` : `${rankText} IN THE ARENA`;
 
-        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#1e1b4b 100%);border-radius:28px;padding:18px 24px 24px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid ${theme.border};">
-            <div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;margin-bottom:4px;">BA FITNESS · THE ARENA</div>
-            <div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin-bottom:2px;">${who}</div>
-            <div style="font-size:11px;font-weight:800;color:${meta.color};text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px;">${meta.title}</div>
+        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#1e1b4b 100%);border-radius:28px;padding:12px 22px 22px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid ${theme.border};overflow:hidden;line-height:1.15;"><div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;line-height:1;margin:0 0 3px;">BA FITNESS · THE ARENA</div><div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin:0 0 2px;">${who}</div><div style="font-size:11px;font-weight:800;color:${meta.color};text-transform:uppercase;letter-spacing:0.12em;line-height:1;margin:0 0 14px;">${meta.title}</div>
 
-            <div style="background:rgba(15,23,42,0.75);border-radius:22px;padding:24px 20px;border:1px solid rgba(255,255,255,0.08);text-align:center;margin-bottom:18px;">
-                <div style="font-size:13px;font-weight:900;color:${theme.accent};letter-spacing:0.22em;margin-bottom:8px;">${placeLine}</div>
-                <div style="font-size:52px;font-weight:900;font-style:italic;line-height:1;color:#ffffff;">${score}</div>
-                <div style="font-size:9px;font-weight:800;color:#64748b;letter-spacing:0.2em;margin-top:8px;">${meta.statCaption}</div>
+            <div style="background:rgba(15,23,42,0.75);border-radius:22px;padding:20px 20px 18px;border:1px solid rgba(255,255,255,0.08);text-align:center;margin-bottom:18px;">
+                <div style="font-size:13px;font-weight:900;color:${theme.accent};letter-spacing:0.22em;line-height:1;margin-bottom:10px;">${placeLine}</div>
+                <div style="height:56px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;">
+                    <div style="font-size:48px;font-weight:900;font-style:italic;line-height:1;color:#ffffff;">${score}</div>
+                </div>
+                <div style="font-size:9px;font-weight:800;color:#64748b;letter-spacing:0.2em;line-height:1.3;">${meta.statCaption}</div>
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">
@@ -206,15 +202,25 @@ const FitnessSocial = {
         return `🏆 ${name} is sitting ${rankLabel} on the BA Fitness leaderboard!\n\n${score} · ${meta.statCaption.toLowerCase()}\n\nCome get yours in The Arena 💪`;
     },
 
+    stripEmptyTextNodes(node) {
+        if (!node) return;
+        [...node.childNodes].forEach(child => {
+            if (child.nodeType === Node.TEXT_NODE && !child.textContent.trim()) child.remove();
+            else if (child.nodeType === Node.ELEMENT_NODE) this.stripEmptyTextNodes(child);
+        });
+    },
+
     async captureHtmlCard(html) {
         if (typeof html2canvas === 'undefined') return null;
         const host = document.createElement('div');
-        host.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
+        host.style.cssText = 'position:fixed;left:0;top:0;transform:translateX(-10000px);z-index:-1;line-height:0;font-size:0;';
         host.innerHTML = html;
         document.body.appendChild(host);
+        const card = host.firstElementChild;
+        if (card) this.stripEmptyTextNodes(card);
         try {
             await new Promise(r => setTimeout(r, 150));
-            const canvas = await html2canvas(host.firstElementChild, {
+            const canvas = await html2canvas(card, {
                 backgroundColor: '#020617',
                 scale: 2,
                 useCORS: true,
@@ -270,13 +276,7 @@ const FitnessSocial = {
                 <div style="font-size:11px;font-weight:900;color:#3b82f6;letter-spacing:0.04em;">${line.sets.join('  ·  ')}</div>
             </div>`).join('');
 
-        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#1e1b4b 100%);border-radius:28px;padding:18px 24px 24px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid rgba(59,130,246,0.3);">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
-                <div>
-                    <div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;margin-bottom:4px;">BA FITNESS</div>
-                    <div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;">${who}</div>
-                    <div style="font-size:11px;font-weight:800;color:#3b82f6;text-transform:uppercase;letter-spacing:0.12em;margin-top:2px;">${proto}</div>
-                </div>
+        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#1e1b4b 100%);border-radius:28px;padding:12px 22px 22px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid rgba(59,130,246,0.3);overflow:hidden;line-height:1.15;"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;"><div><div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;line-height:1;margin:0 0 3px;">BA FITNESS</div><div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin:0;">${who}</div><div style="font-size:11px;font-weight:800;color:#3b82f6;text-transform:uppercase;letter-spacing:0.12em;line-height:1;margin:2px 0 0;">${proto}</div></div>
                 ${streak > 0 ? `<div style="background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.35);border-radius:12px;padding:8px 10px;text-align:center;">
                     <div style="font-size:16px;line-height:1;">🔥</div>
                     <div style="font-size:10px;font-weight:900;color:#f97316;margin-top:2px;">${streak} DAY</div>
