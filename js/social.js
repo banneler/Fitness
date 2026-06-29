@@ -119,22 +119,135 @@ const FitnessSocial = {
     },
 
     buildRecap({ athleteName, protocolName, durationSeconds, tonnage, setCount, exerciseCount, highlights, streak }) {
-        let msg = '💪 BA FITNESS RECAP 💪\n\n';
-        if (athleteName) msg += `${athleteName} just crushed "${protocolName}"!\n\n`;
-        else msg += `Just crushed "${protocolName}"!\n\n`;
+        const who = athleteName ? athleteName.toUpperCase() : 'IRON WARRIOR';
+        const proto = (protocolName || 'WORKOUT').toUpperCase();
 
-        msg += `⏱ ${this.formatDuration(durationSeconds)}  •  🏋️ ${this.formatNumber(tonnage)} lbs moved\n`;
-        msg += `📋 ${exerciseCount} exercises  •  ${setCount} sets logged`;
-
-        if (streak > 0) msg += `\n🔥 ${streak}-day streak rolling!`;
+        let msg = `╔══════════════════════════╗\n`;
+        msg += `║   ⚡ BA FITNESS RECAP ⚡   ║\n`;
+        msg += `╚══════════════════════════╝\n\n`;
+        msg += `${who} · ${proto} · COMPLETE ✓\n\n`;
+        msg += `┌──────────────────────────┐\n`;
+        msg += `│ ⏱  ${this.formatDuration(durationSeconds).padEnd(8)} 🏋️  ${this.formatNumber(tonnage).padStart(7)} lbs │\n`;
+        msg += `│ 📋  ${exerciseCount} exercises · ${setCount} sets${streak > 0 ? ` · 🔥 ${streak}d streak` : ''}          │\n`;
+        msg += `└──────────────────────────┘`;
 
         if (highlights?.length) {
-            msg += '\n\nTOP LIFTS:\n';
-            highlights.slice(0, 6).forEach(h => { msg += `• ${h}\n`; });
+            msg += `\n\n🏆 TOP LIFTS\n`;
+            highlights.slice(0, 5).forEach(h => {
+                const [name, lift] = h.includes(':') ? h.split(': ') : [h, ''];
+                const dots = '·'.repeat(Math.max(1, 18 - name.length));
+                msg += `▸ ${name} ${dots} ${lift}\n`;
+            });
         }
 
-        msg += '\nSee you in The Arena 🏆';
+        msg += `\nMuscle heatmap attached 🔥\nThe Arena awaits 🏆`;
         return msg.trim();
+    },
+
+    buildShareCardHtml({ athleteName, protocolName, durationSeconds, tonnage, setCount, exerciseCount, highlights, streak, heatmapStatuses }) {
+        const who = athleteName || 'Athlete';
+        const proto = protocolName || 'Workout';
+        const grid = typeof FitnessHeatmap !== 'undefined'
+            ? FitnessHeatmap.buildGridHtml(heatmapStatuses || FitnessHeatmap.defaultStatuses())
+            : '';
+        const counts = typeof FitnessHeatmap !== 'undefined'
+            ? FitnessHeatmap.countByStatus(heatmapStatuses || {})
+            : {};
+
+        const liftRows = (highlights || []).slice(0, 4).map(h => {
+            const [name, lift] = h.includes(':') ? h.split(': ') : [h, ''];
+            return `<div style="display:flex;justify-content:space-between;font-size:11px;color:#e2e8f0;margin-top:6px;">
+                <span style="font-weight:700;text-transform:uppercase;font-style:italic;">${name}</span>
+                <span style="font-weight:900;color:#3b82f6;">${lift || ''}</span>
+            </div>`;
+        }).join('');
+
+        const legend = [
+            { c: '#ef4444', l: 'RECOVERING', n: counts.recov || 0 },
+            { c: '#a855f7', l: 'FATIGUED', n: counts.tired || 0 },
+            { c: '#2dd4bf', l: 'PRIME', n: counts.prime || 0 },
+            { c: '#3b82f6', l: 'COLD', n: counts.fresh || 0 }
+        ].map(x => `<span style="font-size:7px;font-weight:800;color:${x.c};margin-right:8px;">● ${x.l}</span>`).join('');
+
+        return `<div style="width:360px;background:linear-gradient(165deg,#0f172a 0%,#020617 55%,#1e1b4b 100%);border-radius:24px;padding:24px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid rgba(59,130,246,0.25);box-shadow:0 0 60px rgba(59,130,246,0.15);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:9px;font-weight:900;letter-spacing:0.35em;color:#64748b;text-transform:uppercase;">BA FITNESS</div>
+                ${streak > 0 ? `<div style="font-size:11px;font-weight:900;color:#f97316;">🔥 ${streak} DAY STREAK</div>` : ''}
+            </div>
+            <div style="font-size:22px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.1;margin-bottom:4px;color:#ffffff;">${who}</div>
+            <div style="font-size:12px;font-weight:800;color:#3b82f6;text-transform:uppercase;letter-spacing:0.15em;margin-bottom:18px;">${proto}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:18px;">
+                <div style="background:rgba(15,23,42,0.8);border-radius:14px;padding:12px;border:1px solid rgba(255,255,255,0.06);text-align:center;">
+                    <div style="font-size:18px;font-weight:900;">${this.formatDuration(durationSeconds)}</div>
+                    <div style="font-size:7px;font-weight:800;color:#64748b;letter-spacing:0.1em;margin-top:4px;">DURATION</div>
+                </div>
+                <div style="background:rgba(15,23,42,0.8);border-radius:14px;padding:12px;border:1px solid rgba(255,255,255,0.06);text-align:center;">
+                    <div style="font-size:18px;font-weight:900;">${this.formatNumber(tonnage)}</div>
+                    <div style="font-size:7px;font-weight:800;color:#64748b;letter-spacing:0.1em;margin-top:4px;">LBS MOVED</div>
+                </div>
+                <div style="background:rgba(15,23,42,0.8);border-radius:14px;padding:12px;border:1px solid rgba(255,255,255,0.06);text-align:center;">
+                    <div style="font-size:18px;font-weight:900;">${setCount}</div>
+                    <div style="font-size:7px;font-weight:800;color:#64748b;letter-spacing:0.1em;margin-top:4px;">SETS · ${exerciseCount} EX</div>
+                </div>
+            </div>
+            ${liftRows ? `<div style="background:rgba(15,23,42,0.5);border-radius:16px;padding:14px;margin-bottom:16px;border:1px solid rgba(255,255,255,0.05);">
+                <div style="font-size:8px;font-weight:900;color:#64748b;letter-spacing:0.2em;margin-bottom:4px;">TOP LIFTS</div>${liftRows}
+            </div>` : ''}
+            <div style="background:rgba(15,23,42,0.6);border-radius:16px;padding:14px;border:1px solid rgba(59,130,246,0.15);">
+                <div style="font-size:8px;font-weight:900;color:#3b82f6;letter-spacing:0.2em;margin-bottom:8px;">MUSCLE HEATMAP</div>
+                <div style="margin-bottom:10px;">${legend}</div>
+                ${grid}
+            </div>
+            <div style="text-align:center;margin-top:16px;font-size:8px;font-weight:900;color:#475569;letter-spacing:0.25em;text-transform:uppercase;">See You In The Arena 🏆</div>
+        </div>`;
+    },
+
+    async captureShareCard(options) {
+        if (typeof html2canvas === 'undefined') return null;
+        const host = document.createElement('div');
+        host.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
+        host.innerHTML = this.buildShareCardHtml(options);
+        document.body.appendChild(host);
+        try {
+            const canvas = await html2canvas(host.firstElementChild, {
+                backgroundColor: '#020617',
+                scale: 2,
+                useCORS: true,
+                logging: false
+            });
+            return await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.92));
+        } finally {
+            document.body.removeChild(host);
+        }
+    },
+
+    async shareRecap(options) {
+        const text = this.buildRecap(options);
+        const blob = await this.captureShareCard(options);
+
+        if (blob && navigator.share && navigator.canShare) {
+            const file = new File([blob], 'ba-fitness-recap.png', { type: 'image/png' });
+            const payload = { text, files: [file] };
+            if (navigator.canShare(payload)) {
+                try {
+                    await navigator.share(payload);
+                    return 'shared-image';
+                } catch (err) {
+                    if (err?.name === 'AbortError') return 'cancelled';
+                }
+            }
+        }
+
+        if (blob && navigator.share) {
+            try {
+                await navigator.share({ text: text + '\n\n(Heatmap card — screenshot from app for the full visual)' });
+                return 'shared';
+            } catch (err) {
+                if (err?.name === 'AbortError') return 'cancelled';
+            }
+        }
+
+        return this.shareText(text);
     },
 
     async shareText(text) {
@@ -161,14 +274,12 @@ const FitnessSocial = {
         return 'failed';
     },
 
-    groupLikes(likes) {
-        const counts = {};
-        const mine = new Set();
-        likes.forEach(row => {
-            const key = row.target_user_id;
-            counts[key] = (counts[key] || 0) + 1;
-        });
-        return { counts, mine };
+    contextLabel(context) {
+        return ({ volume: 'Volume ranking', sessions: 'Consistency ranking', streak: 'Streak' })[context] || context;
+    },
+
+    contextEmoji(context) {
+        return ({ volume: '🏋️', sessions: '📅', streak: '🔥' })[context] || '💪';
     },
 
     groupComments(comments) {
@@ -194,5 +305,34 @@ const FitnessSocial = {
         const hrs = Math.floor(mins / 60);
         if (hrs < 24) return `${hrs}h ago`;
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    },
+
+    buildArenaFeed(likes, comments, profileMap) {
+        const items = [];
+        (likes || []).forEach(row => {
+            const p = profileMap[row.actor_user_id] || {};
+            items.push({
+                id: `like-${row.id}`,
+                type: 'like',
+                actorName: p.full_name || p.initials || 'Someone',
+                actorInitials: p.initials || '??',
+                context: row.context,
+                body: null,
+                created_at: row.created_at
+            });
+        });
+        (comments || []).forEach(row => {
+            const p = profileMap[row.author_user_id] || {};
+            items.push({
+                id: `comment-${row.id}`,
+                type: 'comment',
+                actorName: p.full_name || p.initials || 'Someone',
+                actorInitials: p.initials || '??',
+                context: row.context,
+                body: row.body,
+                created_at: row.created_at
+            });
+        });
+        return items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }
 };

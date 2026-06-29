@@ -12,6 +12,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="js/heatmap.js"></script>
     <script src="js/social.js"></script>
 
     <style>
@@ -293,10 +295,13 @@
                 newRoutineName: '',       // New: custom Protocol name
                 pickerModal: { visible: false, targetSet: null, weightValues: [], repsValues: [], weightVal: 0, repsVal: 0, targetWeightType: 'combined' },
                 libraryExercises: [], personalRecords: {},
-                profileName: '', streak: 0, shareToast: ''
+                profileName: '', streak: 0, shareToast: '', rawLogs: []
             } 
         },
         computed: {
+            muscleHeatmap() {
+                return FitnessHeatmap.compute(this.rawLogs, this.libraryExercises);
+            },
             sessionRecapStats() {
                 return FitnessSocial.computeFromActiveRoutine(this.activeRoutine, this.sessionTimer);
             },
@@ -328,6 +333,8 @@
             this.profileName = profile?.full_name || '';
             const { data: streakLogs } = await _client.from('workout_logs').select('created_at').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(120);
             this.streak = FitnessSocial.calculateStreak(streakLogs || []);
+            const { data: historyLogs } = await _client.from('workout_logs').select('exercise_name, created_at').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(300);
+            this.rawLogs = historyLogs || [];
             const { data } = await _client.from('exercises').select('*').order('name'); this.libraryExercises = data || [];
             
             const savedSession = localStorage.getItem('constellation_active_session');
@@ -540,13 +547,15 @@
                     this.shareToast = 'Log at least one completed set to share.';
                     return;
                 }
-                const text = FitnessSocial.buildRecap({
+                const payload = {
                     athleteName: this.profileName,
                     streak: this.streak,
+                    heatmapStatuses: this.muscleHeatmap,
                     ...stats
-                });
-                const result = await FitnessSocial.shareText(text);
-                if (result === 'clipboard') this.shareToast = 'Recap copied to clipboard!';
+                };
+                const result = await FitnessSocial.shareRecap(payload);
+                if (result === 'shared-image') this.shareToast = 'Recap + heatmap sent!';
+                else if (result === 'clipboard') this.shareToast = 'Recap copied to clipboard!';
                 else if (result === 'failed') this.shareToast = 'Could not open share — try copying from preview.';
                 else this.shareToast = '';
                 if (this.shareToast) setTimeout(() => { this.shareToast = ''; }, 3000);

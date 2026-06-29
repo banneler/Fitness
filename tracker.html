@@ -15,6 +15,8 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="js/heatmap.js"></script>
     <script src="js/social.js"></script>
     <style>
         [v-cloak] { display: none !important; }
@@ -638,13 +640,15 @@
                     protocol_name: session.protocol_name,
                     duration: session.duration
                 });
-                const text = FitnessSocial.buildRecap({
+                const heatmapStatuses = FitnessHeatmap.compute(this.rawWorkouts, this.library);
+                const result = await FitnessSocial.shareRecap({
                     athleteName: this.profileName,
                     streak: this.streak,
+                    heatmapStatuses,
                     ...stats
                 });
-                const result = await FitnessSocial.shareText(text);
-                if (result === 'clipboard') this.showToast('Copied!', 'Workout recap copied to clipboard.');
+                if (result === 'shared-image') this.showToast('Sent!', 'Recap + heatmap shared with your crew.');
+                else if (result === 'clipboard') this.showToast('Copied!', 'Workout recap copied to clipboard.');
                 else if (result === 'failed') this.showToast('Share Failed', 'Try again from the workout finish screen.');
             },
             async fetchLibrary() { const { data } = await _client.from('exercises').select('*').order('name'); this.library = data || []; },

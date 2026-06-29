@@ -15,6 +15,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="js/social.js"></script>
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
@@ -49,6 +50,12 @@
             50% { filter: drop-shadow(0 0 15px #f97316); }
         }
         .streak-fire { animation: pulse-orange 2s infinite; }
+
+        @keyframes cheer-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(244, 114, 182, 0.1); }
+            50% { box-shadow: 0 0 30px rgba(244, 114, 182, 0.25); }
+        }
+        .arena-cheer-card { animation: cheer-glow 3s infinite; }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -166,6 +173,41 @@
                     <span v-for="item in lowStockItems" :key="item.id" class="text-[9px] font-bold uppercase bg-red-500/20 text-red-200 px-2 py-0.5 rounded text-nowrap">
                         {{ item.item_name }} ({{ item.servings_left }})
                     </span>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="arenaActivity.length > 0" class="glass p-5 rounded-3xl border-t-4 border-pink-500 shadow-xl arena-cheer-card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="heart" class="w-4 h-4 text-pink-500"></i>
+                    <h3 class="text-xs font-black uppercase tracking-widest text-pink-400">Arena Cheers</h3>
+                </div>
+                <a href="leaderboard.html" class="text-[9px] font-black uppercase text-slate-500 hover:text-pink-400 tracking-wider">The Arena →</a>
+            </div>
+            <div class="space-y-3">
+                <div v-for="item in arenaActivity.slice(0, 8)" :key="item.id" class="bg-slate-950/50 rounded-2xl p-4 border border-white/5">
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-400 flex-shrink-0 border border-white/10">{{ item.actorInitials }}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap mb-1">
+                                <span class="text-xs font-black text-white uppercase italic">{{ item.actorName }}</span>
+                                <span class="text-[8px] font-bold text-slate-600">{{ FitnessSocial.formatCommentTime(item.created_at) }}</span>
+                            </div>
+                            <p v-if="item.type === 'like'" class="text-[10px] text-slate-400 font-bold uppercase tracking-wide flex items-center gap-1.5">
+                                <i data-lucide="heart" class="w-3 h-3 text-pink-500"></i>
+                                Cheered your {{ FitnessSocial.contextLabel(item.context) }}
+                                <span>{{ FitnessSocial.contextEmoji(item.context) }}</span>
+                            </p>
+                            <div v-else>
+                                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                                    <i data-lucide="message-circle" class="w-3 h-3 text-blue-400"></i>
+                                    On your {{ FitnessSocial.contextLabel(item.context) }}
+                                </p>
+                                <p class="text-sm text-slate-300 italic leading-snug">"{{ item.body }}"</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -329,7 +371,9 @@
                 streak: 0, 
                 lowStockItems: [], 
                 resumeSessionName: null, 
-                toast: { visible: false, title: '', message: '' }
+                toast: { visible: false, title: '', message: '' },
+                arenaActivity: [],
+                FitnessSocial
             } 
         },
         computed: {
@@ -382,7 +426,8 @@
                 this.fetchSchedule(),
                 this.fetchStreak(),
                 this.fetchLowStock(),
-                this.fetchProfile() 
+                this.fetchProfile(),
+                this.fetchArenaCheers()
             ]);
             
             this.$nextTick(() => lucide.createIcons());
@@ -470,6 +515,28 @@
                 } else {
                     this.showToast("Error", "Could not save profile.");
                 }
+            },
+            async fetchArenaCheers() {
+                const uid = this.session.user.id;
+                const since = new Date(Date.now() - 7 * 86400000).toISOString();
+                const [likesRes, commentsRes] = await Promise.all([
+                    _client.from('arena_likes').select('*').eq('target_user_id', uid).gte('created_at', since).order('created_at', { ascending: false }).limit(20),
+                    _client.from('arena_comments').select('*').eq('target_user_id', uid).gte('created_at', since).order('created_at', { ascending: false }).limit(20)
+                ]);
+                if (likesRes.error?.code === '42P01' || commentsRes.error?.code === '42P01') return;
+
+                const likes = likesRes.data || [];
+                const comments = commentsRes.data || [];
+                const actorIds = [...new Set([
+                    ...likes.map(l => l.actor_user_id),
+                    ...comments.map(c => c.author_user_id)
+                ])];
+                if (!actorIds.length) { this.arenaActivity = []; return; }
+
+                const { data: profiles } = await _client.from('profiles').select('id, full_name, initials').in('id', actorIds);
+                const profileMap = {};
+                (profiles || []).forEach(p => { profileMap[p.id] = p; });
+                this.arenaActivity = FitnessSocial.buildArenaFeed(likes, comments, profileMap);
             },
             async fetchMetrics() {
                 // FIX: Use Local Midnight
