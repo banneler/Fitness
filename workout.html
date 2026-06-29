@@ -19,7 +19,7 @@
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; height: 100dvh; overflow: hidden; }
-        html { height: 100%; }
+        html { height: 100dvh; }
         
         .glass-solid { background: #020617; border-bottom: 1px solid rgba(255,255,255,0.08); }
         .glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
@@ -56,7 +56,7 @@
     </style>
 </head>
 <body class="font-sans antialiased bg-slate-950">
-<div id="app" v-cloak class="h-full flex flex-col bg-slate-950 overflow-hidden">
+<div id="app" v-cloak class="fixed inset-0 flex flex-col bg-slate-950 overflow-hidden">
     
     <header class="flex-shrink-0 glass-solid p-4 pt-16 z-40 shadow-2xl">
         <div class="flex justify-between items-center">
@@ -71,7 +71,7 @@
         </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto overscroll-contain p-4 space-y-6 scroll-smooth no-scrollbar" id="session-container">
+    <main class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-6 scroll-smooth no-scrollbar" id="session-container">
         
         <div v-for="(group, groupIdx) in activeRoutine.data" 
              :key="groupIdx" 
@@ -132,7 +132,7 @@
                         </div>
 
                         <div class="col-span-2 flex justify-center" v-if="ex.sets[i]">
-                            <input type="checkbox" v-model="ex.sets[i].done" @change="handleSetComplete(ex, ex.sets[i])" class="custom-checkbox">
+                            <input type="checkbox" v-model="ex.sets[i].done" @change="handleSetComplete(ex, ex.sets[i], i)" class="custom-checkbox">
                         </div>
                         
                         <div class="col-span-1 flex justify-center" v-if="ex.sets[i]"><input type="checkbox" v-model="ex.sets[i].failure" @change="haptic" class="failure-checkbox"></div>
@@ -364,10 +364,24 @@
                 }
                 return NaN;
             },
+
+            commitSetDefaults(ex, set, setIdx) {
+                if (!this.hasCurrentValue(set.reps)) {
+                    let r = this.inheritFromPriorSets(ex.sets, setIdx, 'reps', v => parseInt(v, 10));
+                    if (isNaN(r) && this.hasPrevValue(set.prevReps)) r = parseInt(set.prevReps, 10);
+                    if (!isNaN(r)) set.reps = r;
+                }
+                if (!this.isBodyWeight(ex.weightType) && !this.hasCurrentValue(set.weight)) {
+                    let w = this.inheritFromPriorSets(ex.sets, setIdx, 'weight', parseFloat);
+                    if (isNaN(w) && this.hasPrevValue(set.prevWeight)) w = parseFloat(set.prevWeight);
+                    if (!isNaN(w)) set.weight = w;
+                }
+            },
             
-            handleSetComplete(ex, set) {
+            handleSetComplete(ex, set, setIdx) {
                 this.haptic();
-                if(set.done) {
+                if (set.done) {
+                    this.commitSetDefaults(ex, set, setIdx);
                     const currentWeight = parseFloat(set.weight);
                     if(!isNaN(currentWeight) && ex.personalRecord > 0 && currentWeight > ex.personalRecord) {
                         this.triggerConfetti();
