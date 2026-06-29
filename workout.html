@@ -374,7 +374,11 @@
             haptic() { if (navigator.vibrate) navigator.vibrate(10); },
             isBodyWeight(type) { if(type === true) return true; if(!type) return false; const t = type.toString().toLowerCase(); return t === 'bodyweight' || t === 'body_weight' || t === 'bw' || t === 'true'; },
             hasPrevValue(val) { return val !== '' && val !== null && val !== undefined; },
-            hasCurrentValue(val) { return val !== '' && val !== null && val !== undefined; },
+            hasCurrentValue(val) {
+                if (val === '' || val === null || val === undefined) return false;
+                const n = Number(val);
+                return Number.isNaN(n) || n !== 0;
+            },
             displayCurrentOrGhost(current, prev) {
                 if (this.hasCurrentValue(current)) return current;
                 if (this.hasPrevValue(prev)) return prev;
@@ -391,20 +395,47 @@
 
             commitSetDefaults(ex, set, setIdx) {
                 if (!this.hasCurrentValue(set.reps)) {
-                    let r = this.inheritFromPriorSets(ex.sets, setIdx, 'reps', v => parseInt(v, 10));
-                    if (isNaN(r) && this.hasPrevValue(set.prevReps)) r = parseInt(set.prevReps, 10);
+                    let r = NaN;
+                    if (this.hasPrevValue(set.prevReps)) r = parseInt(set.prevReps, 10);
+                    else if (setIdx > 0) r = this.inheritFromPriorSets(ex.sets, setIdx, 'reps', v => parseInt(v, 10));
                     if (!isNaN(r)) set.reps = r;
                 }
                 if (!this.isBodyWeight(ex.weightType) && !this.hasCurrentValue(set.weight)) {
-                    let w = this.inheritFromPriorSets(ex.sets, setIdx, 'weight', parseFloat);
-                    if (isNaN(w) && this.hasPrevValue(set.prevWeight)) w = parseFloat(set.prevWeight);
+                    let w = NaN;
+                    if (this.hasPrevValue(set.prevWeight)) w = parseFloat(set.prevWeight);
+                    else if (setIdx > 0) w = this.inheritFromPriorSets(ex.sets, setIdx, 'weight', parseFloat);
                     if (!isNaN(w)) set.weight = w;
                 }
+            },
+
+            syncPickerWheelValues() {
+                const itemHeight = 50;
+                if (!this.isBodyWeight(this.pickerModal.targetWeightType) && this.$refs.weightWheel) {
+                    const idx = Math.round(this.$refs.weightWheel.scrollTop / itemHeight);
+                    const val = this.pickerModal.weightValues[idx];
+                    if (val !== undefined) this.pickerModal.weightVal = val;
+                }
+                if (this.$refs.repsWheel) {
+                    const idx = Math.round(this.$refs.repsWheel.scrollTop / itemHeight);
+                    const val = this.pickerModal.repsValues[idx];
+                    if (val !== undefined) this.pickerModal.repsVal = val;
+                }
+            },
+
+            applyPickerToTarget() {
+                if (!this.pickerModal.targetSet) return;
+                this.syncPickerWheelValues();
+                this.pickerModal.targetSet.weight = this.isBodyWeight(this.pickerModal.targetWeightType) ? '' : this.pickerModal.weightVal;
+                this.pickerModal.targetSet.reps = this.pickerModal.repsVal;
             },
             
             handleSetComplete(ex, set, setIdx) {
                 this.haptic();
                 if (set.done) {
+                    if (this.pickerModal.visible && this.pickerModal.targetSet === set) {
+                        this.applyPickerToTarget();
+                        this.pickerModal.visible = false;
+                    }
                     this.commitSetDefaults(ex, set, setIdx);
                     const currentWeight = parseFloat(set.weight);
                     if(!isNaN(currentWeight) && ex.personalRecord > 0 && currentWeight > ex.personalRecord) {
@@ -447,10 +478,7 @@
             handleRepsScroll(e) { const idx = Math.round(e.target.scrollTop/50); const val = this.pickerModal.repsValues[idx]; if(val!==undefined && val!==this.pickerModal.repsVal){ this.pickerModal.repsVal=val; if(navigator.vibrate)navigator.vibrate(5); } },
             saveDualPicker() {
                 this.haptic();
-                if(this.pickerModal.targetSet) {
-                    this.pickerModal.targetSet.weight = this.isBodyWeight(this.pickerModal.targetWeightType) ? '' : this.pickerModal.weightVal;
-                    this.pickerModal.targetSet.reps = this.pickerModal.repsVal;
-                }
+                this.applyPickerToTarget();
                 this.pickerModal.visible = false;
             },
             
