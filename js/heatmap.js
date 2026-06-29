@@ -4,6 +4,8 @@
 const FitnessHeatmap = {
     MUSCLES: ['chest', 'back', 'shoulders', 'biceps', 'triceps', 'forearms', 'core', 'quads', 'hamstrings', 'glutes', 'calves', 'hips'],
     BODY_GROUPS: ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Hips'],
+    /** Gym page viewBox */
+    GYM_VIEWBOX: '0 130 612 590',
     /** Share card viewBox — shifted up vs gym so the crown isn't clipped at y=130 */
     SHARE_VIEWBOX: '0 95 612 635',
     _bodyMapSvg: null,
@@ -68,6 +70,28 @@ const FitnessHeatmap = {
             css += `#${id} path{fill:${color}!important;opacity:${opacity}}`;
         });
         return css;
+    },
+
+    buildGymStatusStyles(statuses) {
+        let css = this.buildStatusStyles(statuses);
+        css += '@keyframes gym-recov-pulse{0%,100%{opacity:.75}50%{opacity:1}}';
+        this.BODY_GROUPS.forEach(id => {
+            if (statuses?.[id.toLowerCase()]?.status === 'recov') {
+                css += `#${id}{animation:gym-recov-pulse 1.5s ease-in-out infinite}`;
+            }
+        });
+        return css;
+    },
+
+    async buildGymBodySvgHtml(statuses) {
+        const raw = await this.loadBodyMapSvg();
+        const style = this.buildGymStatusStyles(statuses || this.defaultStatuses());
+        return raw
+            .replace(
+                'viewBox="0 130 612 590"',
+                `viewBox="${this.GYM_VIEWBOX}" preserveAspectRatio="xMidYMid meet" style="height:300px;width:auto;display:block;margin:0 auto;filter:drop-shadow(0 0 25px rgba(59,130,246,0.4))"`
+            )
+            .replace('</svg>', `<style>${style}</style></svg>`);
     },
 
     async buildBodySvgHtml(statuses) {

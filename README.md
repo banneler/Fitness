@@ -18,6 +18,11 @@ Exercises owned by **Bryan Anneler** (`6f471a6f-3697-4826-a0d8-34404ea5980d`) ar
 
 The owner UUID is also set in `js/config.js` (must match the SQL function `fitness_standard_owner_id()`).
 
+### Protocol library (standard + personal)
+Protocols (routines) owned by **Bryan Anneler** are the global **standard** set — visible to everyone. Any other user’s custom protocols are **personal** and only visible to them.
+
+**One-time setup:** run `supabase/routines_schema.sql` in the Supabase SQL Editor. This adds RLS policies, dedupes standard protocols, and enforces one canonical name per standard protocol.
+
 ### Arena cheers & comments
 Likes and comments on leaderboard rows (Volume, Consistency, Streak tabs). Comments support text plus GIFs via an in-app Giphy picker.
 

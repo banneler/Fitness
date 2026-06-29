@@ -20,6 +20,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/exercise-library.js"></script>
+    <script src="js/routine-library.js"></script>
 
     <style>
         [v-cloak] { display: none !important; }
@@ -429,7 +430,7 @@
                 if (error) { this.showToast("Error", "Could not load routine."); return; }
 
                 if (data) {
-                    if (data.user_id !== this.session.user.id) {
+                    if (!FitnessRoutineLibrary.canEdit(data, this.session.user.id)) {
                          this.isEditing = false; 
                          this.routine = { 
                              id: null, 
@@ -437,7 +438,7 @@
                              icon: data.icon_name, 
                              supersets: data.supersets || [] 
                          };
-                         this.showToast("Cloned", "Shared protocol copied as template.", "copy");
+                         this.showToast("Cloned", FitnessRoutineLibrary.isStandard(data) ? "Standard protocol copied as template." : "Protocol copied as template.", "copy");
                     } else {
                          this.routine = { 
                              id: data.id, 

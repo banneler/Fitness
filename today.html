@@ -20,6 +20,7 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/exercise-library.js"></script>
+    <script src="js/routine-library.js"></script>
     <script src="js/heatmap.js"></script>
     <script src="js/social.js"></script>
     <style>
@@ -618,8 +619,12 @@
                 else if (result === 'failed') this.showToast('Share Failed', 'Could not open share sheet.');
             },
             async fetchSchedule() {
-                const dayName = new Date().toLocaleDateString('en-US', {weekday:'short'}); 
-                const { data } = await _client.from('schedule').select('*, routines(name)').eq('day_of_week', dayName).single();
+                const dayName = new Date().toLocaleDateString('en-US', {weekday:'short'});
+                const { data } = await _client.from('schedule')
+                    .select('*, routines(name)')
+                    .eq('user_id', this.session.user.id)
+                    .eq('day_of_week', dayName)
+                    .maybeSingle();
                 if (data && data.routines) {
                     this.todaysWorkout = data.routines.name;
                 }
