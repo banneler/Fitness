@@ -216,6 +216,7 @@ const FitnessSocial = {
         return {
             metric,
             title: meta.title,
+            caption: meta.statCaption,
             color: meta.color,
             emoji: this.contextEmoji(metric)
         };

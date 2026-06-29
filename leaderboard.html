@@ -40,10 +40,6 @@
         }
         .fire-anim { animation: pulse-orange 2s infinite; }
 
-        @keyframes crown-reign {
-            0%, 100% { transform: translateX(-50%) rotate(-4deg) scale(1); filter: drop-shadow(0 0 20px rgba(250, 204, 21, 0.75)); }
-            50% { transform: translateX(-50%) rotate(4deg) scale(1.1); filter: drop-shadow(0 0 42px rgba(250, 204, 21, 1)); }
-        }
         @keyframes crown-descend-drop {
             0% { transform: translateY(-140px) scale(1.35); opacity: 0; }
             55% { transform: translateY(10px) scale(1.08); opacity: 1; }
@@ -54,55 +50,14 @@
             from { opacity: 0; transform: scale(0.92); }
             to { opacity: 1; transform: scale(1); }
         }
-        @keyframes king-reign-bob {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        @keyframes sparkle-pulse {
-            0%, 100% { opacity: 0.35; transform: scale(0.85) rotate(0deg); }
-            50% { opacity: 1; transform: scale(1.15) rotate(18deg); }
-        }
         @keyframes coronation-glow-pulse {
             0%, 100% { opacity: 0.35; }
             50% { opacity: 0.7; }
         }
 
         .crown-descend-anim { animation: crown-descend-drop 1.2s ease-out forwards; }
-        .crown-reign-shine { animation: crown-reign 0.85s ease-in-out infinite; }
         .coronation-phase-in { animation: coronation-phase-in 0.35s ease-out forwards; }
         .coronation-glow { animation: coronation-glow-pulse 2s ease-in-out infinite; }
-
-        .coronation-reign-stage {
-            width: 100%;
-            height: 9rem;
-            position: relative;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-        }
-        .coronation-reign-king {
-            position: relative;
-            animation: king-reign-bob 1.1s ease-in-out infinite;
-        }
-        .coronation-reign-body {
-            font-size: 6.5rem;
-            line-height: 1;
-            display: block;
-        }
-        .coronation-reign-crown {
-            position: absolute;
-            top: -0.35rem;
-            left: 50%;
-            font-size: 3rem;
-            line-height: 1;
-        }
-        .coronation-reign-sparkle {
-            position: absolute;
-            right: -1.25rem;
-            top: 0.5rem;
-            font-size: 2rem;
-            animation: sparkle-pulse 1.4s ease-in-out infinite;
-        }
 
         .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
@@ -122,26 +77,21 @@
         <div v-if="arenaCoronation" @click="dismissCoronation" class="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center px-8 cursor-pointer overflow-hidden">
             <div class="absolute inset-0 coronation-glow pointer-events-none" :style="{ background: `radial-gradient(circle at 50% 40%, ${arenaCoronation.color}44, transparent 65%)` }"></div>
 
-            <div v-if="arenaCoronationPhase === 'descend'" class="flex flex-col items-center relative z-10 coronation-phase-in">
+            <div class="flex flex-col items-center relative z-10 w-full max-w-sm mx-auto text-center coronation-phase-in">
                 <div class="text-[130px] crown-descend-anim leading-none select-none">👑</div>
-                <div class="text-2xl font-black italic uppercase tracking-[0.2em] mt-8 animate-pulse" :style="{ color: arenaCoronation.color }">The Crown Is Yours</div>
-                <p class="text-sm text-slate-400 mt-3 text-center">
-                    #1 in {{ arenaCoronation.title.toLowerCase() }}
-                    <span class="ml-1">{{ arenaCoronation.emoji }}</span>
-                </p>
-            </div>
-
-            <div v-else class="flex flex-col items-center relative z-10 w-full coronation-phase-in">
-                <div class="text-xl font-black italic uppercase tracking-[0.15em] mb-2 animate-pulse" :style="{ color: arenaCoronation.color }">Long Live the Champion</div>
-                <p class="text-sm text-slate-400 mb-6 text-center">You rule the arena {{ arenaCoronation.emoji }}</p>
-                <div class="coronation-reign-stage">
-                    <div class="coronation-reign-king">
-                        <span class="coronation-reign-crown crown-reign-shine">👑</span>
-                        <span class="coronation-reign-body">🤴</span>
-                        <span class="coronation-reign-sparkle">✨</span>
-                    </div>
+                <h2 class="mt-8 font-black italic uppercase leading-tight animate-pulse">
+                    <span class="block text-2xl tracking-[0.14em]" :style="{ color: arenaCoronation.color }">The Crown</span>
+                    <span class="block text-3xl tracking-[0.1em] text-white mt-1">Is Yours</span>
+                </h2>
+                <div class="glass mt-8 w-full rounded-2xl px-5 py-4 border border-white/10 shadow-xl" :style="{ borderColor: arenaCoronation.color + '33' }">
+                    <p class="text-[9px] font-black uppercase tracking-[0.35em] text-slate-500 mb-2">Arena Rank · Last 7 Days</p>
+                    <p class="text-base font-black italic uppercase tracking-wide" :style="{ color: arenaCoronation.color }">
+                        #1 · {{ arenaCoronation.title }}
+                        <span class="ml-1">{{ arenaCoronation.emoji }}</span>
+                    </p>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mt-2">{{ arenaCoronation.caption }}</p>
                 </div>
-                <div class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mt-6">{{ arenaCoronation.title }}</div>
+                <p class="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-600 mt-6">Tap to dismiss</p>
             </div>
         </div>
     </transition>
@@ -298,9 +248,7 @@
                 users: [],
                 metric: 'volume',
                 arenaCoronation: null,
-                arenaCoronationPhase: 'descend',
                 arenaCoronationTimer: null,
-                arenaCoronationPhaseTimer: null,
                 likes: [],
                 comments: [],
                 profileMap: {},
@@ -367,19 +315,12 @@
             },
             showCoronation(event) {
                 clearTimeout(this.arenaCoronationTimer);
-                clearTimeout(this.arenaCoronationPhaseTimer);
-                this.arenaCoronationPhase = 'descend';
                 this.arenaCoronation = event;
-                this.arenaCoronationPhaseTimer = setTimeout(() => {
-                    this.arenaCoronationPhase = 'reign';
-                }, 1500);
-                this.arenaCoronationTimer = setTimeout(() => this.dismissCoronation(), 5500);
+                this.arenaCoronationTimer = setTimeout(() => this.dismissCoronation(), 4500);
             },
             dismissCoronation() {
                 clearTimeout(this.arenaCoronationTimer);
-                clearTimeout(this.arenaCoronationPhaseTimer);
                 this.arenaCoronation = null;
-                this.arenaCoronationPhase = 'descend';
             },
             async fetchLeaderboard() {
                 const { data, error } = await _client.from('leaderboard').select('*');
