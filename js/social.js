@@ -38,7 +38,15 @@ const FitnessSocial = {
 
     /** Lucide skull — matches workout.html failure checkbox */
     failureSkullMarkup() {
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-left:4px;"><circle cx="9" cy="12" r="1" fill="#ef4444" stroke="none"/><circle cx="15" cy="12" r="1" fill="#ef4444" stroke="none"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="-2 -2 28 28" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;overflow:visible;"><circle cx="9" cy="12" r="1" fill="#ef4444" stroke="none"/><circle cx="15" cy="12" r="1" fill="#ef4444" stroke="none"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>`;
+    },
+
+    formatLiftSetsRow(sets) {
+        return (sets || []).map((s, i) => {
+            const html = typeof s === 'string' ? s : s.html;
+            const sep = i > 0 ? `<span style="color:rgba(59,130,246,0.45);padding:0 5px;line-height:1;">·</span>` : '';
+            return `${sep}<span style="display:inline-flex;align-items:center;line-height:1;">${html}</span>`;
+        }).join('');
     },
 
     buildStreakBadgeHtml(streak) {
@@ -52,9 +60,11 @@ const FitnessSocial = {
         const weight = parseFloat(set.weight);
         const wLabel = isNaN(weight) || weight === 0 ? 'BW' : weight;
         const failed = this.isSetFailure(set);
-        const text = `${wLabel}×${reps}`;
-        const html = failed ? `${wLabel}×${reps}${this.failureSkullMarkup()}` : `${wLabel}×${reps}`;
-        return { text, html };
+        const label = `${wLabel}×${reps}`;
+        const html = failed
+            ? `<span style="display:inline-flex;align-items:center;gap:4px;line-height:1;">${label}${this.failureSkullMarkup()}</span>`
+            : label;
+        return { text: label, html };
     },
 
     setLabelHtml(set, isBodyWeight) {
@@ -441,7 +451,7 @@ const FitnessSocial = {
         const liftRows = (liftLines || []).map(line => `
             <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);">
                 <div style="font-size:10px;font-weight:800;color:#e2e8f0;text-transform:uppercase;font-style:italic;margin-bottom:3px;">${line.name}</div>
-                <div style="font-size:11px;font-weight:900;color:#3b82f6;letter-spacing:0.04em;">${line.sets.map(s => (typeof s === 'string' ? s : s.html)).join('  ·  ')}</div>
+                <div style="font-size:11px;font-weight:900;color:#3b82f6;letter-spacing:0.04em;display:flex;flex-wrap:wrap;align-items:center;row-gap:4px;line-height:1;overflow:visible;">${this.formatLiftSetsRow(line.sets)}</div>
             </div>`).join('');
 
         const streakBadgeHtml = this.buildStreakBadgeHtml(streak);
