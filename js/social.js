@@ -133,19 +133,19 @@ const FitnessSocial = {
 
     metricShareMeta(metric) {
         return ({
-            volume: { title: 'Volume Leader', subtitle: 'Iron moved this week', emoji: '🏋️', color: '#a855f7' },
-            sessions: { title: 'Consistency Leader', subtitle: 'Sessions this week', emoji: '📅', color: '#3b82f6' },
-            streak: { title: 'Streak Leader', subtitle: 'Active day streak', emoji: '🔥', color: '#f97316' }
-        })[metric] || { title: 'Arena Standings', subtitle: 'Last 7 days', emoji: '🏆', color: '#a855f7' };
+            volume: { title: 'Volume Leader', statCaption: 'LBS MOVED THIS WEEK', color: '#a855f7' },
+            sessions: { title: 'Consistency Leader', statCaption: 'SESSIONS THIS WEEK', color: '#3b82f6' },
+            streak: { title: 'Streak Leader', statCaption: 'DAY STREAK', color: '#f97316' }
+        })[metric] || { title: 'Arena Standings', statCaption: 'LAST 7 DAYS', color: '#a855f7' };
     },
 
     buildStreakShareCardHtml({ athleteName, streakDays }) {
         const who = athleteName || 'Athlete';
         const days = parseInt(streakDays, 10) || 0;
-        return `<div style="width:380px;background:linear-gradient(165deg,#1c1917 0%,#020617 45%,#431407 100%);border-radius:28px;padding:28px 24px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid rgba(249,115,22,0.45);">
-            <div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;margin-bottom:6px;">BA FITNESS · THE ARENA</div>
-            <div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin-bottom:4px;">${who}</div>
-            <div style="font-size:11px;font-weight:800;color:#f97316;text-transform:uppercase;letter-spacing:0.14em;margin-bottom:22px;">Streak Champion</div>
+        return `<div style="width:380px;background:linear-gradient(165deg,#1c1917 0%,#020617 45%,#431407 100%);border-radius:28px;padding:18px 24px 24px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid rgba(249,115,22,0.45);">
+            <div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;margin-bottom:4px;">BA FITNESS · THE ARENA</div>
+            <div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin-bottom:2px;">${who}</div>
+            <div style="font-size:11px;font-weight:800;color:#f97316;text-transform:uppercase;letter-spacing:0.14em;margin-bottom:16px;">Streak Champion</div>
 
             <div style="background:rgba(15,23,42,0.65);border-radius:22px;padding:28px 20px;border:1px solid rgba(249,115,22,0.25);text-align:center;margin-bottom:20px;">
                 <div style="font-size:48px;line-height:1;margin-bottom:12px;">🔥</div>
@@ -168,23 +168,15 @@ const FitnessSocial = {
         const rankText = this.rankLabel(rank).toUpperCase();
         const placeLine = rank <= 2 ? `${rankText} PLACE` : `${rankText} IN THE ARENA`;
 
-        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#1e1b4b 100%);border-radius:28px;padding:28px 24px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid ${theme.border};">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
-                <div>
-                    <div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;margin-bottom:6px;">BA FITNESS · THE ARENA</div>
-                    <div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;">${who}</div>
-                    <div style="font-size:11px;font-weight:800;color:${meta.color};text-transform:uppercase;letter-spacing:0.12em;margin-top:4px;">${meta.title}</div>
-                </div>
-                <div style="background:${theme.glow};border:1px solid ${theme.border};border-radius:12px;padding:8px 10px;text-align:center;min-width:52px;">
-                    <div style="font-size:18px;line-height:1;">${meta.emoji}</div>
-                    <div style="font-size:8px;font-weight:900;color:${theme.accent};margin-top:4px;letter-spacing:0.08em;">${theme.label}</div>
-                </div>
-            </div>
+        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#1e1b4b 100%);border-radius:28px;padding:18px 24px 24px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid ${theme.border};">
+            <div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;margin-bottom:4px;">BA FITNESS · THE ARENA</div>
+            <div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin-bottom:2px;">${who}</div>
+            <div style="font-size:11px;font-weight:800;color:${meta.color};text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px;">${meta.title}</div>
 
             <div style="background:rgba(15,23,42,0.75);border-radius:22px;padding:24px 20px;border:1px solid rgba(255,255,255,0.08);text-align:center;margin-bottom:18px;">
                 <div style="font-size:13px;font-weight:900;color:${theme.accent};letter-spacing:0.22em;margin-bottom:8px;">${placeLine}</div>
                 <div style="font-size:52px;font-weight:900;font-style:italic;line-height:1;color:#ffffff;">${score}</div>
-                <div style="font-size:9px;font-weight:800;color:#64748b;letter-spacing:0.2em;margin-top:8px;">${unit} · ${meta.subtitle.toUpperCase()}</div>
+                <div style="font-size:9px;font-weight:800;color:#64748b;letter-spacing:0.2em;margin-top:8px;">${meta.statCaption}</div>
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">
@@ -211,7 +203,7 @@ const FitnessSocial = {
         const name = athleteName || 'I';
         const rankLabel = this.rankLabel(rank);
         const meta = this.metricShareMeta(metric);
-        return `🏆 ${name} is sitting ${rankLabel} on the BA Fitness leaderboard!\n\n${score} ${unit.toLowerCase()} · ${meta.subtitle}\n\nCome get yours in The Arena 💪`;
+        return `🏆 ${name} is sitting ${rankLabel} on the BA Fitness leaderboard!\n\n${score} · ${meta.statCaption.toLowerCase()}\n\nCome get yours in The Arena 💪`;
     },
 
     async captureHtmlCard(html) {
@@ -278,12 +270,12 @@ const FitnessSocial = {
                 <div style="font-size:11px;font-weight:900;color:#3b82f6;letter-spacing:0.04em;">${line.sets.join('  ·  ')}</div>
             </div>`).join('');
 
-        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#1e1b4b 100%);border-radius:28px;padding:28px 24px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid rgba(59,130,246,0.3);">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#1e1b4b 100%);border-radius:28px;padding:18px 24px 24px;font-family:system-ui,-apple-system,sans-serif;color:white;box-sizing:border-box;border:1px solid rgba(59,130,246,0.3);">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
                 <div>
-                    <div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;margin-bottom:6px;">BA FITNESS</div>
+                    <div style="font-size:8px;font-weight:900;letter-spacing:0.4em;color:#64748b;text-transform:uppercase;margin-bottom:4px;">BA FITNESS</div>
                     <div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;">${who}</div>
-                    <div style="font-size:11px;font-weight:800;color:#3b82f6;text-transform:uppercase;letter-spacing:0.12em;margin-top:4px;">${proto}</div>
+                    <div style="font-size:11px;font-weight:800;color:#3b82f6;text-transform:uppercase;letter-spacing:0.12em;margin-top:2px;">${proto}</div>
                 </div>
                 ${streak > 0 ? `<div style="background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.35);border-radius:12px;padding:8px 10px;text-align:center;">
                     <div style="font-size:16px;line-height:1;">🔥</div>
