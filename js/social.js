@@ -139,23 +139,45 @@ const FitnessSocial = {
         })[metric] || { title: 'Arena Standings', statCaption: 'LAST 7 DAYS', color: '#a855f7' };
     },
 
+    buildShareStatHeroBlock({
+        top,
+        score,
+        bottom,
+        topColor = '#facc15',
+        scoreColor = '#ffffff',
+        bottomColor = '#64748b',
+        topSize = 13,
+        scoreSize = 48,
+        scoreNudge = -22,
+        background = 'rgba(15,23,42,0.75)',
+        border = '1px solid rgba(255,255,255,0.08)',
+        marginBottom = 18
+    }) {
+        return `<div style="background:${background};border-radius:22px;padding:18px 20px 20px;border:${border};text-align:center;margin-bottom:${marginBottom}px;box-sizing:border-box;"><div style="font-size:${topSize}px;font-weight:900;color:${topColor};letter-spacing:0.08em;line-height:1.2;margin:0 0 14px;">${top}</div><div style="font-size:${scoreSize}px;font-weight:900;font-style:italic;line-height:1;color:${scoreColor};margin:0 0 14px;transform:translateY(${scoreNudge}px);">${score}</div><div style="font-size:9px;font-weight:800;color:${bottomColor};letter-spacing:0.08em;line-height:1.2;margin:0;">${bottom}</div></div>`;
+    },
+
+    buildShareMiniStatCell(value, label) {
+        return `<div style="background:rgba(15,23,42,0.85);border-radius:14px;border:1px solid rgba(255,255,255,0.07);text-align:center;box-sizing:border-box;"><table role="presentation" style="width:100%;border-collapse:collapse;"><tr><td style="padding:14px 8px 6px;font-size:17px;font-weight:900;line-height:1;color:#ffffff;">${value}</td></tr><tr><td style="padding:0 8px 14px;font-size:6px;font-weight:800;color:#64748b;letter-spacing:0.08em;line-height:1;">${label}</td></tr></table></div>`;
+    },
+
     buildStreakShareCardHtml({ athleteName, streakDays }) {
         const who = athleteName || 'Athlete';
         const days = parseInt(streakDays, 10) || 0;
-        return `<div style="width:380px;background:linear-gradient(165deg,#1c1917 0%,#020617 45%,#431407 100%);border-radius:28px;padding:10px 22px 22px;font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:white;box-sizing:border-box;border:1px solid rgba(249,115,22,0.45);overflow:hidden;line-height:1;"><div style="font-size:8px;font-weight:900;letter-spacing:0.08em;color:#64748b;text-transform:uppercase;line-height:1;margin:0 0 3px;">BA FITNESS · THE ARENA</div><div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin:0 0 2px;">${who}</div><div style="font-size:11px;font-weight:800;color:#f97316;text-transform:uppercase;letter-spacing:0.08em;line-height:1;margin:0 0 14px;">Streak Champion</div>
-
-            <div style="background:rgba(15,23,42,0.65);border-radius:22px;padding:28px 20px;border:1px solid rgba(249,115,22,0.25);text-align:center;margin-bottom:20px;">
-                <div style="font-size:48px;line-height:1;margin-bottom:12px;">🔥</div>
-                <div style="font-size:56px;font-weight:900;font-style:italic;line-height:1;color:#f97316;text-shadow:0 0 30px rgba(249,115,22,0.45);">${days}</div>
-                <div style="font-size:10px;font-weight:900;color:#fdba74;letter-spacing:0.28em;margin-top:8px;">DAY STREAK</div>
-            </div>
-
-            <div style="background:rgba(249,115,22,0.08);border-radius:16px;padding:14px 16px;border:1px solid rgba(249,115,22,0.2);text-align:center;margin-bottom:8px;">
-                <div style="font-size:11px;font-weight:900;color:#fed7aa;letter-spacing:0.18em;text-transform:uppercase;font-style:italic;">Consistency is King</div>
-            </div>
-
-            <div style="text-align:center;margin-top:18px;font-size:9px;font-weight:900;color:#94a3b8;letter-spacing:0.28em;text-transform:uppercase;">The Arena Awaits 🏆</div>
-        </div>`;
+        const hero = this.buildShareStatHeroBlock({
+            top: '🔥',
+            score: days,
+            bottom: 'DAY STREAK',
+            topColor: '#f97316',
+            scoreColor: '#f97316',
+            bottomColor: '#fdba74',
+            topSize: 40,
+            scoreSize: 56,
+            scoreNudge: -26,
+            background: 'rgba(15,23,42,0.65)',
+            border: '1px solid rgba(249,115,22,0.25)',
+            marginBottom: 20
+        });
+        return `<div style="width:380px;background:linear-gradient(165deg,#1c1917 0%,#020617 45%,#431407 100%);border-radius:28px;padding:10px 22px 22px;font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:white;box-sizing:border-box;border:1px solid rgba(249,115,22,0.45);overflow:hidden;line-height:1;"><div style="font-size:8px;font-weight:900;letter-spacing:0.08em;color:#64748b;text-transform:uppercase;line-height:1;margin:0 0 3px;">BA FITNESS · THE ARENA</div><div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin:0 0 2px;">${who}</div><div style="font-size:11px;font-weight:800;color:#f97316;text-transform:uppercase;letter-spacing:0.08em;line-height:1;margin:0 0 14px;">Streak Champion</div>${hero}<div style="background:rgba(249,115,22,0.08);border-radius:16px;padding:14px 16px;border:1px solid rgba(249,115,22,0.2);text-align:center;margin-bottom:8px;"><div style="font-size:11px;font-weight:900;color:#fed7aa;letter-spacing:0.08em;text-transform:uppercase;font-style:italic;">Consistency is King</div></div><div style="text-align:center;margin-top:18px;font-size:9px;font-weight:900;color:#94a3b8;letter-spacing:0.08em;text-transform:uppercase;">The Arena Awaits 🏆</div></div>`;
     },
 
     buildRankingShareCardHtml({ athleteName, rank, metric, score, unit, metricLabel }) {
@@ -164,30 +186,17 @@ const FitnessSocial = {
         const meta = this.metricShareMeta(metric);
         const rankText = this.rankLabel(rank).toUpperCase();
         const placeLine = rank <= 2 ? `${rankText} PLACE` : `${rankText} IN THE ARENA`;
+        const hero = this.buildShareStatHeroBlock({
+            top: placeLine,
+            score,
+            bottom: meta.statCaption,
+            topColor: theme.accent,
+            scoreColor: '#ffffff',
+            scoreSize: 48,
+            scoreNudge: -22
+        });
 
-        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#1e1b4b 100%);border-radius:28px;padding:10px 22px 22px;font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:white;box-sizing:border-box;border:1px solid ${theme.border};overflow:hidden;line-height:1;"><div style="font-size:8px;font-weight:900;letter-spacing:0.08em;color:#64748b;text-transform:uppercase;line-height:1;margin:0 0 3px;">BA FITNESS · THE ARENA</div><div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin:0 0 2px;">${who}</div><div style="font-size:11px;font-weight:800;color:${meta.color};text-transform:uppercase;letter-spacing:0.08em;line-height:1;margin:0 0 14px;">${meta.title}</div>
-
-            <div style="background:rgba(15,23,42,0.75);border-radius:22px;padding:20px 20px 18px;border:1px solid rgba(255,255,255,0.08);text-align:center;margin-bottom:18px;">
-                <div style="font-size:13px;font-weight:900;color:${theme.accent};letter-spacing:0.22em;line-height:1;margin-bottom:10px;">${placeLine}</div>
-                <div style="height:56px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;">
-                    <div style="font-size:48px;font-weight:900;font-style:italic;line-height:1;color:#ffffff;">${score}</div>
-                </div>
-                <div style="font-size:9px;font-weight:800;color:#64748b;letter-spacing:0.2em;line-height:1.3;">${meta.statCaption}</div>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">
-                <div style="background:rgba(15,23,42,0.85);border-radius:14px;padding:12px 10px;border:1px solid rgba(255,255,255,0.07);text-align:center;">
-                    <div style="font-size:8px;font-weight:800;color:#64748b;letter-spacing:0.12em;margin-bottom:4px;">METRIC</div>
-                    <div style="font-size:11px;font-weight:900;color:${meta.color};text-transform:uppercase;">${metricLabel || meta.title}</div>
-                </div>
-                <div style="background:rgba(15,23,42,0.85);border-radius:14px;padding:12px 10px;border:1px solid rgba(255,255,255,0.07);text-align:center;">
-                    <div style="font-size:8px;font-weight:800;color:#64748b;letter-spacing:0.12em;margin-bottom:4px;">WINDOW</div>
-                    <div style="font-size:11px;font-weight:900;color:#e2e8f0;text-transform:uppercase;">Last 7 Days</div>
-                </div>
-            </div>
-
-            <div style="text-align:center;margin-top:18px;font-size:9px;font-weight:900;color:#94a3b8;letter-spacing:0.28em;text-transform:uppercase;">The Arena Awaits 🏆</div>
-        </div>`;
+        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#1e1b4b 100%);border-radius:28px;padding:10px 22px 22px;font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:white;box-sizing:border-box;border:1px solid ${theme.border};overflow:hidden;line-height:1;"><div style="font-size:8px;font-weight:900;letter-spacing:0.08em;color:#64748b;text-transform:uppercase;line-height:1;margin:0 0 3px;">BA FITNESS · THE ARENA</div><div style="font-size:24px;font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.05;color:#ffffff;margin:0 0 2px;">${who}</div><div style="font-size:11px;font-weight:800;color:${meta.color};text-transform:uppercase;letter-spacing:0.08em;line-height:1;margin:0 0 14px;">${meta.title}</div>${hero}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;"><div style="background:rgba(15,23,42,0.85);border-radius:14px;padding:12px 10px;border:1px solid rgba(255,255,255,0.07);text-align:center;"><div style="font-size:8px;font-weight:800;color:#64748b;letter-spacing:0.08em;margin-bottom:4px;">METRIC</div><div style="font-size:11px;font-weight:900;color:${meta.color};text-transform:uppercase;">${metricLabel || meta.title}</div></div><div style="background:rgba(15,23,42,0.85);border-radius:14px;padding:12px 10px;border:1px solid rgba(255,255,255,0.07);text-align:center;"><div style="font-size:8px;font-weight:800;color:#64748b;letter-spacing:0.08em;margin-bottom:4px;">WINDOW</div><div style="font-size:11px;font-weight:900;color:#e2e8f0;text-transform:uppercase;">Last 7 Days</div></div></div><div style="text-align:center;margin-top:18px;font-size:9px;font-weight:900;color:#94a3b8;letter-spacing:0.08em;text-transform:uppercase;">The Arena Awaits 🏆</div></div>`;
     },
 
     buildStreakFallbackText({ athleteName, streakDays }) {
@@ -283,20 +292,7 @@ const FitnessSocial = {
                 </div>` : ''}
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;">
-                <div style="background:rgba(15,23,42,0.85);border-radius:14px;padding:12px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;">
-                    <div style="font-size:17px;font-weight:900;">${this.formatDuration(durationSeconds)}</div>
-                    <div style="font-size:6px;font-weight:800;color:#64748b;letter-spacing:0.12em;margin-top:4px;">DURATION</div>
-                </div>
-                <div style="background:rgba(15,23,42,0.85);border-radius:14px;padding:12px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;">
-                    <div style="font-size:17px;font-weight:900;">${this.formatNumber(tonnage)}</div>
-                    <div style="font-size:6px;font-weight:800;color:#64748b;letter-spacing:0.12em;margin-top:4px;">LBS MOVED</div>
-                </div>
-                <div style="background:rgba(15,23,42,0.85);border-radius:14px;padding:12px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;">
-                    <div style="font-size:17px;font-weight:900;">${setCount}</div>
-                    <div style="font-size:6px;font-weight:800;color:#64748b;letter-spacing:0.12em;margin-top:4px;">SETS · ${exerciseCount} EX</div>
-                </div>
-            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;">${this.buildShareMiniStatCell(this.formatDuration(durationSeconds), 'DURATION')}${this.buildShareMiniStatCell(this.formatNumber(tonnage), 'LBS MOVED')}${this.buildShareMiniStatCell(setCount, `SETS · ${exerciseCount} EX`)}</div>
 
             ${liftRows ? `<div style="background:rgba(15,23,42,0.55);border-radius:18px;padding:16px;margin-bottom:18px;border:1px solid rgba(255,255,255,0.06);">
                 <div style="font-size:8px;font-weight:900;color:#64748b;letter-spacing:0.22em;margin-bottom:2px;">THE WORK</div>
@@ -309,7 +305,7 @@ const FitnessSocial = {
                 <div style="width:100%;text-align:center;line-height:0;padding:10px 0 8px;overflow:visible;">${bodySvgHtml || ''}</div>
             </div>
 
-            <div style="text-align:center;margin-top:20px;font-size:9px;font-weight:900;color:#94a3b8;letter-spacing:0.28em;text-transform:uppercase;">The Arena Awaits 🏆</div>
+            <div style="text-align:center;margin-top:20px;font-size:9px;font-weight:900;color:#94a3b8;letter-spacing:0.08em;text-transform:uppercase;">The Arena Awaits 🏆</div>
         </div>`;
     },
 
