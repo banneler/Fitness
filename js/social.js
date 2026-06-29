@@ -139,6 +139,73 @@ const FitnessSocial = {
         })[metric] || { title: 'Arena Standings', statCaption: 'LAST 7 DAYS', color: '#a855f7' };
     },
 
+    ARENA_SNAPSHOT_KEY: 'constellation_arena_ranks',
+    ARENA_METRICS: ['volume', 'sessions', 'streak'],
+
+    sortLeaderboardByMetric(users, metric) {
+        return [...(users || [])].sort((a, b) => {
+            if (metric === 'volume') return (b.total_volume || 0) - (a.total_volume || 0);
+            if (metric === 'sessions') return (b.sessions_count || 0) - (a.sessions_count || 0);
+            return (b.current_streak || 0) - (a.current_streak || 0);
+        });
+    },
+
+    getLeaderboardRank(sorted, userId) {
+        const idx = sorted.findIndex(u => u.user_id === userId);
+        return idx >= 0 ? idx : -1;
+    },
+
+    buildArenaSnapshot(users, userId) {
+        const snapshot = { at: Date.now() };
+        this.ARENA_METRICS.forEach(metric => {
+            const sorted = this.sortLeaderboardByMetric(users, metric);
+            const leader = sorted[0];
+            snapshot[metric] = {
+                rank: this.getLeaderboardRank(sorted, userId),
+                leaderId: leader?.user_id || null
+            };
+        });
+        return snapshot;
+    },
+
+    loadArenaSnapshot() {
+        try {
+            const raw = localStorage.getItem(this.ARENA_SNAPSHOT_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
+        }
+    },
+
+    saveArenaSnapshot(snapshot) {
+        try {
+            localStorage.setItem(this.ARENA_SNAPSHOT_KEY, JSON.stringify(snapshot));
+        } catch (e) { /* ignore quota */ }
+    },
+
+    detectArenaOverthrows(prev, users, userId, profileMap = {}) {
+        if (!prev) return [];
+        const events = [];
+        this.ARENA_METRICS.forEach(metric => {
+            if (prev[metric]?.rank !== 0) return;
+            const sorted = this.sortLeaderboardByMetric(users, metric);
+            const currentRank = this.getLeaderboardRank(sorted, userId);
+            if (currentRank === 0) return;
+            const leader = sorted[0];
+            if (!leader || leader.user_id === userId) return;
+            const profile = profileMap[leader.user_id] || leader;
+            const meta = this.metricShareMeta(metric);
+            events.push({
+                metric,
+                usurperName: profile.full_name || profile.initials || 'Someone',
+                title: meta.title,
+                color: meta.color,
+                emoji: this.contextEmoji(metric)
+            });
+        });
+        return events;
+    },
+
     buildShareStatHeroBlock({
         top,
         score,
