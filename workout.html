@@ -384,26 +384,15 @@
                 if (this.hasPrevValue(prev)) return prev;
                 return '-';
             },
-            inheritFromPriorSets(sets, setIdx, field, parser) {
-                if (!sets || setIdx <= 0) return NaN;
-                for (let j = setIdx - 1; j >= 0; j--) {
-                    const parsed = parser(sets[j]?.[field]);
-                    if (!isNaN(parsed)) return parsed;
-                }
-                return NaN;
-            },
 
-            commitSetDefaults(ex, set, setIdx) {
-                if (!this.hasCurrentValue(set.reps)) {
-                    let r = NaN;
-                    if (this.hasPrevValue(set.prevReps)) r = parseInt(set.prevReps, 10);
-                    else if (setIdx > 0) r = this.inheritFromPriorSets(ex.sets, setIdx, 'reps', v => parseInt(v, 10));
+            /** On complete: commit this set's last-workout ghost values only — never copy from earlier sets in this session. */
+            commitSetDefaults(ex, set) {
+                if (!this.hasCurrentValue(set.reps) && this.hasPrevValue(set.prevReps)) {
+                    const r = parseInt(set.prevReps, 10);
                     if (!isNaN(r)) set.reps = r;
                 }
-                if (!this.isBodyWeight(ex.weightType) && !this.hasCurrentValue(set.weight)) {
-                    let w = NaN;
-                    if (this.hasPrevValue(set.prevWeight)) w = parseFloat(set.prevWeight);
-                    else if (setIdx > 0) w = this.inheritFromPriorSets(ex.sets, setIdx, 'weight', parseFloat);
+                if (!this.isBodyWeight(ex.weightType) && !this.hasCurrentValue(set.weight) && this.hasPrevValue(set.prevWeight)) {
+                    const w = parseFloat(set.prevWeight);
                     if (!isNaN(w)) set.weight = w;
                 }
             },
@@ -436,7 +425,7 @@
                         this.applyPickerToTarget();
                         this.pickerModal.visible = false;
                     }
-                    this.commitSetDefaults(ex, set, setIdx);
+                    this.commitSetDefaults(ex, set);
                     const currentWeight = parseFloat(set.weight);
                     if(!isNaN(currentWeight) && ex.personalRecord > 0 && currentWeight > ex.personalRecord) {
                         this.triggerConfetti();
@@ -458,12 +447,10 @@
                 if(this.pickerModal.weightValues.length === 0) { for(let i=0; i<=1000; i+=2.5) this.pickerModal.weightValues.push(i); for(let i=0; i<=100; i++) this.pickerModal.repsValues.push(i); }
                 
                 let w = parseFloat(setObj.weight);
-                if (isNaN(w) && ex) w = this.inheritFromPriorSets(ex.sets, setIdx, 'weight', parseFloat);
                 if (isNaN(w)) w = parseFloat(setObj.prevWeight);
                 if (isNaN(w)) w = 0;
                 
                 let r = parseInt(setObj.reps, 10);
-                if (isNaN(r) && ex) r = this.inheritFromPriorSets(ex.sets, setIdx, 'reps', v => parseInt(v, 10));
                 if (isNaN(r)) r = parseInt(setObj.prevReps, 10);
                 if (isNaN(r)) r = 0;
                 
