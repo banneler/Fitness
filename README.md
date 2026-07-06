@@ -32,5 +32,14 @@ Likes and comments on leaderboard rows (Volume, Consistency, Streak tabs). Comme
 
 Without those tables, sharing still works; cheers/comments show a setup reminder on the leaderboard.
 
+Comment **likes** and **replies** require the `parent_id` column and `arena_comment_likes` table from `supabase/arena_prs_schema.sql` (run that migration after `social_schema.sql`).
+
+### Weekly PR board
+Community tally of personal records hit this week — confetti on open, likes, comments, and replies on each PR card (`prs.html`). Linked from the Arena leaderboard header.
+
+**One-time setup:** run `supabase/arena_prs_schema.sql` in the Supabase SQL Editor (after `social_schema.sql`). Creates `arena_pr_events`, PR likes/comments, and comment-like tables. Without it, the PR page falls back to computing PRs from `workout_logs` for the current week (no social on PR cards).
+
+PRs are recorded automatically when you finish a workout session.
+
 ### Arena Cheers on Today
 The **Today** page shows recent likes and comments from the last 7 days when buddies interact with your leaderboard row (volume, consistency, or streak).

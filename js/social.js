@@ -646,6 +646,30 @@ const FitnessSocial = {
         return grouped;
     },
 
+    buildCommentThreads(comments) {
+        const map = {};
+        const roots = [];
+        (comments || []).forEach(row => {
+            map[row.id] = { ...row, replies: [] };
+        });
+        (comments || []).forEach(row => {
+            const node = map[row.id];
+            if (row.parent_id && map[row.parent_id]) map[row.parent_id].replies.push(node);
+            else roots.push(node);
+        });
+        return roots;
+    },
+
+    buildCommentLikeState(rows, userId) {
+        const counts = {};
+        const mine = new Set();
+        (rows || []).forEach(row => {
+            counts[row.comment_id] = (counts[row.comment_id] || 0) + 1;
+            if (userId && row.actor_user_id === userId) mine.add(row.comment_id);
+        });
+        return { counts, mine };
+    },
+
     likeKey(targetUserId, context) {
         return `${targetUserId}:${context}`;
     },

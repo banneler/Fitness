@@ -21,6 +21,7 @@
     <script src="js/exercise-history.js"></script>
     <script src="js/heatmap.js"></script>
     <script src="js/social.js"></script>
+    <script src="js/arena-prs.js"></script>
 
     <style>
         [v-cloak] { display: none !important; }
@@ -630,7 +631,14 @@
                         }
                     });
                 });
-                if(flatLogs.length) await _client.from('workout_logs').insert(flatLogs);
+                if (flatLogs.length) {
+                    await _client.from('workout_logs').insert(flatLogs);
+                    try {
+                        await FitnessArenaPrs.recordSessionPrs(_client, this.session.user.id, flatLogs);
+                    } catch (e) {
+                        console.error('PR recording failed', e);
+                    }
+                }
                 if(this.stackTaken) { const { data: inv } = await _client.from('inventory').select('*'); if(inv && inv.length) { const updates = inv.map(i => _client.from('inventory').update({servings_left: Math.max(0, i.servings_left - 1)}).eq('id', i.id)); await Promise.all(updates); } }
                 
                 localStorage.removeItem('constellation_active_session');
