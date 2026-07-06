@@ -1,4 +1,4 @@
-const CACHE_NAME = 'constellation-v3.36';
+const CACHE_NAME = 'constellation-v3.40';
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -24,6 +24,8 @@ const CORE_ASSETS = [
   '/js/arena-history.js',
   '/js/giphy-config.js',
   '/js/config.js',
+  '/js/user-prefs.js',
+  '/js/bottom-nav.js',
   '/js/exercise-library.js',
   '/body-map.svg',
   '/js/exercise-history.js',

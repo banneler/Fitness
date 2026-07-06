@@ -21,6 +21,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <script src="js/arena-prs.js"></script>
     <script src="js/arena-history.js"></script>
+    <script src="js/user-prefs.js"></script>
+    <script src="js/bottom-nav.js"></script>
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
@@ -316,13 +318,7 @@
         </template>
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-between px-6 py-4 safe-area-bottom z-[100]">
-        <a href="today.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="calendar" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Today</span></a>
-        <a href="gym.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Gym</span></a>
-        <a href="#" class="flex flex-col items-center tab-active text-purple-500"><i data-lucide="trophy" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Arena</span></a>
-        <a href="kitchen.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="utensils" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Kitchen</span></a>
-        <a href="tracker.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="line-chart" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Tracker</span></a>
-    </nav>
+    <nav id="app-bottom-nav"></nav>
 
     <div v-if="gifPickerTarget" class="fixed inset-0 z-[200] flex items-end justify-center bg-black/75 backdrop-blur-sm" @click.self="closeGifPicker">
         <div class="w-full max-w-lg bg-slate-900 rounded-t-3xl border-t border-white/10 shadow-2xl flex flex-col max-h-[72vh] safe-area-bottom">
@@ -439,6 +435,7 @@
             }
         },
         async mounted() {
+            if (!FitnessUserPrefs.guardPage('arena')) return;
             const params = new URLSearchParams(window.location.search);
             if (params.get('tab') === 'prs') this.metric = 'prs';
 
@@ -456,6 +453,7 @@
                 await this.fetchSocial();
             }
             this.$nextTick(() => {
+                FitnessBottomNav.mount('app-bottom-nav', 'arena');
                 lucide.createIcons();
                 if (this.metric !== 'prs') this.maybeShowCoronation();
             });

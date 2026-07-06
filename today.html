@@ -19,6 +19,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="js/config.js"></script>
+    <script src="js/user-prefs.js"></script>
+    <script src="js/bottom-nav.js"></script>
     <script src="js/exercise-library.js"></script>
     <script src="js/routine-library.js"></script>
     <script src="js/heatmap.js"></script>
@@ -146,7 +148,7 @@
 <div id="app" v-cloak class="min-h-screen flex flex-col p-6 pb-32 pt-16">
     
     <transition name="fade">
-        <div v-if="arenaOverthrow" @click="dismissArenaOverthrow" class="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center px-8 cursor-pointer overflow-hidden">
+        <div v-if="arenaOverthrow && prefs.pages.arena" @click="dismissArenaOverthrow" class="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center px-8 cursor-pointer overflow-hidden">
             <div class="absolute inset-0 overthrow-glow pointer-events-none" :style="{ background: `radial-gradient(circle at 50% 40%, ${arenaOverthrow.color}33, transparent 65%)` }"></div>
 
             <div v-if="arenaOverthrowPhase === 'shake'" class="flex flex-col items-center relative z-10 overthrow-phase-in">
@@ -192,10 +194,11 @@
     <transition name="modal">
         <div v-if="showSettingsModal" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
             <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="showSettingsModal = false"></div>
-            <div class="glass w-full max-w-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl">
-                <h2 class="text-xl font-black italic uppercase text-white mb-6">Profile Settings</h2>
+            <div class="glass w-full max-w-sm rounded-3xl p-8 relative border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+                <h2 class="text-xl font-black italic uppercase text-white mb-2">Settings</h2>
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-6">Profile & app layout</p>
                 
-                <div class="space-y-4 mb-8">
+                <div class="space-y-4 mb-6">
                     <div class="flex flex-col items-center gap-3">
                         <div class="w-20 h-20 rounded-full bg-slate-800 border border-white/10 overflow-hidden flex items-center justify-center">
                             <img v-if="profile.avatar_url" :src="profile.avatar_url" alt="" class="w-full h-full object-cover">
@@ -216,9 +219,67 @@
                     </div>
                 </div>
 
+                <div class="border-t border-white/5 pt-6 mb-6">
+                    <h3 class="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-3">App Pages</h3>
+                    <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wide mb-4 leading-relaxed">Hide tabs you do not use. Today is always your home.</p>
+                    <div class="space-y-2">
+                        <label class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-white/5 cursor-pointer">
+                            <span class="text-xs font-bold text-white uppercase">Gym</span>
+                            <input type="checkbox" v-model="prefs.pages.gym" class="w-4 h-4 rounded accent-blue-500">
+                        </label>
+                        <label class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-white/5 cursor-pointer">
+                            <span class="text-xs font-bold text-white uppercase">Arena</span>
+                            <input type="checkbox" v-model="prefs.pages.arena" class="w-4 h-4 rounded accent-purple-500">
+                        </label>
+                        <label class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-white/5 cursor-pointer">
+                            <span class="text-xs font-bold text-white uppercase">Kitchen</span>
+                            <input type="checkbox" v-model="prefs.pages.kitchen" class="w-4 h-4 rounded accent-green-500">
+                        </label>
+                        <label class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-white/5 cursor-pointer">
+                            <span class="text-xs font-bold text-white uppercase">Tracker</span>
+                            <input type="checkbox" v-model="prefs.pages.tracker" class="w-4 h-4 rounded accent-teal-400">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="border-t border-white/5 pt-6 mb-8">
+                    <h3 class="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-3">Today Dashboard</h3>
+                    <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wide mb-4 leading-relaxed">Streamline your home screen. Sections tied to hidden pages are ignored.</p>
+                    <div class="space-y-2">
+                        <label class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-white/5 cursor-pointer" :class="!prefs.pages.gym ? 'opacity-40' : ''">
+                            <span class="text-xs font-bold text-white uppercase">Active Session Banner</span>
+                            <input type="checkbox" v-model="prefs.today.resumeSession" :disabled="!prefs.pages.gym" class="w-4 h-4 rounded accent-blue-500">
+                        </label>
+                        <label class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-white/5 cursor-pointer" :class="!prefs.pages.kitchen ? 'opacity-40' : ''">
+                            <span class="text-xs font-bold text-white uppercase">Low Stock Alerts</span>
+                            <input type="checkbox" v-model="prefs.today.lowStock" :disabled="!prefs.pages.kitchen" class="w-4 h-4 rounded accent-red-500">
+                        </label>
+                        <label class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-white/5 cursor-pointer" :class="!prefs.pages.arena ? 'opacity-40' : ''">
+                            <span class="text-xs font-bold text-white uppercase">Arena Cheers</span>
+                            <input type="checkbox" v-model="prefs.today.arenaCheers" :disabled="!prefs.pages.arena" class="w-4 h-4 rounded accent-pink-500">
+                        </label>
+                        <label class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-white/5 cursor-pointer" :class="!prefs.pages.kitchen ? 'opacity-40' : ''">
+                            <span class="text-xs font-bold text-white uppercase">Fuel Target</span>
+                            <input type="checkbox" v-model="prefs.today.fuelTarget" :disabled="!prefs.pages.kitchen" class="w-4 h-4 rounded accent-blue-500">
+                        </label>
+                        <label class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-white/5 cursor-pointer" :class="!prefs.pages.gym ? 'opacity-40' : ''">
+                            <span class="text-xs font-bold text-white uppercase">Iron Volume</span>
+                            <input type="checkbox" v-model="prefs.today.ironVolume" :disabled="!prefs.pages.gym" class="w-4 h-4 rounded accent-orange-500">
+                        </label>
+                        <label class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-white/5 cursor-pointer">
+                            <span class="text-xs font-bold text-white uppercase">Hydration</span>
+                            <input type="checkbox" v-model="prefs.today.hydration" class="w-4 h-4 rounded accent-blue-500">
+                        </label>
+                        <label class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-white/5 cursor-pointer">
+                            <span class="text-xs font-bold text-white uppercase">Daily Readiness</span>
+                            <input type="checkbox" v-model="prefs.today.readiness" class="w-4 h-4 rounded accent-yellow-500">
+                        </label>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-3">
                     <button @click="showSettingsModal = false" class="py-4 rounded-2xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">Cancel</button>
-                    <button @click="saveProfile" class="py-4 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase shadow-lg active:scale-95 transition-all">Save Identity</button>
+                    <button @click="saveSettings" class="py-4 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase shadow-lg active:scale-95 transition-all">Save Settings</button>
                 </div>
             </div>
         </div>
@@ -256,7 +317,7 @@
                     </div>
                 </div>
                 
-                <a href="gym.html" v-if="todaysWorkout" class="text-[10px] font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1 hover:text-blue-300">
+                <a href="gym.html" v-if="todaysWorkout && prefs.pages.gym" class="text-[10px] font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1 hover:text-blue-300">
                     <i data-lucide="crosshair" class="w-3 h-3"></i> Protocol: {{ todaysWorkout }}
                 </a>
                 <span v-else class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Rest Day Protocol</span>
@@ -275,7 +336,7 @@
 
     <main class="space-y-6">
         
-        <div v-if="resumeSessionName" class="fixed bottom-24 left-6 right-6 z-[90]">
+        <div v-if="resumeSessionName && prefs.today.resumeSession && prefs.pages.gym" class="fixed bottom-24 left-6 right-6 z-[90]">
             <a href="workout.html" class="flex items-center justify-between bg-blue-600/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/10 shadow-blue-900/20 active:scale-95 transition-all">
                 <div class="flex items-center gap-3">
                     <div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
@@ -288,7 +349,7 @@
             </a>
         </div>
 
-        <div v-if="lowStockItems.length > 0" class="glass p-4 rounded-2xl border border-red-500/30 bg-red-900/10 flex items-center gap-4 relative overflow-hidden">
+        <div v-if="lowStockItems.length > 0 && prefs.today.lowStock && prefs.pages.kitchen" class="glass p-4 rounded-2xl border border-red-500/30 bg-red-900/10 flex items-center gap-4 relative overflow-hidden">
             <div class="absolute inset-0 border border-red-500/20 rounded-2xl animate-pulse"></div>
             <div class="w-10 h-10 rounded-xl bg-red-500/20 flex flex-shrink-0 items-center justify-center text-red-500 z-10">
                 <i data-lucide="alert-triangle" class="w-5 h-5"></i>
@@ -303,7 +364,7 @@
             </div>
         </div>
 
-        <div v-if="arenaActivity.length > 0" class="glass p-5 rounded-3xl border-t-4 border-pink-500 shadow-xl arena-cheer-card">
+        <div v-if="arenaActivity.length > 0 && prefs.today.arenaCheers && prefs.pages.arena" class="glass p-5 rounded-3xl border-t-4 border-pink-500 shadow-xl arena-cheer-card">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-2">
                     <i data-lucide="heart" class="w-4 h-4 text-pink-500"></i>
@@ -360,8 +421,8 @@
             </button>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-            <div class="glass p-5 rounded-3xl border-t-4" :class="proteinLeft <= 0 ? 'border-t-green-500' : 'border-t-blue-500'">
+        <div v-if="showFuelCard || showIronCard" class="grid gap-4" :class="showFuelCard && showIronCard ? 'grid-cols-2' : 'grid-cols-1'">
+            <div v-if="showFuelCard" class="glass p-5 rounded-3xl border-t-4" :class="proteinLeft <= 0 ? 'border-t-green-500' : 'border-t-blue-500'">
                 <div class="flex items-center gap-2 mb-3 opacity-60">
                     <i data-lucide="utensils" class="w-4 h-4" :class="proteinLeft <= 0 ? 'text-green-400' : 'text-blue-400'"></i>
                     <span class="text-[9px] font-black uppercase tracking-widest">Fuel Target</span>
@@ -376,7 +437,7 @@
                 </div>
             </div>
 
-            <div class="glass p-5 rounded-3xl border-t-4 border-t-orange-500 relative">
+            <div v-if="showIronCard" class="glass p-5 rounded-3xl border-t-4 border-t-orange-500 relative">
                 <div class="flex items-center gap-2 mb-3 opacity-60">
                     <i data-lucide="dumbbell" class="w-4 h-4 text-orange-400"></i>
                     <span class="text-[9px] font-black uppercase tracking-widest">Iron Volume</span>
@@ -389,7 +450,7 @@
             </div>
         </div>
 
-        <div class="glass p-6 rounded-[2rem] border-t-4 border-t-blue-500 shadow-xl">
+        <div v-if="prefs.today.hydration" class="glass p-6 rounded-[2rem] border-t-4 border-t-blue-500 shadow-xl">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-2 opacity-80">
                     <i data-lucide="droplets" class="w-4 h-4 text-blue-400"></i>
@@ -414,7 +475,7 @@
             </div>
         </div>
 
-        <section class="glass p-6 rounded-[2.5rem] shadow-2xl">
+        <section v-if="prefs.today.readiness" class="glass p-6 rounded-[2.5rem] shadow-2xl">
             <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center gap-2">
                     <i data-lucide="sun" class="w-5 h-5 text-yellow-500"></i>
@@ -463,33 +524,12 @@
 
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-between px-6 py-4 safe-area-bottom z-[100]">
-        <a href="#" class="flex flex-col items-center tab-active text-white">
-            <i data-lucide="calendar" class="w-6 h-6 mb-1"></i>
-            <span class="text-[8px] font-black uppercase italic tracking-widest">Today</span>
-        </a>
-
-        <a href="gym.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
-            <i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i>
-            <span class="text-[8px] font-black uppercase italic tracking-widest">Gym</span>
-        </a>
-
-        <a href="leaderboard.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
-            <i data-lucide="trophy" class="w-6 h-6 mb-1"></i>
-            <span class="text-[8px] font-black uppercase italic tracking-widest">Arena</span>
-        </a>
-
-        <a href="kitchen.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
-            <i data-lucide="utensils" class="w-6 h-6 mb-1"></i>
-            <span class="text-[8px] font-black uppercase italic tracking-widest">Kitchen</span>
-        </a>
-
-        <a href="tracker.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all">
-            <i data-lucide="line-chart" class="w-6 h-6 mb-1"></i>
-            <span class="text-[8px] font-black uppercase italic tracking-widest">Tracker</span>
-        </a>
-    </nav>
+    <nav id="app-bottom-nav"></nav>
 </div>
+
+<script>
+    FitnessBottomNav.mount('app-bottom-nav', 'today');
+</script>
 
 <script>
     const { createApp } = Vue;
@@ -504,8 +544,9 @@
                 session: null,
                 reportSaved: false,
                 logoutModal: false,
-                showSettingsModal: false, 
-                profile: { full_name: '', initials: '', avatar_url: null }, 
+                showSettingsModal: false,
+                prefs: FitnessUserPrefs.load(),
+                profile: { full_name: '', initials: '', avatar_url: null },
                 metrics: {
                     id: null,
                     weight: null,
@@ -567,8 +608,14 @@
                 return FitnessHeatmap.compute(this.heatmapLogs, this.libraryExercises);
             },
             visibleArenaCheers() {
-                if (this.arenaCheersExpanded) return this.arenaActivity;
-                return this.arenaActivity.slice(0, 5);
+                if (!this.prefs.today.arenaCheers || !this.prefs.pages.arena) return [];
+                return this.arenaCheersExpanded ? this.arenaActivity : this.arenaActivity.slice(0, 5);
+            },
+            showFuelCard() {
+                return this.prefs.today.fuelTarget && this.prefs.pages.kitchen;
+            },
+            showIronCard() {
+                return this.prefs.today.ironVolume && this.prefs.pages.gym;
             }
         },
         async mounted() {
@@ -589,19 +636,21 @@
                 } 
             }
             
-            await Promise.all([
+            const fetches = [
                 this.fetchMetrics(),
-                this.fetchTargets(), 
-                this.fetchProtein(),
-                this.fetchVolume(),
-                this.fetchSchedule(),
-                this.fetchStreak(),
-                this.fetchLowStock(),
                 this.fetchProfile(),
-                this.fetchArenaCheers(),
-                this.fetchHeatmapData(),
-                this.checkArenaOverthrows()
-            ]);
+                this.fetchStreak()
+            ];
+            if (this.prefs.pages.kitchen) {
+                fetches.push(this.fetchTargets(), this.fetchProtein(), this.fetchLowStock());
+            }
+            if (this.prefs.pages.gym) {
+                fetches.push(this.fetchVolume(), this.fetchSchedule(), this.fetchHeatmapData());
+            }
+            if (this.prefs.pages.arena) {
+                fetches.push(this.fetchArenaCheers(), this.checkArenaOverthrows());
+            }
+            await Promise.all(fetches);
             
             this.$nextTick(() => lucide.createIcons());
         },
@@ -741,21 +790,26 @@
                 }
                 this.avatarUploading = false;
             },
-            async saveProfile() {
+            async saveSettings() {
+                FitnessUserPrefs.save(this.prefs);
+                FitnessBottomNav.mount('app-bottom-nav', 'today');
+
                 const { error } = await _client.from('profiles').update({
                     full_name: this.profile.full_name,
                     initials: this.profile.initials.toUpperCase(),
                     avatar_url: this.profile.avatar_url
                 }).eq('id', this.session.user.id);
-                
+
                 if (!error) {
-                    this.showToast("Identity Updated", "Profile settings saved.");
+                    this.showToast('Settings Saved', 'Profile and layout updated.');
                     this.showSettingsModal = false;
                 } else {
-                    this.showToast("Error", "Could not save profile.");
+                    this.showToast('Error', 'Layout saved locally; profile could not sync.');
+                    this.showSettingsModal = false;
                 }
             },
             async checkArenaOverthrows() {
+                if (!this.prefs.pages.arena) return;
                 const uid = this.session.user.id;
                 const [{ data: leaderboard, error }, { data: profiles }] = await Promise.all([
                     _client.from('leaderboard').select('*'),

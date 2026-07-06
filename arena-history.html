@@ -12,6 +12,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="js/social.js"></script>
     <script src="js/arena-history.js"></script>
+    <script src="js/user-prefs.js"></script>
+    <script src="js/bottom-nav.js"></script>
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
@@ -71,13 +73,7 @@
         </div>
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-between px-6 py-4 z-[100]">
-        <a href="today.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="calendar" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Today</span></a>
-        <a href="gym.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="dumbbell" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Gym</span></a>
-        <a href="leaderboard.html" class="flex flex-col items-center text-purple-500"><i data-lucide="trophy" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Arena</span></a>
-        <a href="kitchen.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="utensils" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Kitchen</span></a>
-        <a href="tracker.html" class="flex flex-col items-center text-slate-600 hover:text-white transition-all"><i data-lucide="line-chart" class="w-6 h-6 mb-1"></i><span class="text-[8px] font-black uppercase italic tracking-widest">Tracker</span></a>
-    </nav>
+    <nav id="app-bottom-nav"></nav>
 </div>
 
 <script>
@@ -107,6 +103,7 @@ createApp({
         }
     },
     async mounted() {
+        if (!FitnessUserPrefs.guardPage('arena')) return;
         const { data: { session } } = await _client.auth.getSession();
         if (!session) { window.location.href = 'index.html'; return; }
 
@@ -120,6 +117,7 @@ createApp({
         this.source = result.source;
         this.tableMissing = !!result.tableMissing;
         this.loading = false;
+        FitnessBottomNav.mount('app-bottom-nav', 'arena');
         this.$nextTick(() => lucide.createIcons());
     },
     updated() { this.$nextTick(() => lucide.createIcons()); },
