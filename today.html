@@ -317,7 +317,10 @@
             <div class="space-y-3">
                 <div v-for="item in arenaActivity.slice(0, 8)" :key="item.id" class="bg-slate-950/50 rounded-2xl p-4 border border-white/5">
                     <div class="flex items-start gap-3">
-                        <div class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-400 flex-shrink-0 border border-white/10">{{ item.actorInitials }}</div>
+                        <div class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-400 flex-shrink-0 border border-white/10 overflow-hidden">
+                            <img v-if="item.actorAvatarUrl" :src="item.actorAvatarUrl" alt="" class="w-full h-full object-cover">
+                            <span v-else>{{ item.actorInitials }}</span>
+                        </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 flex-wrap mb-1">
                                 <span class="text-xs font-black text-white uppercase italic">{{ item.actorName }}</span>
@@ -805,7 +808,7 @@
                 ])];
                 if (!actorIds.length) { this.arenaActivity = []; return; }
 
-                const { data: profiles } = await _client.from('profiles').select('id, full_name, initials').in('id', actorIds);
+                const { data: profiles } = await _client.from('profiles').select('id, full_name, initials, avatar_url').in('id', actorIds);
                 const profileMap = {};
                 (profiles || []).forEach(p => { profileMap[p.id] = p; });
                 this.arenaActivity = FitnessSocial.buildArenaFeed(likes, comments, profileMap);

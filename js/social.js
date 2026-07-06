@@ -693,8 +693,10 @@ const FitnessSocial = {
             items.push({
                 id: `like-${row.id}`,
                 type: 'like',
+                actorUserId: row.actor_user_id,
                 actorName: p.full_name || p.initials || 'Someone',
                 actorInitials: p.initials || '??',
+                actorAvatarUrl: p.avatar_url || null,
                 context: row.context,
                 body: null,
                 created_at: row.created_at
@@ -707,8 +709,10 @@ const FitnessSocial = {
                 type: 'comment',
                 commentId: row.id,
                 authorUserId: row.author_user_id,
+                actorUserId: row.author_user_id,
                 actorName: p.full_name || p.initials || 'Someone',
                 actorInitials: p.initials || '??',
+                actorAvatarUrl: p.avatar_url || null,
                 context: row.context,
                 body: row.body,
                 created_at: row.created_at
