@@ -12,16 +12,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        (function () {
-            function syncAppHeight() {
-                document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-            }
-            syncAppHeight();
-            window.addEventListener('resize', syncAppHeight);
-            window.addEventListener('orientationchange', function () { setTimeout(syncAppHeight, 150); });
-        })();
-    </script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -37,27 +27,20 @@
 
     <style>
         [v-cloak] { display: none !important; }
-        :root { --app-height: 100vh; --app-height: 100dvh; }
         html, body {
             margin: 0;
             padding: 0;
-            height: var(--app-height);
-            overflow: hidden;
-            background-color: #0f172a;
+            min-height: 100%;
+            background-color: #020617;
         }
         body {
+            background-color: #020617;
             color: white;
             -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
         }
         #app {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: var(--app-height);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            min-height: 100vh;
             background-color: #020617;
         }
         .workout-footer-bar {
@@ -72,17 +55,8 @@
             border-top: 1px solid rgba(255, 255, 255, 0.08);
             padding: 0.625rem 1.5rem 0.375rem;
         }
-        .workout-footer-bar::after {
-            content: "";
-            position: absolute;
-            left: 0;
-            right: 0;
-            top: 100%;
-            height: env(safe-area-inset-bottom, 0px);
-            background: #0f172a;
-        }
         #session-container {
-            padding-bottom: 5.25rem;
+            padding-bottom: 8rem;
         }
         
         .glass-solid { background: #020617; border-bottom: 1px solid rgba(255,255,255,0.08); }
@@ -122,7 +96,7 @@
 <body class="font-sans antialiased bg-slate-950">
 <div id="app" v-cloak class="bg-slate-950">
     
-    <header class="flex-shrink-0 glass-solid p-4 pt-16 z-40 shadow-2xl">
+    <header class="fixed top-0 left-0 right-0 glass-solid p-4 pt-16 z-40 shadow-2xl">
         <div class="flex justify-between items-center">
             <div>
                 <div class="flex items-center gap-2 mb-1">
@@ -135,7 +109,7 @@
         </div>
     </header>
 
-    <main class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain p-4 space-y-6 scroll-smooth no-scrollbar" id="session-container">
+    <main class="p-4 pt-32 space-y-6 scroll-smooth overflow-x-hidden" id="session-container">
         
         <div v-for="(group, groupIdx) in activeRoutine.data" 
              :key="groupIdx" 
@@ -225,7 +199,6 @@
 
     </main>
 
-    <teleport to="body">
     <footer class="workout-footer-bar">
         <div class="grid grid-cols-4 gap-2 mb-1">
             <button @click="prevExercise" :disabled="activeExerciseIdx === 0" class="col-span-1 h-12 rounded-2xl bg-slate-800/80 flex items-center justify-center text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
@@ -240,6 +213,7 @@
         <button @click="exitModal = true" class="w-full py-1 text-[10px] text-slate-500 font-black uppercase hover:text-white transition-colors">Exit Workout</button>
     </footer>
 
+    <teleport to="body">
     <transition name="modal">
         <div v-if="finishModal" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
             <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="finishModal = false"></div>
