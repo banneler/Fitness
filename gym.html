@@ -123,20 +123,7 @@
                 </div>
                 <div class="flex justify-center relative z-10 px-2 pt-2 pb-1 overflow-visible">
                     <div v-if="heatmapError" class="text-[10px] font-bold uppercase tracking-widest text-slate-500 py-12 text-center">Heatmap unavailable</div>
-                    <div
-                        v-else
-                        class="relative mx-auto overflow-visible"
-                        :style="heatmapFaceContainerStyle"
-                    >
-                        <div v-html="heatmapHtml"></div>
-                        <img
-                            v-if="heatmapFaceSrc"
-                            :src="heatmapFaceSrc"
-                            alt=""
-                            class="absolute rounded-full object-cover pointer-events-none border-[2.5px] border-blue-500/45 shadow-[0_0_12px_rgba(59,130,246,0.35)]"
-                            :style="heatmapFaceStyle"
-                        >
-                    </div>
+                    <div v-else class="overflow-visible" v-html="heatmapHtml"></div>
                 </div>
             </div>
 
@@ -303,20 +290,8 @@
     const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Hips', 'Cardio'];
 
     const app = createApp({
-        data() { return { loading: true, bootReady: false, loadingText: 'Loading Data', bootError: null, routines: [], libraryExercises: [], schedule: [], recentSessions: [], rawLogs: [], muscleHeatmap: FitnessHeatmap.defaultStatuses(), heatmapHtml: '', heatmapError: false, profile: { avatar_url: null, heatmap_face_url: null }, scheduleModal: null, previewModal: null, toast: { visible: false, title: '', message: '' }, session: null, resumeSessionName: null, activeFilter: null, muscleGroups: MUSCLES } },
+        data() { return { loading: true, bootReady: false, loadingText: 'Loading Data', bootError: null, routines: [], libraryExercises: [], schedule: [], recentSessions: [], rawLogs: [], muscleHeatmap: FitnessHeatmap.defaultStatuses(), heatmapHtml: '', heatmapError: false, scheduleModal: null, previewModal: null, toast: { visible: false, title: '', message: '' }, session: null, resumeSessionName: null, activeFilter: null, muscleGroups: MUSCLES } },
         computed: {
-            heatmapFaceContainerStyle() {
-                return FitnessHeatmap.heatmapFaceContainerStyle();
-            },
-            heatmapFaceStyle() {
-                return FitnessHeatmap.heatmapFaceOverlayStyle();
-            },
-            heatmapFaceSrc() {
-                if (this.profile?.heatmap_face_url) return this.profile.heatmap_face_url;
-                const uid = this.session?.user?.id;
-                if (!uid) return null;
-                return `https://mvoyrchefjcpjkdtezmz.supabase.co/storage/v1/object/public/avatars/${uid}/avatar-face.png`;
-            },
             upcomingDays() {
                 const days = [];
                 for(let i=0; i<7; i++) { const d = new Date(); d.setDate(d.getDate() + i); days.push({ dateNum: d.getDate(), dayName: d.toLocaleDateString('en-US', {weekday:'short'}), fullDate: d.toLocaleDateString('en-CA') }); }
@@ -369,7 +344,7 @@
                         }
                     }
 
-                    await Promise.all([this.fetchExercises(), this.fetchSchedule(), this.fetchProfile()]);
+                    await Promise.all([this.fetchExercises(), this.fetchSchedule()]);
                     await this.fetchRoutines();
                     await this.fetchHistory();
                     this.bootReady = true;
@@ -391,17 +366,6 @@
                     this.heatmapError = true;
                     this.heatmapHtml = '';
                 }
-            },
-            async fetchProfile() {
-                const { data, error } = await _client.from('profiles')
-                    .select('avatar_url, heatmap_face_url')
-                    .eq('id', this.session.user.id)
-                    .single();
-                if (error) {
-                    console.error('fetchProfile', error);
-                    return;
-                }
-                if (data) this.profile = { ...this.profile, ...data };
             },
             retryBoot() { this.boot(); },
             async clearCacheAndReload() {

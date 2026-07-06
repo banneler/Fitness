@@ -1,4 +1,4 @@
-const CACHE_NAME = 'constellation-v3.39';
+const CACHE_NAME = 'constellation-v3.36';
 const CORE_ASSETS = [
   '/',
   '/index.html',
