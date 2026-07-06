@@ -43,7 +43,7 @@
             padding: 0;
             height: var(--app-height);
             overflow: hidden;
-            background-color: #020617;
+            background-color: #0f172a;
         }
         body {
             color: white;
@@ -64,13 +64,22 @@
             position: fixed;
             left: 0;
             right: 0;
-            bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+            bottom: 0;
             z-index: 40;
             background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-top: 1px solid rgba(255, 255, 255, 0.08);
             padding: 0.625rem 1.5rem 0.375rem;
+        }
+        .workout-footer-bar::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 100%;
+            height: env(safe-area-inset-bottom, 0px);
+            background: #0f172a;
         }
         #session-container {
             padding-bottom: 5.25rem;
