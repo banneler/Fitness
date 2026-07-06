@@ -229,9 +229,9 @@
                 <i data-lucide="chevron-right" class="w-5 h-5 text-white"></i>
             </a>
         </div>
-
-        <nav id="app-bottom-nav"></nav>
     </div>
+
+    <nav id="app-bottom-nav"></nav>
 
     <transition name="modal">
         <div v-if="previewModal" class="fixed inset-0 z-[200] flex items-end justify-center sm:items-center p-4">
@@ -350,8 +350,10 @@
                     this.bootReady = false;
                 } finally {
                     this.loading = false;
-                    FitnessBottomNav.mount('app-bottom-nav', 'gym');
-                    this.$nextTick(() => { try { lucide.createIcons(); } catch (e) { console.warn(e); } });
+                    this.$nextTick(() => {
+                        FitnessBottomNav.mount('app-bottom-nav', 'gym');
+                        try { lucide.createIcons(); } catch (e) { console.warn(e); }
+                    });
                 }
             },
             async refreshHeatmap() {
