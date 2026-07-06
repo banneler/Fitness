@@ -119,15 +119,11 @@
     </header>
 
     <main class="space-y-4">
-        <div class="glass p-1 rounded-xl flex mb-6">
-            <button @click="setMetric('volume')" class="flex-1 py-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all" :class="metric === 'volume' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500'">Volume</button>
-            <button @click="setMetric('sessions')" class="flex-1 py-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all" :class="metric === 'sessions' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500'">Consistency</button>
-            <button @click="setMetric('streak')" class="flex-1 py-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1" :class="metric === 'streak' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-500'">
-                <span v-if="metric === 'streak'">🔥</span> Streak
-            </button>
-            <button @click="setMetric('prs')" class="flex-1 py-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1" :class="metric === 'prs' ? 'bg-yellow-500 text-slate-950 shadow-lg' : 'text-slate-500'">
-                <span>🏆</span> PRs
-            </button>
+        <div class="glass p-1 rounded-xl grid grid-cols-4 gap-0.5 mb-6">
+            <button @click="setMetric('volume')" class="min-w-0 py-2.5 px-1 rounded-lg text-[8px] font-black uppercase tracking-wide text-center transition-all" :class="metric === 'volume' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500'">Volume</button>
+            <button @click="setMetric('sessions')" class="min-w-0 py-2.5 px-1 rounded-lg text-[8px] font-black uppercase tracking-wide text-center transition-all" :class="metric === 'sessions' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500'">Consistency</button>
+            <button @click="setMetric('streak')" class="min-w-0 py-2.5 px-1 rounded-lg text-[8px] font-black uppercase tracking-wide text-center transition-all" :class="metric === 'streak' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-500'">Streak</button>
+            <button @click="setMetric('prs')" class="min-w-0 py-2.5 px-1 rounded-lg text-[8px] font-black uppercase tracking-wide text-center transition-all" :class="metric === 'prs' ? 'bg-yellow-500 text-slate-950 shadow-lg' : 'text-slate-500'">PRs</button>
         </div>
 
         <template v-if="metric === 'prs'">
@@ -499,7 +495,7 @@
                 if (!this.session || this.metric === 'prs') return;
                 const [likesRes, commentsRes, commentLikesRes] = await Promise.all([
                     _client.from('arena_likes').select('id, target_user_id, actor_user_id, context').eq('context', this.metric),
-                    _client.from('arena_comments').select('id, target_user_id, author_user_id, parent_id, body, created_at, context').eq('context', this.metric).order('created_at', { ascending: true }),
+                    _client.from('arena_comments').select('*').eq('context', this.metric).order('created_at', { ascending: true }),
                     _client.from('arena_comment_likes').select('comment_id, actor_user_id')
                 ]);
                 if (likesRes.error?.code === '42P01' || commentsRes.error?.code === '42P01') {
@@ -509,7 +505,10 @@
                 this.socialUnavailable = false;
                 this.likes = likesRes.data || [];
                 this.comments = commentsRes.data || [];
-                const clState = FitnessSocial.buildCommentLikeState(commentLikesRes.data || [], this.session.user.id);
+                const clState = FitnessSocial.buildCommentLikeState(
+                    commentLikesRes.error ? [] : (commentLikesRes.data || []),
+                    this.session.user.id
+                );
                 this.commentLikeCounts = clState.counts;
                 this.myCommentLikes = clState.mine;
                 const mine = new Set();
@@ -524,7 +523,7 @@
                 return this.likeCounts[userId] || 0;
             },
             commentCount(userId) {
-                return (this.groupedComments[userId] || []).length;
+                return this.commentThreadsFor(userId).length;
             },
             isLiked(userId) {
                 return this.myLikeKeys.has(FitnessSocial.likeKey(userId, this.metric));
