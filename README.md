@@ -44,7 +44,7 @@ PRs are recorded automatically when you finish a workout session. Open **PRs** a
 ### Rank history (gold cup)
 The **🏆 History** button on the Arena header opens a timeline of crown changes and rank shifts across Volume, Consistency, and Streak.
 
-**One-time setup:** run `supabase/arena_history_schema.sql` for shared community history. Without it, events are recorded locally on each device when someone opens the Arena or Today page.
+**One-time setup:** run `supabase/arena_history_schema.sql` for shared community history. On first empty board, the app seeds opening standings automatically; run `supabase/arena_history_season_open.sql` once to backfill immediately.
 
 ### Arena Cheers on Today
 The **Today** page shows recent likes and comments from the last 7 days when buddies interact with your leaderboard row (volume, consistency, or streak).

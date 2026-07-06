@@ -446,6 +446,7 @@
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
             await Promise.all([this.fetchLeaderboard(), this.fetchProfiles()]);
+            await FitnessArenaHistory.seedOpeningBoardIfEmpty(_client, this.users);
             await FitnessArenaHistory.recordChanges(_client, this.users);
             if (this.metric === 'prs') {
                 await this.fetchPrFeed();

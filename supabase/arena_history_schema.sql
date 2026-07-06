@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS arena_rank_events (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    event_type text NOT NULL CHECK (event_type IN ('crown_change', 'rank_change', 'entered')),
+    event_type text NOT NULL CHECK (event_type IN ('crown_change', 'rank_change', 'entered', 'season_open')),
     metric text NOT NULL CHECK (metric IN ('volume', 'sessions', 'streak')),
     user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
     previous_leader_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,

@@ -707,6 +707,7 @@
                 ]);
                 if (error || !leaderboard?.length) return;
 
+                await FitnessArenaHistory.seedOpeningBoardIfEmpty(_client, leaderboard);
                 await FitnessArenaHistory.recordChanges(_client, leaderboard);
 
                 const profileMap = {};

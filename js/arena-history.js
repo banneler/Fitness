@@ -113,6 +113,46 @@ const FitnessArenaHistory = {
         return { ...row, id: row.id || `${row.event_type}-${row.metric}-${row.created_at}` };
     },
 
+    buildOpeningBoardEvents(users) {
+        const base = Date.now();
+        const events = [];
+        this.METRICS.forEach((metric, mi) => {
+            const sorted = FitnessSocial.sortLeaderboardByMetric(users, metric);
+            if (sorted[0]) {
+                events.push({
+                    event_type: 'season_open',
+                    metric,
+                    new_leader_id: sorted[0].user_id,
+                    created_at: new Date(base + mi * 1000).toISOString()
+                });
+            }
+            sorted.forEach((u, idx) => {
+                events.push({
+                    event_type: 'entered',
+                    metric,
+                    user_id: u.user_id,
+                    new_rank: idx + 1,
+                    created_at: new Date(base - 120000 - idx * 500).toISOString()
+                });
+            });
+        });
+        return events;
+    },
+
+    async seedOpeningBoardIfEmpty(client, users) {
+        if (!users?.length) return false;
+        const { count, error } = await client
+            .from('arena_rank_events')
+            .select('*', { count: 'exact', head: true });
+        if (error?.code === '42P01' || (count ?? 0) > 0) return false;
+
+        const events = this.buildOpeningBoardEvents(users);
+        const { error: insertError } = await client
+            .from('arena_rank_events')
+            .insert(events.map(e => this.toDbRow(e)));
+        return !insertError;
+    },
+
     async recordChanges(client, users) {
         const prev = this.loadSnapshot();
         const next = this.buildFullSnapshot(users);
@@ -170,6 +210,18 @@ const FitnessArenaHistory = {
         const metricLabel = FitnessSocial.contextLabel(event.metric);
         const emoji = FitnessSocial.contextEmoji(event.metric);
         const when = FitnessSocial.formatCommentTime(event.created_at);
+
+        if (event.event_type === 'season_open') {
+            const leader = this.name(profileMap, event.new_leader_id);
+            return {
+                headline: `${metricLabel} board opens`,
+                detail: `${leader} leads the pack · ${emoji}`,
+                when,
+                metric: event.metric,
+                tone: 'crown',
+                emoji: '🏁'
+            };
+        }
 
         if (event.event_type === 'crown_change') {
             const usurper = this.name(profileMap, event.new_leader_id);
