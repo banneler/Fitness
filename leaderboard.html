@@ -487,7 +487,7 @@
                 else this.users = data || [];
             },
             async fetchProfiles() {
-                const { data } = await _client.from('profiles').select('id, full_name, initials');
+                const { data } = await _client.from('profiles').select('id, full_name, initials, avatar_url');
                 const map = {};
                 (data || []).forEach(p => { map[p.id] = p; });
                 this.profileMap = map;

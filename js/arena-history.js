@@ -206,10 +206,28 @@ const FitnessArenaHistory = {
         return profileMap[userId]?.full_name || profileMap[userId]?.initials || 'Athlete';
     },
 
+    initials(profileMap, userId) {
+        if (!userId) return '??';
+        return profileMap[userId]?.initials || '??';
+    },
+
+    avatarUrl(profileMap, userId) {
+        if (!userId) return null;
+        return profileMap[userId]?.avatar_url || null;
+    },
+
+    subjectUserId(event) {
+        if (event.event_type === 'crown_change' || event.event_type === 'season_open') {
+            return event.new_leader_id;
+        }
+        return event.user_id;
+    },
+
     formatEvent(event, profileMap = {}) {
         const metricLabel = FitnessSocial.contextLabel(event.metric);
         const emoji = FitnessSocial.contextEmoji(event.metric);
         const when = FitnessSocial.formatCommentTime(event.created_at);
+        const subjectUserId = this.subjectUserId(event);
 
         if (event.event_type === 'season_open') {
             const leader = this.name(profileMap, event.new_leader_id);
@@ -219,7 +237,7 @@ const FitnessArenaHistory = {
                 when,
                 metric: event.metric,
                 tone: 'crown',
-                emoji: '🏁'
+                subjectUserId
             };
         }
 
@@ -232,7 +250,7 @@ const FitnessArenaHistory = {
                 when,
                 metric: event.metric,
                 tone: 'crown',
-                emoji: '👑'
+                subjectUserId
             };
         }
 
@@ -244,7 +262,7 @@ const FitnessArenaHistory = {
                 when,
                 metric: event.metric,
                 tone: 'neutral',
-                emoji: '📊'
+                subjectUserId
             };
         }
 
@@ -257,7 +275,7 @@ const FitnessArenaHistory = {
             when,
             metric: event.metric,
             tone: event.new_rank < event.old_rank ? 'up' : 'down',
-            emoji: arrow
+            subjectUserId
         };
     }
 };

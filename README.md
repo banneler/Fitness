@@ -46,5 +46,10 @@ The **🏆 History** button on the Arena header opens a timeline of crown change
 
 **One-time setup:** run `supabase/arena_history_schema.sql` for shared community history. On first empty board, the app seeds opening standings automatically; run `supabase/arena_history_season_open.sql` once to backfill immediately.
 
+### Profile avatars
+Upload a photo in **Today → Settings → Change Photo**. Stored in the public `avatars` storage bucket; URL saved on `profiles.avatar_url`. Shown on the Arena leaderboard and Rank History timeline.
+
+**One-time setup:** run `supabase/avatars_storage.sql` in the Supabase SQL Editor.
+
 ### Arena Cheers on Today
 The **Today** page shows recent likes and comments from the last 7 days when buddies interact with your leaderboard row (volume, consistency, or streak).

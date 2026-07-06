@@ -196,6 +196,16 @@
                 <h2 class="text-xl font-black italic uppercase text-white mb-6">Profile Settings</h2>
                 
                 <div class="space-y-4 mb-8">
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="w-20 h-20 rounded-full bg-slate-800 border border-white/10 overflow-hidden flex items-center justify-center">
+                            <img v-if="profile.avatar_url" :src="profile.avatar_url" alt="" class="w-full h-full object-cover">
+                            <span v-else class="text-xl font-black text-slate-500">{{ profile.initials || '??' }}</span>
+                        </div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-blue-400 cursor-pointer active:opacity-70">
+                            {{ avatarUploading ? 'Uploading...' : 'Change Photo' }}
+                            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" @change="onAvatarSelected" :disabled="avatarUploading">
+                        </label>
+                    </div>
                     <div class="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
                         <span class="text-[8px] text-slate-500 font-black block mb-1 uppercase">Display Name</span>
                         <input type="text" v-model="profile.full_name" class="bg-transparent border-none text-lg font-bold w-full text-white p-0 focus:ring-0 placeholder-slate-700" placeholder="Your Name">
@@ -486,7 +496,7 @@
                 reportSaved: false,
                 logoutModal: false,
                 showSettingsModal: false, 
-                profile: { full_name: '', initials: '' }, 
+                profile: { full_name: '', initials: '', avatar_url: null }, 
                 metrics: {
                     id: null,
                     weight: null,
@@ -516,6 +526,7 @@
                 arenaOverthrowPhase: 'shake',
                 arenaOverthrowTimer: null,
                 arenaOverthrowPhaseTimer: null,
+                avatarUploading: false,
                 FitnessSocial
             } 
         },
@@ -681,15 +692,46 @@
                 this.lowStockItems = data || [];
             },
             async fetchProfile() {
-                const { data } = await _client.from('profiles').select('full_name, initials').eq('id', this.session.user.id).single();
+                const { data } = await _client.from('profiles').select('full_name, initials, avatar_url').eq('id', this.session.user.id).single();
                 if (data) {
                     this.profile = data;
                 }
             },
+            async onAvatarSelected(e) {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (!file || !this.session) return;
+                if (file.size > 5 * 1024 * 1024) {
+                    this.showToast('Photo Too Large', 'Max size is 5 MB.');
+                    return;
+                }
+                this.avatarUploading = true;
+                try {
+                    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+                    const path = `${this.session.user.id}/avatar.${ext}`;
+                    const { error: uploadError } = await _client.storage
+                        .from('avatars')
+                        .upload(path, file, { upsert: true, contentType: file.type });
+                    if (uploadError) throw uploadError;
+                    const { data: urlData } = _client.storage.from('avatars').getPublicUrl(path);
+                    const avatar_url = `${urlData.publicUrl}?v=${Date.now()}`;
+                    const { error } = await _client.from('profiles')
+                        .update({ avatar_url })
+                        .eq('id', this.session.user.id);
+                    if (error) throw error;
+                    this.profile.avatar_url = avatar_url;
+                    this.showToast('Photo Updated', 'Your avatar is live on the Arena.');
+                } catch (err) {
+                    console.error(err);
+                    this.showToast('Upload Failed', 'Could not save avatar photo.');
+                }
+                this.avatarUploading = false;
+            },
             async saveProfile() {
                 const { error } = await _client.from('profiles').update({
                     full_name: this.profile.full_name,
-                    initials: this.profile.initials.toUpperCase()
+                    initials: this.profile.initials.toUpperCase(),
+                    avatar_url: this.profile.avatar_url
                 }).eq('id', this.session.user.id);
                 
                 if (!error) {

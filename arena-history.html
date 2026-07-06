@@ -59,8 +59,9 @@
         </div>
 
         <div v-for="item in filteredEvents" :key="item.id" class="glass rounded-2xl p-4 flex gap-3 items-start" :class="item.display.tone === 'crown' ? 'history-crown border border-yellow-500/20' : 'border border-white/5'">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" :class="toneClass(item.display.tone)">
-                {{ item.display.emoji }}
+            <div class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-slate-800 border border-white/10 flex items-center justify-center" :class="avatarRingClass(item.display.tone)">
+                <img v-if="avatarFor(item)" :src="avatarFor(item)" alt="" class="w-full h-full object-cover">
+                <span v-else class="text-[10px] font-black text-slate-400">{{ initialsFor(item) }}</span>
             </div>
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-black italic uppercase text-white leading-snug">{{ item.display.headline }}</p>
@@ -109,7 +110,7 @@ createApp({
         const { data: { session } } = await _client.auth.getSession();
         if (!session) { window.location.href = 'index.html'; return; }
 
-        const { data: profiles } = await _client.from('profiles').select('id, full_name, initials');
+        const { data: profiles } = await _client.from('profiles').select('id, full_name, initials, avatar_url');
         const map = {};
         (profiles || []).forEach(p => { map[p.id] = p; });
         this.profileMap = map;
@@ -123,11 +124,22 @@ createApp({
     },
     updated() { this.$nextTick(() => lucide.createIcons()); },
     methods: {
-        toneClass(tone) {
-            if (tone === 'crown') return 'bg-yellow-500/15 text-yellow-400';
-            if (tone === 'up') return 'bg-green-500/10 text-green-400';
-            if (tone === 'down') return 'bg-red-500/10 text-red-400';
-            return 'bg-slate-800 text-slate-400';
+        subjectUserId(item) {
+            return item.display?.subjectUserId || FitnessArenaHistory.subjectUserId(item);
+        },
+        initialsFor(item) {
+            const id = this.subjectUserId(item);
+            return this.profileMap[id]?.initials || '??';
+        },
+        avatarFor(item) {
+            const id = this.subjectUserId(item);
+            return this.profileMap[id]?.avatar_url || null;
+        },
+        avatarRingClass(tone) {
+            if (tone === 'crown') return 'ring-2 ring-yellow-500/35';
+            if (tone === 'up') return 'ring-2 ring-green-500/25';
+            if (tone === 'down') return 'ring-2 ring-red-500/25';
+            return '';
         }
     }
 }).mount('#app');
