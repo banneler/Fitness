@@ -73,6 +73,15 @@
         .comment-gif { display: block; }
         .comment-text { white-space: pre-wrap; }
         .pr-card-glow { box-shadow: 0 0 30px rgba(250, 204, 21, 0.08); }
+        .leader-avatar-crown {
+            position: absolute;
+            top: -1.25rem;
+            left: 50%;
+            transform: translateX(calc(-50% - 0.125rem)) rotate(12deg);
+            z-index: 10;
+            pointer-events: none;
+            filter: drop-shadow(0 4px 3px rgb(0 0 0 / 0.25));
+        }
     </style>
 </head>
 <body class="font-sans antialiased bg-slate-950">
@@ -221,7 +230,7 @@
                             <img v-if="user.avatar_url" :src="user.avatar_url" class="w-full h-full object-cover">
                             <span v-else class="font-black text-slate-500">{{ user.initials || '??' }}</span>
                         </div>
-                        <div v-show="index === 0" class="absolute -top-5 left-1/2 -translate-x-1/2 -translate-x-0.5 text-2xl rotate-12 z-10 drop-shadow-md pointer-events-none">👑</div>
+                        <div v-show="index === 0" class="leader-avatar-crown text-2xl leading-none select-none">👑</div>
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 flex-wrap">
