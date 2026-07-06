@@ -15,16 +15,11 @@
     <script>
         (function () {
             function syncAppHeight() {
-                var vv = window.visualViewport;
-                var h = vv ? vv.height : window.innerHeight;
-                var top = vv ? vv.offsetTop : 0;
-                document.documentElement.style.setProperty('--app-height', h + 'px');
-                document.documentElement.style.setProperty('--app-top', top + 'px');
+                document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
             }
             syncAppHeight();
             window.addEventListener('resize', syncAppHeight);
             window.addEventListener('orientationchange', function () { setTimeout(syncAppHeight, 150); });
-            if (window.visualViewport) window.visualViewport.addEventListener('resize', syncAppHeight);
         })();
     </script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
@@ -56,7 +51,7 @@
         }
         #app {
             position: fixed;
-            top: var(--app-top, 0px);
+            top: 0;
             left: 0;
             width: 100%;
             height: var(--app-height);
@@ -69,7 +64,7 @@
             position: fixed;
             left: 0;
             right: 0;
-            bottom: 0;
+            bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
             z-index: 40;
             background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(20px);
