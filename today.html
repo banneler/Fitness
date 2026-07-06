@@ -23,6 +23,7 @@
     <script src="js/routine-library.js"></script>
     <script src="js/heatmap.js"></script>
     <script src="js/social.js"></script>
+    <script src="js/arena-history.js"></script>
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
@@ -300,7 +301,7 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <a href="leaderboard.html" class="text-[9px] font-black uppercase text-slate-500 hover:text-pink-400 tracking-wider">The Arena →</a>
-                    <a href="prs.html" class="text-[9px] font-black uppercase text-yellow-500/80 hover:text-yellow-400 tracking-wider">Weekly PRs →</a>
+                    <a href="leaderboard.html?tab=prs" class="text-[9px] font-black uppercase text-yellow-500/80 hover:text-yellow-400 tracking-wider">Weekly PRs →</a>
                 </div>
             </div>
             <div class="space-y-3">
@@ -705,6 +706,8 @@
                     _client.from('profiles').select('id, full_name, initials')
                 ]);
                 if (error || !leaderboard?.length) return;
+
+                await FitnessArenaHistory.recordChanges(_client, leaderboard);
 
                 const profileMap = {};
                 (profiles || []).forEach(p => { profileMap[p.id] = p; });

@@ -39,7 +39,12 @@ Community tally of personal records hit this week — confetti on open, likes, c
 
 **One-time setup:** run `supabase/arena_prs_schema.sql` in the Supabase SQL Editor (after `social_schema.sql`). Creates `arena_pr_events`, PR likes/comments, and comment-like tables. Without it, the PR page falls back to computing PRs from `workout_logs` for the current week (no social on PR cards).
 
-PRs are recorded automatically when you finish a workout session.
+PRs are recorded automatically when you finish a workout session. Open **PRs** as the fourth tab on the Arena leaderboard (confetti on first open).
+
+### Rank history (gold cup)
+The **🏆 History** button on the Arena header opens a timeline of crown changes and rank shifts across Volume, Consistency, and Streak.
+
+**One-time setup:** run `supabase/arena_history_schema.sql` for shared community history. Without it, events are recorded locally on each device when someone opens the Arena or Today page.
 
 ### Arena Cheers on Today
 The **Today** page shows recent likes and comments from the last 7 days when buddies interact with your leaderboard row (volume, consistency, or streak).

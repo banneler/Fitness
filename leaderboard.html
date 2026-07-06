@@ -18,7 +18,9 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="js/giphy-config.js"></script>
     <script src="js/social.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="js/arena-prs.js"></script>
+    <script src="js/arena-history.js"></script>
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
@@ -68,6 +70,7 @@
         .tab-active i { stroke-width: 3px; filter: drop-shadow(0 0 8px #a855f7); }
         .comment-gif { display: block; }
         .comment-text { white-space: pre-wrap; }
+        .pr-card-glow { box-shadow: 0 0 30px rgba(250, 204, 21, 0.08); }
     </style>
 </head>
 <body class="font-sans antialiased bg-slate-950">
@@ -109,21 +112,104 @@
             </h1>
             <p class="text-[8px] font-bold text-slate-500 uppercase tracking-[0.3em]">Last 7 Days Performance</p>
         </div>
-        <a href="prs.html" class="flex flex-col items-center gap-1 px-3 py-2 rounded-2xl bg-yellow-500/10 border border-yellow-500/25 text-yellow-400 active:scale-95 transition-all">
+        <a href="arena-history.html" class="flex flex-col items-center gap-1 px-3 py-2 rounded-2xl bg-yellow-500/10 border border-yellow-500/25 text-yellow-400 active:scale-95 transition-all" title="Rank history">
             <span class="text-lg leading-none">🏆</span>
-            <span class="text-[7px] font-black uppercase tracking-widest">PRs</span>
+            <span class="text-[7px] font-black uppercase tracking-widest">History</span>
         </a>
     </header>
 
     <main class="space-y-4">
         <div class="glass p-1 rounded-xl flex mb-6">
-            <button @click="setMetric('volume')" class="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all" :class="metric === 'volume' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500'">Volume</button>
-            <button @click="setMetric('sessions')" class="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all" :class="metric === 'sessions' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500'">Consistency</button>
-            <button @click="setMetric('streak')" class="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1" :class="metric === 'streak' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-500'">
+            <button @click="setMetric('volume')" class="flex-1 py-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all" :class="metric === 'volume' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500'">Volume</button>
+            <button @click="setMetric('sessions')" class="flex-1 py-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all" :class="metric === 'sessions' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500'">Consistency</button>
+            <button @click="setMetric('streak')" class="flex-1 py-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1" :class="metric === 'streak' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-500'">
                 <span v-if="metric === 'streak'">🔥</span> Streak
+            </button>
+            <button @click="setMetric('prs')" class="flex-1 py-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1" :class="metric === 'prs' ? 'bg-yellow-500 text-slate-950 shadow-lg' : 'text-slate-500'">
+                <span>🏆</span> PRs
             </button>
         </div>
 
+        <template v-if="metric === 'prs'">
+            <p v-if="prSocialUnavailable" class="text-[10px] text-amber-500/80 font-bold uppercase tracking-wider text-center px-4 mb-2">
+                Run supabase/arena_prs_schema.sql for cheers & comments on PRs
+            </p>
+            <p v-else-if="prComputedFallback" class="text-[10px] text-slate-500 font-bold uppercase tracking-wider text-center px-4 mb-2">
+                Live tally from workout logs this week
+            </p>
+
+            <div v-if="prEvents.length === 0" class="glass rounded-3xl p-10 text-center">
+                <p class="text-sm font-black italic text-slate-400 uppercase">No PRs yet this week</p>
+                <p class="text-[10px] text-slate-600 mt-2 uppercase tracking-wider">Hit a new max and claim the board</p>
+            </div>
+
+            <div v-for="pr in prEvents" :key="pr.id" class="glass rounded-3xl p-5 pr-card-glow border border-yellow-500/10 mb-4">
+                <div class="flex items-start gap-4 mb-4">
+                    <div class="w-11 h-11 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-[10px] font-black text-slate-400 flex-shrink-0">{{ prInitials(pr.user_id) }}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-black italic uppercase text-white text-sm">{{ prName(pr.user_id) }}</span>
+                            <span v-if="pr.user_id === session?.user?.id" class="text-[8px] bg-white/10 px-1.5 py-0.5 rounded text-slate-400 font-bold uppercase">You</span>
+                        </div>
+                        <p class="text-[10px] font-black uppercase tracking-wider text-yellow-400/90 mt-0.5">{{ pr.exercise_name }}</p>
+                        <p class="text-[8px] text-slate-600 font-bold uppercase tracking-widest mt-1">{{ prFormatWhen(pr.achieved_at) }}</p>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <div class="text-2xl font-black italic text-yellow-400 leading-none">{{ formatNumber(pr.weight) }}</div>
+                        <div class="text-[8px] text-slate-500 font-bold uppercase tracking-widest">LBS × {{ pr.reps || '—' }}</div>
+                        <div v-if="prDelta(pr)" class="text-[9px] font-black text-green-400 mt-1">{{ prDelta(pr) }}</div>
+                    </div>
+                </div>
+                <div v-if="session && !pr._computed" class="flex items-center gap-2 pt-3 border-t border-white/5">
+                    <button @click="togglePrLike(pr)" :disabled="socialBusy" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/50 border border-white/5 transition-all active:scale-95 disabled:opacity-50" :class="isPrLiked(pr.id) ? 'like-btn-active border-pink-500/30' : 'text-slate-400 hover:text-pink-400'">
+                        <i data-lucide="heart" class="w-4 h-4"></i>
+                        <span class="text-[10px] font-black">{{ prLikeCount(pr.id) || '' }}</span>
+                    </button>
+                    <button @click="togglePrComments(pr.id)" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/50 border border-white/5 text-slate-400 hover:text-blue-400 transition-all active:scale-95">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i>
+                        <span class="text-[10px] font-black">{{ prCommentCount(pr.id) || '' }}</span>
+                    </button>
+                </div>
+                <div v-if="expandedPr === pr.id && !pr._computed" class="space-y-3 pt-3 mt-1">
+                    <div v-if="commentThreadsForPr(pr.id).length === 0" class="text-[10px] text-slate-600 italic px-1">Be the first to hype this PR!</div>
+                    <template v-for="comment in commentThreadsForPr(pr.id)" :key="comment.id">
+                        <div class="flex gap-2 items-start">
+                            <div class="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-[9px] font-black text-slate-400 flex-shrink-0">{{ prInitials(comment.author_user_id) }}</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-baseline gap-2">
+                                    <span class="text-[10px] font-black text-slate-300 uppercase">{{ prName(comment.author_user_id) }}</span>
+                                    <span class="text-[8px] text-slate-600">{{ prFormatWhen(comment.created_at) }}</span>
+                                </div>
+                                <div class="text-xs text-slate-400 break-words" v-html="renderCommentHtml(comment.body)"></div>
+                                <div v-if="session" class="flex items-center gap-3 mt-1.5">
+                                    <button @click="togglePrCommentLike(comment.id)" :disabled="socialBusy" class="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider transition-colors" :class="isPrCommentLiked(comment.id) ? 'text-pink-400' : 'text-slate-500 hover:text-pink-400'">
+                                        <i data-lucide="heart" class="w-3 h-3"></i>
+                                        {{ prCommentLikeCount(comment.id) || '' }}
+                                    </button>
+                                    <button @click="startPrReply(pr.id, comment.id)" class="text-[9px] font-black uppercase tracking-wider text-slate-500 hover:text-blue-400">Reply</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-for="reply in comment.replies" :key="reply.id" class="flex gap-2 items-start ml-8">
+                            <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[8px] font-black text-slate-500 flex-shrink-0">{{ prInitials(reply.author_user_id) }}</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs text-slate-500 break-words" v-html="renderCommentHtml(reply.body)"></div>
+                                <button v-if="session" @click="togglePrCommentLike(reply.id)" :disabled="socialBusy" class="flex items-center gap-1 mt-1 text-[9px] font-black uppercase tracking-wider transition-colors" :class="isPrCommentLiked(reply.id) ? 'text-pink-400' : 'text-slate-500 hover:text-pink-400'">
+                                    <i data-lucide="heart" class="w-3 h-3"></i>
+                                    {{ prCommentLikeCount(reply.id) || '' }}
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                    <div v-if="session" class="flex gap-2">
+                        <input v-model="prCommentDraft[pr.id]" @keyup.enter="postPrComment(pr.id)" maxlength="280" placeholder="Celebrate this PR..." class="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-yellow-500">
+                        <button @click="postPrComment(pr.id)" :disabled="!canPostPrComment(pr.id) || socialBusy" class="px-4 py-2 rounded-xl bg-yellow-500 text-slate-950 text-[10px] font-black uppercase disabled:opacity-40">Post</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template v-else>
         <p v-if="socialUnavailable" class="text-[10px] text-amber-500/80 font-bold uppercase tracking-wider text-center px-4">
             Cheers & comments need the arena tables — run supabase/social_schema.sql
         </p>
@@ -231,6 +317,7 @@
                 </div>
             </div>
         </div>
+        </template>
     </main>
 
     <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex justify-between px-6 py-4 safe-area-bottom z-[100]">
@@ -294,7 +381,19 @@
                 gifResults: [],
                 gifLoading: false,
                 gifSearchTimer: null,
-                FitnessSocial
+                FitnessSocial,
+                prEvents: [],
+                prLikes: [],
+                prComments: [],
+                prCommentLikeCounts: {},
+                myPrLikes: new Set(),
+                myPrCommentLikes: new Set(),
+                prCommentDraft: {},
+                prReplyParent: {},
+                expandedPr: null,
+                prSocialUnavailable: false,
+                prComputedFallback: false,
+                prConfettiFired: false
             };
         },
         computed: {
@@ -314,22 +413,54 @@
                     counts[row.target_user_id] = (counts[row.target_user_id] || 0) + 1;
                 });
                 return counts;
+            },
+            prCommentsByPr() {
+                const map = {};
+                this.prComments.forEach(c => {
+                    if (!map[c.pr_id]) map[c.pr_id] = [];
+                    map[c.pr_id].push(c);
+                });
+                return map;
+            },
+            prLikeCounts() {
+                const c = {};
+                this.prLikes.forEach(r => { c[r.pr_id] = (c[r.pr_id] || 0) + 1; });
+                return c;
             }
         },
         watch: {
-            metric() {
+            metric(m) {
                 this.expandedUser = null;
-                this.fetchSocial();
+                if (m === 'prs') {
+                    this.fetchPrFeed();
+                    if (!this.prConfettiFired) {
+                        FitnessArenaPrs.fireConfettiCanon();
+                        this.prConfettiFired = true;
+                    }
+                } else {
+                    this.fetchSocial();
+                }
             }
         },
         async mounted() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('tab') === 'prs') this.metric = 'prs';
+
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
-            await Promise.all([this.fetchLeaderboard(), this.fetchProfiles(), this.fetchSocial()]);
+            await Promise.all([this.fetchLeaderboard(), this.fetchProfiles()]);
+            await FitnessArenaHistory.recordChanges(_client, this.users);
+            if (this.metric === 'prs') {
+                await this.fetchPrFeed();
+                FitnessArenaPrs.fireConfettiCanon();
+                this.prConfettiFired = true;
+            } else {
+                await this.fetchSocial();
+            }
             this.$nextTick(() => {
                 lucide.createIcons();
-                this.maybeShowCoronation();
+                if (this.metric !== 'prs') this.maybeShowCoronation();
             });
         },
         updated() { this.$nextTick(() => lucide.createIcons()); },
@@ -337,10 +468,10 @@
             setMetric(m) {
                 if (this.metric === m) return;
                 this.metric = m;
-                this.$nextTick(() => this.maybeShowCoronation());
+                if (m !== 'prs') this.$nextTick(() => this.maybeShowCoronation());
             },
             maybeShowCoronation() {
-                if (!this.session || !this.users.length) return;
+                if (!this.session || !this.users.length || this.metric === 'prs') return;
                 if (!FitnessSocial.isArenaLeader(this.users, this.session.user.id, this.metric)) return;
                 this.showCoronation(FitnessSocial.buildCoronationEvent(this.metric));
             },
@@ -365,7 +496,7 @@
                 this.profileMap = map;
             },
             async fetchSocial() {
-                if (!this.session) return;
+                if (!this.session || this.metric === 'prs') return;
                 const [likesRes, commentsRes, commentLikesRes] = await Promise.all([
                     _client.from('arena_likes').select('id, target_user_id, actor_user_id, context').eq('context', this.metric),
                     _client.from('arena_comments').select('id, target_user_id, author_user_id, parent_id, body, created_at, context').eq('context', this.metric).order('created_at', { ascending: true }),
@@ -606,6 +737,109 @@
                 if (index === 1) return 'silver-text';
                 if (index === 2) return 'bronze-text';
                 return 'text-slate-600';
+            },
+            async fetchPrFeed() {
+                const result = await FitnessArenaPrs.fetchWeeklyFeed(_client, this.profileMap);
+                if (result.tableMissing) {
+                    this.prSocialUnavailable = true;
+                    this.prEvents = [];
+                    return;
+                }
+                if (Array.isArray(result)) {
+                    this.prEvents = result;
+                } else {
+                    this.prEvents = result.events || [];
+                    this.prComputedFallback = !!result.computedFallback;
+                }
+                await this.fetchPrSocial();
+            },
+            async fetchPrSocial() {
+                if (this.prSocialUnavailable || !this.session) return;
+                const [likesRes, commentsRes, clRes] = await Promise.all([
+                    _client.from('arena_pr_likes').select('id, pr_id, actor_user_id'),
+                    _client.from('arena_pr_comments').select('id, pr_id, author_user_id, parent_id, body, created_at').order('created_at', { ascending: true }),
+                    _client.from('arena_pr_comment_likes').select('comment_id, actor_user_id')
+                ]);
+                if (likesRes.error?.code === '42P01') {
+                    this.prSocialUnavailable = true;
+                    return;
+                }
+                this.prLikes = likesRes.data || [];
+                this.prComments = commentsRes.data || [];
+                const clState = FitnessSocial.buildCommentLikeState(clRes.data || [], this.session.user.id);
+                this.prCommentLikeCounts = clState.counts;
+                this.myPrCommentLikes = clState.mine;
+                const mine = new Set();
+                this.prLikes.forEach(r => {
+                    if (r.actor_user_id === this.session.user.id) mine.add(r.pr_id);
+                });
+                this.myPrLikes = mine;
+            },
+            prName(uid) { return this.profileMap[uid]?.full_name || 'Athlete'; },
+            prInitials(uid) { return this.profileMap[uid]?.initials || '??'; },
+            prFormatWhen(iso) { return FitnessSocial.formatCommentTime(iso); },
+            prDelta(pr) { return FitnessArenaPrs.formatPrDelta(pr.weight, pr.previous_weight); },
+            isPrLiked(prId) { return this.myPrLikes.has(prId); },
+            prLikeCount(prId) { return this.prLikeCounts[prId] || 0; },
+            prCommentCount(prId) { return (this.prCommentsByPr[prId] || []).length; },
+            commentThreadsForPr(prId) {
+                return FitnessSocial.buildCommentThreads(this.prCommentsByPr[prId] || []);
+            },
+            isPrCommentLiked(id) { return this.myPrCommentLikes.has(id); },
+            prCommentLikeCount(id) { return this.prCommentLikeCounts?.[id] || 0; },
+            togglePrComments(prId) { this.expandedPr = this.expandedPr === prId ? null : prId; },
+            startPrReply(prId, parentId) {
+                this.prReplyParent[prId] = parentId;
+                this.expandedPr = prId;
+            },
+            canPostPrComment(prId) {
+                return FitnessSocial.commentHasContent(this.prCommentDraft[prId] || '');
+            },
+            async togglePrLike(pr) {
+                if (!this.session || this.socialBusy || pr._computed) return;
+                this.socialBusy = true;
+                try {
+                    if (this.myPrLikes.has(pr.id)) {
+                        await _client.from('arena_pr_likes').delete().eq('pr_id', pr.id).eq('actor_user_id', this.session.user.id);
+                    } else {
+                        await _client.from('arena_pr_likes').insert({ pr_id: pr.id, actor_user_id: this.session.user.id });
+                    }
+                    await this.fetchPrSocial();
+                } catch (e) { console.error(e); }
+                this.socialBusy = false;
+            },
+            async togglePrCommentLike(commentId) {
+                if (!this.session || this.socialBusy) return;
+                this.socialBusy = true;
+                try {
+                    if (this.myPrCommentLikes.has(commentId)) {
+                        await _client.from('arena_pr_comment_likes').delete().eq('comment_id', commentId).eq('actor_user_id', this.session.user.id);
+                    } else {
+                        await _client.from('arena_pr_comment_likes').insert({ comment_id: commentId, actor_user_id: this.session.user.id });
+                    }
+                    await this.fetchPrSocial();
+                } catch (e) { console.error(e); }
+                this.socialBusy = false;
+            },
+            async postPrComment(prId) {
+                const body = (this.prCommentDraft[prId] || '').trim();
+                if (!FitnessSocial.commentHasContent(body) || !this.session) return;
+                this.socialBusy = true;
+                try {
+                    const row = {
+                        pr_id: prId,
+                        author_user_id: this.session.user.id,
+                        body
+                    };
+                    if (this.prReplyParent[prId]) row.parent_id = this.prReplyParent[prId];
+                    const { error } = await _client.from('arena_pr_comments').insert(row);
+                    if (error) throw error;
+                    this.prCommentDraft[prId] = '';
+                    this.prReplyParent[prId] = null;
+                    this.expandedPr = prId;
+                    await this.fetchPrSocial();
+                } catch (e) { console.error(e); }
+                this.socialBusy = false;
             }
         }
     }).mount('#app');
