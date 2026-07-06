@@ -439,10 +439,12 @@
             }
         },
         async mounted() {
-            if (!FitnessUserPrefs.guardPage('kitchen')) return;
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
+
+            await FitnessUserPrefs.hydrate(_client, session.user.id);
+            if (!FitnessUserPrefs.guardPage('kitchen')) return;
 
             await Promise.all([
                 this.initMemory(), 

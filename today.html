@@ -528,10 +528,6 @@
 </div>
 
 <script>
-    FitnessBottomNav.mount('app-bottom-nav', 'today');
-</script>
-
-<script>
     const { createApp } = Vue;
     const _client = supabase.createClient(
         'https://mvoyrchefjcpjkdtezmz.supabase.co', 
@@ -622,6 +618,8 @@
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
+            this.prefs = await FitnessUserPrefs.hydrate(_client, session.user.id);
+            FitnessBottomNav.mount('app-bottom-nav', 'today');
 
             // Check for active session for banner
             const saved = localStorage.getItem('constellation_active_session');
@@ -797,14 +795,15 @@
                 const { error } = await _client.from('profiles').update({
                     full_name: this.profile.full_name,
                     initials: this.profile.initials.toUpperCase(),
-                    avatar_url: this.profile.avatar_url
+                    avatar_url: this.profile.avatar_url,
+                    layout_prefs: this.prefs
                 }).eq('id', this.session.user.id);
 
                 if (!error) {
                     this.showToast('Settings Saved', 'Profile and layout updated.');
                     this.showSettingsModal = false;
                 } else {
-                    this.showToast('Error', 'Layout saved locally; profile could not sync.');
+                    this.showToast('Error', 'Layout saved on device; cloud sync failed.');
                     this.showSettingsModal = false;
                 }
             },

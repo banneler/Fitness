@@ -611,10 +611,12 @@
             showMvmtList(val) { if(val) this.$nextTick(() => lucide.createIcons()); }
         },
         async mounted() {
-            if (!FitnessUserPrefs.guardPage('tracker')) return;
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
+
+            await FitnessUserPrefs.hydrate(_client, session.user.id);
+            if (!FitnessUserPrefs.guardPage('tracker')) return;
             const { data: profile } = await _client.from('profiles').select('full_name').eq('id', session.user.id).single();
             this.profileName = profile?.full_name || '';
             await Promise.all([this.fetchDailyMetrics(), this.fetchWeeklyLogs(), this.fetchWorkouts(), this.fetchBodyHistory(), this.fetchLibrary()]);

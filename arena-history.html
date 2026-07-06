@@ -103,9 +103,11 @@ createApp({
         }
     },
     async mounted() {
-        if (!FitnessUserPrefs.guardPage('arena')) return;
         const { data: { session } } = await _client.auth.getSession();
         if (!session) { window.location.href = 'index.html'; return; }
+
+        await FitnessUserPrefs.hydrate(_client, session.user.id);
+        if (!FitnessUserPrefs.guardPage('arena')) return;
 
         const { data: profiles } = await _client.from('profiles').select('id, full_name, initials, avatar_url');
         const map = {};

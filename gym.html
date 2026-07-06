@@ -315,7 +315,6 @@
         },
         methods: {
             async boot() {
-                if (!FitnessUserPrefs.guardPage('gym')) return;
                 this.loading = true;
                 this.bootReady = false;
                 this.bootError = null;
@@ -327,6 +326,9 @@
                     const { data: { session }, error } = await _client.auth.getSession();
                     if (error || !session) { window.location.href = 'index.html'; return; }
                     this.session = session;
+
+                    await FitnessUserPrefs.hydrate(_client, session.user.id);
+                    if (!FitnessUserPrefs.guardPage('gym')) return;
 
                     const saved = localStorage.getItem('constellation_active_session');
                     if (saved) {

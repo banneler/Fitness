@@ -435,13 +435,16 @@
             }
         },
         async mounted() {
-            if (!FitnessUserPrefs.guardPage('arena')) return;
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('tab') === 'prs') this.metric = 'prs';
-
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
+
+            await FitnessUserPrefs.hydrate(_client, session.user.id);
+            if (!FitnessUserPrefs.guardPage('arena')) return;
+
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('tab') === 'prs') this.metric = 'prs';
+
             await Promise.all([this.fetchLeaderboard(), this.fetchProfiles()]);
             await FitnessArenaHistory.seedOpeningBoardIfEmpty(_client, this.users);
             await FitnessArenaHistory.recordChanges(_client, this.users);
