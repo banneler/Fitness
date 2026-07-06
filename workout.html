@@ -8,8 +8,19 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script>
+        (function () {
+            function syncAppHeight() {
+                document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+            }
+            syncAppHeight();
+            window.addEventListener('resize', syncAppHeight);
+            window.addEventListener('orientationchange', function () { setTimeout(syncAppHeight, 150); });
+            if (window.visualViewport) window.visualViewport.addEventListener('resize', syncAppHeight);
+        })();
+    </script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -25,29 +36,43 @@
 
     <style>
         [v-cloak] { display: none !important; }
+        :root { --app-height: 100vh; --app-height: 100dvh; }
         html, body {
-            height: 100%;
+            margin: 0;
+            padding: 0;
+            height: var(--app-height);
             overflow: hidden;
-        }
-        @supports (height: 100dvh) {
-            html, body { height: 100dvh; }
+            background-color: #020617;
         }
         body {
-            background-color: #020617;
             color: white;
             -webkit-tap-highlight-color: transparent;
-            margin: 0;
-            min-height: -webkit-fill-available;
         }
         #app {
             position: fixed;
-            inset: 0;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--app-height);
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            background-color: #020617;
         }
-        .workout-footer-safe {
-            padding-bottom: env(safe-area-inset-bottom, 0px);
+        .workout-footer-bar {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 40;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 0.75rem 1.5rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+        }
+        #session-container {
+            padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
         }
         
         .glass-solid { background: #020617; border-bottom: 1px solid rgba(255,255,255,0.08); }
@@ -100,7 +125,7 @@
         </div>
     </header>
 
-    <main class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain p-4 space-y-6 scroll-smooth no-scrollbar pb-2" id="session-container">
+    <main class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain p-4 space-y-6 scroll-smooth no-scrollbar" id="session-container">
         
         <div v-for="(group, groupIdx) in activeRoutine.data" 
              :key="groupIdx" 
@@ -190,8 +215,7 @@
 
     </main>
 
-    <footer class="workout-footer-safe flex-shrink-0 z-40">
-        <div class="glass px-6 pt-3 pb-2 border-t border-white/5">
+    <footer class="workout-footer-bar">
             <div class="grid grid-cols-4 gap-2 mb-1.5">
             <button @click="prevExercise" :disabled="activeExerciseIdx === 0" class="col-span-1 h-12 rounded-2xl bg-slate-800/80 flex items-center justify-center text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
             <button v-if="activeExerciseIdx < activeRoutine.data.length - 1" @click="nextExercise" class="col-span-2 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black uppercase tracking-wider text-sm shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Next</button>
@@ -203,7 +227,6 @@
             </button>
             </div>
             <button @click="exitModal = true" class="w-full py-1.5 text-[10px] text-slate-500 font-black uppercase hover:text-white transition-colors">Exit Workout</button>
-        </div>
     </footer>
 
     <teleport to="body">
