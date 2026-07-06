@@ -8,6 +8,10 @@ const FitnessHeatmap = {
     GYM_VIEWBOX: '0 95 612 635',
     /** Share card viewBox — shifted up vs gym so the crown isn't clipped at y=130 */
     SHARE_VIEWBOX: '0 95 612 635',
+    /** Head slot on body-map.svg (center crown) */
+    AVATAR_FACE: { cx: 306, cy: 178, r: 62 },
+    GYM_RENDER_HEIGHT: 300,
+    GYM_VIEWBOX_RECT: { x: 0, y: 95, w: 612, h: 635 },
     _bodyMapSvg: null,
 
     defaultStatuses() {
@@ -83,27 +87,73 @@ const FitnessHeatmap = {
         return css;
     },
 
+    buildAvatarFaceMarkup(avatarUrl) {
+        if (!avatarUrl) return '';
+        const { cx, cy, r } = this.AVATAR_FACE;
+        const size = r * 2;
+        const x = cx - r;
+        const y = cy - r;
+        const href = String(avatarUrl).replace(/"/g, '&quot;');
+        return `<defs><clipPath id="avatarFaceClip"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath></defs>`
+            + `<g id="AvatarFace" pointer-events="none">`
+            + `<circle cx="${cx}" cy="${cy}" r="${r + 2}" fill="none" stroke="rgba(59,130,246,0.45)" stroke-width="2.5"/>`
+            + `<image href="${href}" xlink:href="${href}" x="${x}" y="${y}" width="${size}" height="${size}" clip-path="url(#avatarFaceClip)" preserveAspectRatio="xMidYMid slice"/>`
+            + `</g>`;
+    },
+
+    heatmapFaceContainerStyle(renderHeight = this.GYM_RENDER_HEIGHT) {
+        const vb = this.GYM_VIEWBOX_RECT;
+        const scale = renderHeight / vb.h;
+        return {
+            width: `${Math.round(vb.w * scale)}px`,
+            height: `${renderHeight}px`
+        };
+    },
+
+    heatmapFaceOverlayStyle(renderHeight = this.GYM_RENDER_HEIGHT) {
+        const { cx, cy, r } = this.AVATAR_FACE;
+        const vb = this.GYM_VIEWBOX_RECT;
+        const scale = renderHeight / vb.h;
+        const size = Math.round(r * 2 * scale);
+        return {
+            left: `${Math.round((cx - r) * scale)}px`,
+            top: `${Math.round((cy - r - vb.y) * scale)}px`,
+            width: `${size}px`,
+            height: `${size}px`,
+            zIndex: 30
+        };
+    },
+
+    finalizeBodySvg(raw, { viewBox, svgStyle, statusStyles, avatarUrl, preserveAspectRatio = 'xMidYMin meet' }) {
+        const face = avatarUrl ? this.buildAvatarFaceMarkup(avatarUrl) : '';
+        return raw
+            .replace(
+                'viewBox="0 130 612 590"',
+                `viewBox="${viewBox}" preserveAspectRatio="${preserveAspectRatio}" style="${svgStyle}"`
+            )
+            .replace('</svg>', `<style>${statusStyles}</style>${face}</svg>`);
+    },
+
     async buildGymBodySvgHtml(statuses) {
         const raw = await this.loadBodyMapSvg();
         const style = this.buildGymStatusStyles(statuses || this.defaultStatuses());
-        return raw
-            .replace(
-                'viewBox="0 130 612 590"',
-                `viewBox="${this.GYM_VIEWBOX}" preserveAspectRatio="xMidYMin meet" style="height:300px;width:auto;display:block;margin:0 auto;overflow:visible;filter:drop-shadow(0 0 25px rgba(59,130,246,0.4))"`
-            )
-            .replace('</svg>', `<style>${style}</style></svg>`);
+        return this.finalizeBodySvg(raw, {
+            viewBox: this.GYM_VIEWBOX,
+            svgStyle: 'height:300px;width:100%;display:block;margin:0 auto;overflow:visible;filter:drop-shadow(0 0 25px rgba(59,130,246,0.4))',
+            statusStyles: style
+        });
     },
 
-    async buildBodySvgHtml(statuses) {
+    async buildBodySvgHtml(statuses, avatarUrl) {
         const raw = await this.loadBodyMapSvg();
         const style = this.buildStatusStyles(statuses || this.defaultStatuses());
-        const vb = this.SHARE_VIEWBOX;
-        return raw
-            .replace(
-                'viewBox="0 130 612 590"',
-                `viewBox="${vb}" preserveAspectRatio="xMidYMid meet" style="width:100%;max-width:300px;height:auto;display:block;margin:0 auto;overflow:visible;filter:drop-shadow(0 0 16px rgba(59,130,246,0.35))"`
-            )
-            .replace('</svg>', `<style>${style}</style></svg>`);
+        return this.finalizeBodySvg(raw, {
+            viewBox: this.SHARE_VIEWBOX,
+            svgStyle: 'width:100%;max-width:300px;height:auto;display:block;margin:0 auto;overflow:visible;filter:drop-shadow(0 0 16px rgba(59,130,246,0.35))',
+            statusStyles: style,
+            avatarUrl,
+            preserveAspectRatio: 'xMidYMid meet'
+        });
     },
 
     legendHtml(statuses) {
