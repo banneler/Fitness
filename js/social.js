@@ -498,7 +498,10 @@ const FitnessSocial = {
         let animalRowHtml = '';
         if (typeof FitnessAnimalVolume !== 'undefined' && options.tonnage) {
             try {
-                animalRowHtml = await FitnessAnimalVolume.buildShareRowHtml(options.tonnage);
+                animalRowHtml = await FitnessAnimalVolume.buildShareRowHtml(
+                    options.tonnage,
+                    options.animalSeed
+                );
             } catch (e) {
                 console.warn('Animal volume row unavailable', e);
             }

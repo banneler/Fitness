@@ -709,6 +709,7 @@
                     athleteName: this.profile.full_name,
                     streak: this.streak,
                     heatmapStatuses: this.muscleHeatmap,
+                    animalSeed: this.getLocalMidnightISO().slice(0, 10),
                     ...stats
                 });
                 if (result === 'shared-image') this.showToast('Sent!', 'Recap card shared with your crew.');
@@ -989,7 +990,10 @@
                 });
                 this.totalVolume = vol;
                 this.animalRowHtml = typeof FitnessAnimalVolume !== 'undefined'
-                    ? FitnessAnimalVolume.buildPageRowHtml(FitnessAnimalVolume.computeBreakdown(vol))
+                    ? FitnessAnimalVolume.buildPageRowHtml(
+                        FitnessAnimalVolume.computeBreakdown(vol),
+                        this.getLocalMidnightISO().slice(0, 10)
+                    )
                     : '';
             },
             async saveWater(level) {

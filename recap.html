@@ -152,7 +152,8 @@ createApp({
                 exerciseCount: stats.exerciseCount,
                 liftLines: stats.liftLines,
                 streak,
-                heatmapStatuses
+                heatmapStatuses,
+                animalSeed: startTime
             };
 
             const enriched = await FitnessSocial.enrichShareOptions(this.sharePayload);
