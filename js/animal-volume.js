@@ -9,9 +9,11 @@ const FitnessAnimalVolume = {
     },
 
     /** Match heatmap body-map glow (js/heatmap.js) */
-    GLOW_PAGE: 'drop-shadow(0 0 12px rgba(59,130,246,0.45))',
-    GLOW_SHARE: 'drop-shadow(0 0 10px rgba(59,130,246,0.4))',
+    GLOW_PAGE: 'drop-shadow(0 0 16px rgba(59,130,246,0.5))',
+    GLOW_SHARE: 'drop-shadow(0 0 14px rgba(59,130,246,0.45))',
     FILL: '#3b82f6',
+    SIZE_PAGE: 40,
+    SIZE_SHARE: 34,
 
     computeBreakdown(lbs) {
         const total = Math.max(0, Math.floor(parseFloat(lbs) || 0));
@@ -62,7 +64,7 @@ const FitnessAnimalVolume = {
         if (count <= 4) {
             return Array(count).fill(wrap(icon)).join('');
         }
-        return `<span style="display:inline-flex;align-items:center;gap:4px;line-height:0;overflow:visible;padding:3px;">${wrap(icon)}<span style="font-size:10px;font-weight:900;color:#94a3b8;letter-spacing:0.04em;">×${count}</span></span>`;
+        return `<span style="display:inline-flex;align-items:center;gap:4px;line-height:0;overflow:visible;padding:3px;">${wrap(icon)}<span style="font-size:11px;font-weight:900;color:#94a3b8;letter-spacing:0.04em;">×${count}</span></span>`;
     },
 
     _buildGroups(breakdown, svgs, sizePx, inline) {
@@ -86,8 +88,8 @@ const FitnessAnimalVolume = {
         ];
         const parts = groups
             .filter(t => breakdown[t.key] > 0)
-            .map(t => `<span class="inline-flex items-center gap-1">${this._glyphHtml(breakdown[t.key], t.file, 28, false)}</span>`);
-        return `<div class="flex flex-wrap items-center justify-center gap-3 overflow-visible py-1">${parts.join('')}</div>`;
+            .map(t => `<span class="inline-flex items-center gap-1">${this._glyphHtml(breakdown[t.key], t.file, this.SIZE_PAGE, false)}</span>`);
+        return `<div class="flex flex-wrap items-center justify-center gap-4 overflow-visible py-2">${parts.join('')}</div>`;
     },
 
     async buildShareRowHtml(lbs) {
@@ -98,10 +100,10 @@ const FitnessAnimalVolume = {
             this.loadSvg('elephant'),
             this.loadSvg('llama')
         ]);
-        const glyphs = this._buildGroups(breakdown, { whale, elephant, llama }, 22, true);
-        return `<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin-bottom:18px;padding:12px 14px;background:rgba(15,23,42,0.55);border-radius:14px;border:1px solid rgba(255,255,255,0.06);">
-            <div style="width:100%;font-size:7px;font-weight:900;color:#64748b;letter-spacing:0.22em;text-align:center;margin-bottom:8px;">ANIMAL NUMBER</div>
-            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;line-height:0;overflow:visible;padding:4px 0;">${glyphs}</div>
+        const glyphs = this._buildGroups(breakdown, { whale, elephant, llama }, this.SIZE_SHARE, true);
+        return `<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin-bottom:18px;padding:14px 16px;background:rgba(15,23,42,0.55);border-radius:14px;border:1px solid rgba(255,255,255,0.06);">
+            <div style="width:100%;font-size:7px;font-weight:900;color:#64748b;letter-spacing:0.22em;text-align:center;margin-bottom:10px;">ANIMAL NUMBER</div>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;line-height:0;overflow:visible;padding:6px 0;">${glyphs}</div>
         </div>`;
     }
 };
