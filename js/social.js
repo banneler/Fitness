@@ -441,7 +441,7 @@ const FitnessSocial = {
         return this.shareImageCard({ html, fallbackText, filename: 'ba-fitness-rank.png' });
     },
 
-    buildShareCardHtml({ athleteName, protocolName, durationSeconds, tonnage, setCount, exerciseCount, liftLines, streak, bodySvgHtml, heatmapStatuses }) {
+    buildShareCardHtml({ athleteName, protocolName, durationSeconds, tonnage, setCount, exerciseCount, liftLines, streak, bodySvgHtml, heatmapStatuses, animalRowHtml }) {
         const who = athleteName || 'Athlete';
         const proto = protocolName || 'Workout';
         const legend = typeof FitnessHeatmap !== 'undefined'
@@ -473,6 +473,8 @@ const FitnessSocial = {
                 ${liftRows}
             </div>` : ''}
 
+            ${animalRowHtml || ''}
+
             <div style="background:rgba(15,23,42,0.65);border-radius:18px;padding:16px;border:1px solid rgba(59,130,246,0.2);">
                 <div style="font-size:8px;font-weight:900;color:#3b82f6;letter-spacing:0.22em;margin-bottom:10px;">SYSTEM STATUS</div>
                 <div style="margin-bottom:10px;text-align:center;">${legend}</div>
@@ -493,7 +495,15 @@ const FitnessSocial = {
                 console.warn('Body map SVG unavailable', e);
             }
         }
-        return { ...options, heatmapStatuses, bodySvgHtml };
+        let animalRowHtml = '';
+        if (typeof FitnessAnimalVolume !== 'undefined' && options.tonnage) {
+            try {
+                animalRowHtml = await FitnessAnimalVolume.buildShareRowHtml(options.tonnage);
+            } catch (e) {
+                console.warn('Animal volume row unavailable', e);
+            }
+        }
+        return { ...options, heatmapStatuses, bodySvgHtml, animalRowHtml };
     },
 
     async captureShareCard(options) {

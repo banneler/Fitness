@@ -1,4 +1,4 @@
-const CACHE_NAME = 'constellation-v3.63';
+const CACHE_NAME = 'constellation-v3.65';
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -28,9 +28,13 @@ const CORE_ASSETS = [
   '/js/bottom-nav.js',
   '/js/exercise-library.js',
   '/body-map.svg',
+  '/whale.svg',
+  '/elephant.svg',
+  '/llama.svg',
   '/js/exercise-history.js',
   '/js/routine-library.js',
   '/js/heatmap.js',
+  '/js/animal-volume.js',
   'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/vue@3/dist/vue.global.prod.js',

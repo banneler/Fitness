@@ -23,6 +23,7 @@
     <script src="js/bottom-nav.js"></script>
     <script src="js/exercise-library.js"></script>
     <script src="js/heatmap.js"></script>
+    <script src="js/animal-volume.js"></script>
     <script src="js/social.js"></script>
     <style>
         [v-cloak] { display: none !important; }
@@ -330,6 +331,10 @@
                                 <i data-lucide="layers" class="w-3 h-3 text-slate-500"></i>
                                 <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">{{ session.exercises.size }} Ex • {{ session.setCount }} Sets</span>
                             </div>
+                        </div>
+                        <div v-if="sessionAnimalHtml(session)" class="mt-4 pt-4 border-t border-white/5">
+                            <div class="text-[7px] font-black uppercase tracking-[0.2em] text-slate-600 mb-2 text-center">Animal Number</div>
+                            <div v-html="sessionAnimalHtml(session)"></div>
                         </div>
                         <button @click="shareSessionWorkout(session)" class="mt-4 w-full py-3 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-blue-600/30">
                             <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
@@ -643,6 +648,10 @@
             },
             openRecap(session) {
                 window.location.href = `recap.html?t=${session.startTime}&id=${session.id}`;
+            },
+            sessionAnimalHtml(session) {
+                if (typeof FitnessAnimalVolume === 'undefined' || !session?.tonnage) return '';
+                return FitnessAnimalVolume.buildPageRowHtml(FitnessAnimalVolume.computeBreakdown(session.tonnage));
             },
             async shareSessionWorkout(session) {
                 const logs = this.sessionLogs(session);

@@ -24,6 +24,7 @@
     <script src="js/exercise-library.js"></script>
     <script src="js/routine-library.js"></script>
     <script src="js/heatmap.js"></script>
+    <script src="js/animal-volume.js"></script>
     <script src="js/social.js"></script>
     <script src="js/arena-history.js"></script>
     <style>
@@ -450,6 +451,14 @@
             </div>
         </div>
 
+        <div v-if="showAnimalCard" class="glass p-5 rounded-3xl border-t-4 border-t-violet-500">
+            <div class="flex items-center gap-2 mb-3 opacity-60">
+                <i data-lucide="paw-print" class="w-4 h-4 text-violet-400"></i>
+                <span class="text-[9px] font-black uppercase tracking-widest">Animal Number</span>
+            </div>
+            <div v-html="animalRowHtml"></div>
+        </div>
+
         <div v-if="prefs.today.hydration" class="glass p-6 rounded-[2rem] border-t-4 border-t-blue-500 shadow-xl">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-2 opacity-80">
@@ -556,6 +565,7 @@
                 proteinTarget: null,
                 proteinCurrent: 0,
                 totalVolume: 0,
+                animalRowHtml: '',
                 todayWorkoutLogs: [],
                 heatmapLogs: [],
                 libraryExercises: [],
@@ -612,6 +622,9 @@
             },
             showIronCard() {
                 return this.prefs.today.ironVolume && this.prefs.pages.gym;
+            },
+            showAnimalCard() {
+                return this.prefs.pages.gym && this.totalVolume > 0 && this.animalRowHtml;
             }
         },
         async mounted() {
@@ -975,6 +988,9 @@
                     });
                 });
                 this.totalVolume = vol;
+                this.animalRowHtml = typeof FitnessAnimalVolume !== 'undefined'
+                    ? FitnessAnimalVolume.buildPageRowHtml(FitnessAnimalVolume.computeBreakdown(vol))
+                    : '';
             },
             async saveWater(level) {
                 const newVal = this.metrics.water_intake === level ? 0 : level;
