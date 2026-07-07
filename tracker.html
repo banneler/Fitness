@@ -437,9 +437,9 @@
                 </div>
             </div>
         </transition>
-
-        <nav id="app-bottom-nav"></nav>
     </div>
+
+    <nav id="app-bottom-nav"></nav>
 </div>
 
 <script>
@@ -626,8 +626,10 @@
                 this.bodyMetrics = { waist: last.waist, chest: last.chest, arms: last.arms, thigh: last.thigh };
             }
             this.initialLoading = false;
-            FitnessBottomNav.mount('app-bottom-nav', 'tracker');
-            this.$nextTick(() => lucide.createIcons());
+            this.$nextTick(() => {
+                FitnessBottomNav.mount('app-bottom-nav', 'tracker');
+                lucide.createIcons();
+            });
         },
         updated() { lucide.createIcons(); },
         methods: {
