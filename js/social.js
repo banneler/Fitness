@@ -498,7 +498,7 @@ const FitnessSocial = {
         let animalRowHtml = '';
         if (typeof FitnessAnimalVolume !== 'undefined' && options.tonnage) {
             try {
-                animalRowHtml = await FitnessAnimalVolume.buildShareRowHtml(
+                animalRowHtml = FitnessAnimalVolume.buildShareRowHtml(
                     options.tonnage,
                     options.animalSeed
                 );
@@ -509,9 +509,24 @@ const FitnessSocial = {
         return { ...options, heatmapStatuses, bodySvgHtml, animalRowHtml };
     },
 
+    async enrichShareOptionsForCapture(options) {
+        const enriched = await this.enrichShareOptions(options);
+        if (typeof FitnessAnimalVolume !== 'undefined' && options.tonnage) {
+            try {
+                enriched.animalRowHtml = await FitnessAnimalVolume.buildShareRowHtmlForCapture(
+                    options.tonnage,
+                    options.animalSeed
+                );
+            } catch (e) {
+                console.warn('Animal volume capture row unavailable', e);
+            }
+        }
+        return enriched;
+    },
+
     async captureShareCard(options) {
         if (typeof html2canvas === 'undefined') return null;
-        const enriched = await this.enrichShareOptions(options);
+        const enriched = await this.enrichShareOptionsForCapture(options);
         return this.captureHtmlCard(this.buildShareCardHtml(enriched));
     },
 

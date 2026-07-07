@@ -78,12 +78,14 @@ const FitnessAnimalVolume = {
 
     inlineSvg(raw, sizePx, glow) {
         const filter = glow || this.GLOW_SHARE;
+        const sizeStyle = `width:${sizePx}px;height:${sizePx}px;display:block;flex-shrink:0;overflow:visible;filter:${filter};`;
         return raw
             .replace(/<\?xml[^?]*\?>\s*/i, '')
-            .replace(
-                /<svg([^>]*)>/,
-                `<svg$1 style="width:${sizePx}px;height:${sizePx}px;display:block;flex-shrink:0;overflow:visible;filter:${filter};">`
-            )
+            .replace(/<!--[\s\S]*?-->\s*/g, '')
+            .replace(/<svg([^>]*)>/, (match, attrs) => {
+                const cleaned = attrs.replace(/\sstyle="[^"]*"/gi, '');
+                return `<svg${cleaned} style="${sizeStyle}">`;
+            })
             .replace(/\s(width|height)="[^"]*"/gi, '')
             .replace('</svg>', `<style>path{fill:${this.FILL}!important}</style></svg>`);
     },
@@ -93,11 +95,18 @@ const FitnessAnimalVolume = {
         const glow = inline ? this.GLOW_SHARE : this.GLOW_PAGE;
         const icon = inline
             ? this.inlineSvg(svgMarkup, sizePx, glow)
-            : `<img src="${svgMarkup}.svg" alt="" style="width:${sizePx}px;height:${sizePx}px;display:block;flex-shrink:0;opacity:0.95;filter:brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(97%) contrast(101%) ${glow};">`;
+            : `<img src="/${svgMarkup}.svg" alt="" style="width:${sizePx}px;height:${sizePx}px;display:block;flex-shrink:0;opacity:0.95;filter:brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(97%) contrast(101%) ${glow};">`;
         const wrap = (html) => `<span style="display:inline-flex;line-height:0;overflow:visible;padding:1px;">${html}</span>`;
         if (count === 1) return wrap(icon);
         const multSize = Math.max(11, Math.round(sizePx * 0.22));
         return `<span style="display:inline-flex;align-items:center;gap:2px;line-height:0;overflow:visible;padding:1px;flex-shrink:0;">${wrap(icon)}<span style="font-size:${multSize}px;font-weight:900;color:#94a3b8;letter-spacing:0.04em;">×${count}</span></span>`;
+    },
+
+    _rowIconSize(breakdown, baseSize) {
+        const tiers = this._activeTierCount(breakdown);
+        if (tiers >= 4) return Math.round(baseSize * 0.88);
+        if (tiers >= 3) return Math.round(baseSize * 0.94);
+        return baseSize;
     },
 
     _megafaunaGlyph(breakdown, svgs, sizePx, inline, seed) {
@@ -108,13 +117,15 @@ const FitnessAnimalVolume = {
         return this._glyphHtml(count, markup, sizePx, inline);
     },
 
-    _buildGroups(breakdown, svgs, sizePx, inline, seed) {
+    _buildRowPartsHtml(breakdown, sizePx, seed, inline, svgs) {
         const parts = [];
-        const mega = this._megafaunaGlyph(breakdown, svgs, sizePx, inline, seed);
-        if (mega) parts.push(mega);
-        this.TIERS.forEach(tier => {
-            const glyph = this._glyphHtml(breakdown[tier.key], inline ? svgs[tier.file] : tier.file, sizePx, inline);
-            if (glyph) parts.push(glyph);
+        const mega = this._megafaunaGlyph(breakdown, svgs || {}, sizePx, inline, seed);
+        if (mega) {
+            parts.push(`<span style="display:inline-flex;align-items:center;gap:2px;flex-shrink:0;line-height:0;">${mega}</span>`);
+        }
+        this.TIERS.filter(tier => breakdown[tier.key] > 0).forEach(tier => {
+            const markup = inline ? svgs[tier.file] : tier.file;
+            parts.push(`<span style="display:inline-flex;align-items:center;gap:2px;flex-shrink:0;line-height:0;">${this._glyphHtml(breakdown[tier.key], markup, sizePx, inline)}</span>`);
         });
         return parts.join('<span style="width:6px;display:inline-block;flex-shrink:0;"></span>');
     },
@@ -126,26 +137,28 @@ const FitnessAnimalVolume = {
         return `<div class="flex flex-nowrap items-center justify-center gap-2 overflow-visible py-2 max-w-full">${glyphs}</div>`;
     },
 
-    _rowIconSize(breakdown, baseSize) {
-        const tiers = this._activeTierCount(breakdown);
-        if (tiers >= 4) return Math.round(baseSize * 0.88);
-        if (tiers >= 3) return Math.round(baseSize * 0.94);
-        return baseSize;
+    _shareRowInnerHtml(breakdown, seed) {
+        const size = this._rowIconSize(breakdown, this.SIZE_SHARE);
+        return this._rowHtml(this._buildRowPartsHtml(breakdown, size, seed, false, {}), true);
     },
 
     buildPageRowHtml(breakdown, seed) {
         if (!this.hasAnimals(breakdown)) return '';
         const size = this._rowIconSize(breakdown, this.SIZE_PAGE);
-        const parts = [];
-        const mega = this._megafaunaGlyph(breakdown, {}, size, false, seed);
-        if (mega) parts.push(`<span class="inline-flex items-center gap-0.5 flex-shrink-0">${mega}</span>`);
-        this.TIERS.filter(tier => breakdown[tier.key] > 0).forEach(tier => {
-            parts.push(`<span class="inline-flex items-center gap-0.5 flex-shrink-0">${this._glyphHtml(breakdown[tier.key], tier.file, size, false)}</span>`);
-        });
-        return this._rowHtml(parts.join(''), false);
+        return this._rowHtml(this._buildRowPartsHtml(breakdown, size, seed, false, {}), false);
     },
 
-    async buildShareRowHtml(lbs, seed) {
+    buildShareRowHtml(lbs, seed) {
+        const breakdown = this.computeBreakdown(lbs);
+        if (!this.hasAnimals(breakdown)) return '';
+        return `<div style="margin-bottom:18px;padding:12px 14px;background:rgba(15,23,42,0.55);border-radius:14px;border:1px solid rgba(255,255,255,0.06);">
+            <div style="width:100%;font-size:7px;font-weight:900;color:#64748b;letter-spacing:0.22em;text-align:center;margin-bottom:8px;">${this.LABEL.toUpperCase()}</div>
+            ${this._shareRowInnerHtml(breakdown, seed)}
+        </div>`;
+    },
+
+    /** Inline SVG row for html2canvas once images are embedded. */
+    async buildShareRowHtmlForCapture(lbs, seed) {
         const breakdown = this.computeBreakdown(lbs);
         if (!this.hasAnimals(breakdown)) return '';
         const files = [...this.TOP_TIER.files, ...this.TIERS.map(t => t.file)];
@@ -153,7 +166,7 @@ const FitnessAnimalVolume = {
         const svgs = {};
         files.forEach((file, i) => { svgs[file] = svgEntries[i]; });
         const size = this._rowIconSize(breakdown, this.SIZE_SHARE);
-        const glyphs = this._buildGroups(breakdown, svgs, size, true, seed);
+        const glyphs = this._buildRowPartsHtml(breakdown, size, seed, true, svgs);
         return `<div style="margin-bottom:18px;padding:12px 14px;background:rgba(15,23,42,0.55);border-radius:14px;border:1px solid rgba(255,255,255,0.06);">
             <div style="width:100%;font-size:7px;font-weight:900;color:#64748b;letter-spacing:0.22em;text-align:center;margin-bottom:8px;">${this.LABEL.toUpperCase()}</div>
             ${this._rowHtml(glyphs, true)}
