@@ -678,7 +678,7 @@
                     _client.from('workout_logs').select('exercise_name, exercise_id, created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(300),
                     FitnessExerciseLibrary.fetch(_client)
                 ]);
-                this.heatmapLogs = logsRes.data || [];
+                this.heatmapLogs = FitnessWorkoutSync.mergeFetched(logsRes.data || []);
                 this.libraryExercises = library;
             },
             async shareTodayWorkout() {

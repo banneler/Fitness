@@ -691,7 +691,8 @@
                     });
                 });
                 if (flatLogs.length) {
-                    await _client.from('workout_logs').insert(flatLogs);
+                    const { error } = await _client.from('workout_logs').insert(flatLogs);
+                    if (!error) FitnessWorkoutSync.stashPending(flatLogs);
                     try {
                         await FitnessArenaPrs.recordSessionPrs(_client, this.session.user.id, flatLogs);
                     } catch (e) {

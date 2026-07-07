@@ -27,8 +27,12 @@ window.FitnessBottomNav = {
     },
 
     mount(containerId, activeId) {
-        const el = document.getElementById(containerId);
-        if (!el) return;
+        let el = document.getElementById(containerId);
+        if (!el) {
+            el = document.createElement('nav');
+            el.id = containerId;
+        }
+        if (el.parentElement !== document.body) document.body.appendChild(el);
         const prefs = FitnessUserPrefs.load();
         const tabs = this.visibleTabs(prefs);
         el.className = `fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex ${tabs.length <= 3 ? 'justify-around' : 'justify-between'} px-6 py-4 safe-area-bottom z-[100]`;
