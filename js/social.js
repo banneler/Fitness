@@ -154,6 +154,99 @@ const FitnessSocial = {
         };
     },
 
+    /** Rolling 7-day window (matches arena + tracker weekly views). */
+    getWeekWindow(days = 7) {
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - (days - 1));
+        start.setHours(0, 0, 0, 0);
+        const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return {
+            startMs: start.getTime(),
+            weekSeed: start.toLocaleDateString('en-CA'),
+            weekLabel: `${fmt(start)} – ${fmt(end)}`
+        };
+    },
+
+    filterLogsSince(rawWorkouts, startMs) {
+        return (rawWorkouts || []).filter(log => new Date(log.created_at).getTime() >= startMs);
+    },
+
+    groupSessionsFromLogs(logs) {
+        const sessions = [];
+        let currentSession = null;
+        [...(logs || [])].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).forEach(log => {
+            const logTime = new Date(log.created_at).getTime();
+            const logTonnage = (log.sets_data || []).reduce(
+                (acc, s) => acc + (parseFloat(s.weight || 0) * parseInt(s.reps || 0, 10)),
+                0
+            );
+            if (!currentSession || Math.abs(currentSession.startTime - logTime) > 3600000) {
+                currentSession = {
+                    startTime: logTime,
+                    setCount: 0,
+                    tonnage: 0,
+                    duration: log.duration_seconds || 0,
+                    exercises: new Set()
+                };
+                sessions.push(currentSession);
+            }
+            currentSession.setCount += (log.sets_data?.length || 0);
+            currentSession.tonnage += logTonnage;
+            currentSession.exercises.add(log.exercise_name);
+            if ((log.duration_seconds || 0) > currentSession.duration) {
+                currentSession.duration = log.duration_seconds;
+            }
+        });
+        return sessions;
+    },
+
+    computeFromWeekLogs(rawWorkouts, options = {}) {
+        const days = options.days ?? 7;
+        const { startMs, weekSeed, weekLabel } = this.getWeekWindow(days);
+        const weekLogs = this.filterLogsSince(rawWorkouts, startMs);
+        const sessions = this.groupSessionsFromLogs(weekLogs);
+
+        let tonnage = 0;
+        let setCount = 0;
+        const exercises = new Set();
+        const byExercise = {};
+
+        weekLogs.forEach(log => {
+            exercises.add(log.exercise_name);
+            const name = log.exercise_name || 'Exercise';
+            if (!byExercise[name]) byExercise[name] = { sets: [], tonnage: 0 };
+            (log.sets_data || []).forEach(s => {
+                const w = parseFloat(s.weight) || 0;
+                const r = parseInt(s.reps, 10) || 0;
+                tonnage += w * r;
+                setCount++;
+                byExercise[name].tonnage += w * r;
+                const formatted = this.formatSetLabel(s);
+                if (formatted) byExercise[name].sets.push(formatted);
+            });
+        });
+
+        const liftLines = Object.entries(byExercise)
+            .sort((a, b) => b[1].tonnage - a[1].tonnage)
+            .slice(0, 5)
+            .map(([name, data]) => ({ name, sets: data.sets.slice(-8) }));
+
+        const durationSeconds = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+
+        return {
+            weekLabel,
+            weekSeed,
+            weekLogs,
+            sessionCount: sessions.length,
+            durationSeconds,
+            tonnage,
+            setCount,
+            exerciseCount: exercises.size,
+            liftLines
+        };
+    },
+
     /** Plain-text fallback when image share is unavailable */
     buildFallbackText({ athleteName, protocolName, durationSeconds, tonnage, setCount, exerciseCount, liftLines, streak }) {
         const who = athleteName || 'Athlete';
@@ -164,6 +257,23 @@ const FitnessSocial = {
             msg += '\n\n';
             liftLines.forEach(line => {
                 const setText = (s) => (typeof s === 'string' ? s : s.text);
+                msg += `${line.name}: ${line.sets.map(setText).join(', ')}\n`;
+            });
+        }
+        msg += '\nThe Arena awaits 🏆';
+        return msg.trim();
+    },
+
+    buildWeeklyFallbackText({ athleteName, weekLabel, sessionCount, durationSeconds, tonnage, setCount, exerciseCount, liftLines, streak }) {
+        const who = athleteName || 'Athlete';
+        let msg = `BA FITNESS — ${who}\nWeekly Summary · ${weekLabel || 'Last 7 Days'}\n\n`;
+        msg += `${sessionCount || 0} sessions · ${this.formatNumber(tonnage)} lbs · ${setCount} sets · ${exerciseCount} exercises`;
+        if (durationSeconds) msg += ` · ${this.formatDuration(durationSeconds)} total`;
+        if (streak > 0) msg += ` · ${streak}-day streak`;
+        if (liftLines?.length) {
+            msg += '\n\n';
+            liftLines.forEach(line => {
+                const setText = s => (typeof s === 'string' ? s : s.text);
                 msg += `${line.name}: ${line.sets.map(setText).join(', ')}\n`;
             });
         }
@@ -485,6 +595,55 @@ const FitnessSocial = {
         </div>`;
     },
 
+    buildWeeklyShareCardHtml({ athleteName, weekLabel, sessionCount, durationSeconds, tonnage, setCount, exerciseCount, liftLines, streak, bodySvgHtml, heatmapStatuses, animalRowHtml }) {
+        const who = athleteName || 'Athlete';
+        const label = weekLabel || 'Last 7 Days';
+        const legend = typeof FitnessHeatmap !== 'undefined'
+            ? FitnessHeatmap.legendHtml(heatmapStatuses || {})
+            : '';
+
+        const liftRows = (liftLines || []).map(line => `
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);">
+                <div style="font-size:10px;font-weight:800;color:#e2e8f0;text-transform:uppercase;font-style:italic;margin-bottom:3px;">${line.name}</div>
+                <div style="font-size:11px;font-weight:900;color:#3b82f6;letter-spacing:0.04em;display:flex;flex-wrap:wrap;align-items:center;row-gap:4px;line-height:1;overflow:visible;">${this.formatLiftSetsRow(line.sets)}</div>
+            </div>`).join('');
+
+        const streakBadgeHtml = this.buildStreakBadgeHtml(streak);
+        const header = this.buildShareCardHeader({
+            kicker: 'BA FITNESS · WEEKLY',
+            name: who,
+            subtitle: label,
+            subtitleColor: '#a855f7',
+            marginBottom: 10,
+            streakBadgeHtml
+        });
+
+        const durationNote = durationSeconds
+            ? `<div style="font-size:6px;font-weight:800;color:#64748b;letter-spacing:0.08em;line-height:1;margin-top:2px;">${this.formatDuration(durationSeconds)} TOTAL</div>`
+            : '';
+
+        return `<div style="width:380px;background:linear-gradient(165deg,#0f172a 0%,#020617 50%,#2e1065 100%);border-radius:28px;padding:10px 22px 22px;font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:white;box-sizing:border-box;border:1px solid rgba(168,85,247,0.35);overflow:hidden;line-height:1;">${header}
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;">${this.buildShareMiniStatCell(sessionCount, 'SESSIONS')}${this.buildShareMiniStatCell(this.formatNumber(tonnage), 'LBS MOVED')}${this.buildShareMiniStatCell(setCount, `SETS · ${exerciseCount} EX`)}</div>
+            ${durationNote ? `<div style="text-align:center;margin:-12px 0 16px;">${durationNote}</div>` : ''}
+
+            ${liftRows ? `<div style="background:rgba(15,23,42,0.55);border-radius:18px;padding:16px;margin-bottom:18px;border:1px solid rgba(255,255,255,0.06);">
+                <div style="font-size:8px;font-weight:900;color:#64748b;letter-spacing:0.22em;margin-bottom:2px;">THE WEEK</div>
+                ${liftRows}
+            </div>` : ''}
+
+            ${animalRowHtml || ''}
+
+            <div style="background:rgba(15,23,42,0.65);border-radius:18px;padding:16px;border:1px solid rgba(168,85,247,0.25);">
+                <div style="font-size:8px;font-weight:900;color:#a855f7;letter-spacing:0.22em;margin-bottom:10px;">SYSTEM STATUS</div>
+                <div style="margin-bottom:10px;text-align:center;">${legend}</div>
+                <div style="width:100%;text-align:center;line-height:0;padding:10px 0 8px;overflow:visible;">${bodySvgHtml || ''}</div>
+            </div>
+
+            <div style="text-align:center;margin-top:20px;font-size:9px;font-weight:900;color:#94a3b8;letter-spacing:0.08em;text-transform:uppercase;">The Arena Awaits 🏆</div>
+        </div>`;
+    },
+
     async enrichShareOptions(options) {
         const heatmapStatuses = options.heatmapStatuses || (typeof FitnessHeatmap !== 'undefined' ? FitnessHeatmap.defaultStatuses() : {});
         let bodySvgHtml = '';
@@ -527,14 +686,19 @@ const FitnessSocial = {
     async captureShareCard(options) {
         if (typeof html2canvas === 'undefined') return null;
         const enriched = await this.enrichShareOptionsForCapture(options);
-        return this.captureHtmlCard(this.buildShareCardHtml(enriched));
+        const html = options.cardType === 'weekly'
+            ? this.buildWeeklyShareCardHtml(enriched)
+            : this.buildShareCardHtml(enriched);
+        return this.captureHtmlCard(html);
     },
 
     async shareRecap(options) {
+        const isWeekly = options.cardType === 'weekly';
         const blob = await this.captureShareCard(options);
+        const filename = isWeekly ? 'ba-fitness-weekly.png' : 'ba-fitness-recap.png';
 
         if (blob && navigator.share) {
-            const file = new File([blob], 'ba-fitness-recap.png', { type: 'image/png' });
+            const file = new File([blob], filename, { type: 'image/png' });
             const filePayload = { files: [file] };
             if (!navigator.canShare || navigator.canShare(filePayload)) {
                 try {
@@ -547,7 +711,10 @@ const FitnessSocial = {
         }
 
         const enriched = await this.enrichShareOptions(options);
-        return this.shareText(this.buildFallbackText(enriched));
+        const text = isWeekly
+            ? this.buildWeeklyFallbackText(enriched)
+            : this.buildFallbackText(enriched);
+        return this.shareText(text);
     },
 
     async shareText(text) {
