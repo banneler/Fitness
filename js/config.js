@@ -31,3 +31,19 @@ window.FitnessWorkoutSync = {
         }
     }
 };
+
+/** Parse Supabase edge function errors into user-readable messages. */
+window.FitnessEdge = {
+    async parseInvokeError(error, data) {
+        if (data?.error) return data.error;
+        if (error?.context && typeof error.context.json === 'function') {
+            try {
+                const body = await error.context.json();
+                if (body?.error) return body.error;
+            } catch (_) { /* ignore */ }
+        }
+        const msg = error?.message || '';
+        if (msg.includes('non-2xx')) return 'AI service error — try again in a moment.';
+        return msg || 'Neural link failed';
+    }
+};

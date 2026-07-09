@@ -142,7 +142,8 @@ Rules:
       parts.push({ inlineData: { mimeType: "image/jpeg", data: base64 } });
     });
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const model = Deno.env.get('GEMINI_MODEL') || 'gemini-3.5-flash';
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const apiResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

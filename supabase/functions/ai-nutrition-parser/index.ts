@@ -20,7 +20,8 @@ Deno.serve(async (req) => {
     const gemini_api_key = Deno.env.get("GEMINI_API_KEY");
     if (!gemini_api_key) throw new Error("GEMINI_API_KEY secret is not set.");
 
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${gemini_api_key}`;
+    const model = Deno.env.get('GEMINI_MODEL') || 'gemini-3.5-flash';
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gemini_api_key}`;
 
     let contents = [];
 

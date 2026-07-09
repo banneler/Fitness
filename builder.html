@@ -721,8 +721,11 @@
                         body: { imagesBase64: base64Images, library: libraryPayload }
                     });
 
+                    if (error) {
+                        const msg = await FitnessEdge.parseInvokeError(error, data);
+                        throw new Error(msg);
+                    }
                     if (data?.error) throw new Error(data.error);
-                    if (error) throw new Error(error.message || 'Neural link failed');
 
                     if (data?.items?.length) {
                         this.openImportReview(data.items);

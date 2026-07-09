@@ -69,8 +69,9 @@ Deno.serve(async (req) => {
 
     // 5. CALL GEMINI
     const GEMINI_KEY = Deno.env.get('GEMINI_API_KEY')
+    const model = Deno.env.get('GEMINI_MODEL') || 'gemini-3.5-flash';
     const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
