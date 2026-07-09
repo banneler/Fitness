@@ -78,6 +78,84 @@
         </div>
     </transition>
 
+    <div v-if="importReview.visible" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4">
+        <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="closeImportReview"></div>
+        <div class="relative w-full max-w-lg glass rounded-[2rem] border border-purple-500/20 shadow-2xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-white/5">
+                <div class="flex justify-between items-start gap-3">
+                    <div>
+                        <p class="text-[8px] font-black uppercase tracking-[0.25em] text-purple-400 mb-1">Import Review</p>
+                        <h3 class="text-lg font-black italic uppercase text-white leading-none">Confirm Sequence</h3>
+                        <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-2">
+                            {{ importReviewStats.matched }} matched · {{ importReviewStats.fuzzy }} fuzzy · {{ importReviewStats.new }} new
+                        </p>
+                    </div>
+                    <button @click="closeImportReview" class="w-9 h-9 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center text-slate-400 active:scale-95">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                <div v-for="(item, idx) in importReview.items" :key="idx"
+                     class="rounded-2xl border p-4 transition-all"
+                     :class="item.include ? 'border-white/10 bg-slate-950/50' : 'border-white/5 bg-slate-950/20 opacity-60'">
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox" v-model="item.include" class="mt-1 w-4 h-4 rounded accent-purple-500">
+                        <div class="flex-1 min-w-0 space-y-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <div>
+                                    <span class="text-[8px] font-black uppercase tracking-widest text-slate-600">0{{ idx + 1 }} · From image</span>
+                                    <p class="text-sm font-bold text-white leading-tight">{{ item.label }}</p>
+                                </div>
+                                <span class="text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-lg flex-shrink-0"
+                                      :class="{
+                                          'bg-emerald-500/15 text-emerald-400': item.status === 'matched',
+                                          'bg-amber-500/15 text-amber-400': item.status === 'fuzzy',
+                                          'bg-purple-500/15 text-purple-400': item.status === 'unmatched'
+                                      }">
+                                    {{ item.status === 'matched' ? 'Matched' : item.status === 'fuzzy' ? 'Fuzzy' : 'New' }}
+                                </span>
+                            </div>
+
+                            <div v-if="item.status === 'matched' && item.selectedExerciseId" class="text-[10px] text-emerald-400/90 font-bold">
+                                → {{ getExerciseName(item.selectedExerciseId) }}
+                                <span class="text-slate-600 font-normal">({{ Math.round(item.confidence * 100) }}%)</span>
+                            </div>
+
+                            <div v-if="item.status === 'fuzzy'" class="space-y-2">
+                                <p class="text-[9px] text-amber-400/90 font-bold uppercase tracking-wider">
+                                    Closest match · {{ Math.round(item.confidence * 100) }}% — pick or keep
+                                </p>
+                                <select v-model="item.selectedExerciseId" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl p-3 text-xs font-bold text-white outline-none">
+                                    <option v-for="ex in library" :key="ex.id" :value="ex.id">{{ ex.name }}</option>
+                                </select>
+                            </div>
+
+                            <div v-if="item.status === 'unmatched'" class="space-y-2">
+                                <p class="text-[9px] text-purple-400 font-bold uppercase tracking-wider">Will create personal exercise</p>
+                                <input v-model="item.editName" placeholder="Exercise name" class="w-full bg-slate-900 border border-purple-500/30 rounded-xl p-3 text-xs font-bold text-white outline-none">
+                                <select v-model="item.muscleGroup" class="w-full bg-slate-900 border border-purple-500/30 rounded-xl p-3 text-xs font-bold text-white outline-none">
+                                    <option value="" disabled>Select muscle...</option>
+                                    <option v-for="m in muscleGroups" :key="m" :value="m">{{ m }}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-white/5 space-y-2">
+                <button @click="applyImportReview" :disabled="importReview.applying || !importReviewStats.included"
+                        class="w-full py-4 rounded-2xl bg-purple-600 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-purple-900/30 active:scale-[0.98] transition-all disabled:opacity-50">
+                    <i data-lucide="list-plus" class="w-4 h-4"></i>
+                    {{ importReview.applying ? 'Building…' : `Add ${importReviewStats.included} to Sequence` }}
+                </button>
+                <button @click="closeImportReview" class="w-full py-3 rounded-xl text-slate-500 font-bold text-[10px] uppercase tracking-widest">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <header class="flex justify-between items-center mb-6">
         <div>
             <h2 class="text-2xl font-black italic uppercase text-white">{{ isEditing ? 'Edit Protocol' : 'Builder' }}</h2>
@@ -367,10 +445,22 @@
                 routine: { id: null, name: '', icon: 'activity', supersets: [] },
                 routineExercises: [], 
 
-                exerciseForm: { id: null, name: '', group: '', icon: 'dumbbell', weight_type: 'combined', is_bodyweight: false, is_static: false, static_weight: null }
+                exerciseForm: { id: null, name: '', group: '', icon: 'dumbbell', weight_type: 'combined', is_bodyweight: false, is_static: false, static_weight: null },
+
+                importReview: { visible: false, applying: false, items: [] }
             }
         },
         computed: {
+            importReviewStats() {
+                const items = this.importReview.items || [];
+                const included = items.filter(i => i.include);
+                return {
+                    included: included.length,
+                    matched: included.filter(i => i.status === 'matched').length,
+                    fuzzy: included.filter(i => i.status === 'fuzzy').length,
+                    new: included.filter(i => i.status === 'unmatched').length
+                };
+            },
             groupedLibrary() {
                 let filtered = this.library;
                 if (this.activeFilter) filtered = filtered.filter(ex => ex.muscle_group === this.activeFilter);
@@ -473,9 +563,95 @@
                 });
             },
 
-            addExercise(id) {
+            addExercise(id, silent = false) {
                 this.routineExercises.push({ id: id, uniqueKey: Math.random().toString(36).substring(2, 15) });
-                this.$nextTick(() => { this.initSortable(); this.showToast("Added", "Exercise added to sequence", "plus"); });
+                this.$nextTick(() => {
+                    this.initSortable();
+                    if (!silent) this.showToast("Added", "Exercise added to sequence", "plus");
+                });
+            },
+
+            closeImportReview() {
+                if (this.importReview.applying) return;
+                this.importReview.visible = false;
+                this.importReview.items = [];
+            },
+
+            openImportReview(items) {
+                this.importReview.items = (items || []).map(item => ({
+                    label: item.label,
+                    status: item.status,
+                    exerciseId: item.exercise_id,
+                    confidence: item.confidence ?? 0,
+                    muscleGroup: item.muscle_group || '',
+                    editName: item.label,
+                    selectedExerciseId: item.exercise_id,
+                    include: true
+                }));
+                this.importReview.visible = true;
+            },
+
+            async applyImportReview() {
+                const selected = this.importReview.items.filter(i => i.include);
+                if (!selected.length) {
+                    this.showToast("Nothing selected", "Check at least one exercise to import.", "alert-circle");
+                    return;
+                }
+
+                for (const item of selected) {
+                    if (item.status === 'unmatched' && !item.muscleGroup) {
+                        this.showToast("Muscle required", `Pick a muscle group for "${item.editName || item.label}".`, "alert-circle");
+                        return;
+                    }
+                    if (item.status === 'unmatched' && !(item.editName || item.label).trim()) {
+                        this.showToast("Name required", "New exercises need a name.", "alert-circle");
+                        return;
+                    }
+                }
+
+                this.importReview.applying = true;
+                let created = 0;
+                let added = 0;
+
+                try {
+                    for (const item of selected) {
+                        let id = item.selectedExerciseId || item.exerciseId;
+
+                        if (item.status === 'unmatched' || !id) {
+                            const { data, error } = await _client.from('exercises').insert([{
+                                name: (item.editName || item.label).trim(),
+                                muscle_group: item.muscleGroup,
+                                icon_name: 'dumbbell',
+                                weight_type: 'combined',
+                                is_bodyweight: false,
+                                is_static: false,
+                                user_id: this.session.user.id
+                            }]).select('id').single();
+                            if (error) throw error;
+                            id = data.id;
+                            created++;
+                        } else if (!this.library.some(ex => ex.id === id)) {
+                            continue;
+                        }
+
+                        this.addExercise(id, true);
+                        added++;
+                    }
+
+                    if (created) await this.fetchLibrary();
+                    if (!this.routine.name) this.routine.name = "Imported AI Protocol";
+
+                    this.closeImportReview();
+                    const msg = created
+                        ? `${added} added · ${created} new personal exercise${created > 1 ? 's' : ''}`
+                        : `${added} exercise${added > 1 ? 's' : ''} added`;
+                    this.showToast("Import Complete", msg, "sparkles");
+                } catch (err) {
+                    console.error(err);
+                    this.showToast("Import Failed", "Could not finish import.", "alert-triangle");
+                } finally {
+                    this.importReview.applying = false;
+                }
             },
 
             removeExercise(idx) {
@@ -535,23 +711,23 @@
                     // Process all uploaded files in parallel
                     const base64Images = await Promise.all(Array.from(files).map(processFile));
 
-                    const libraryNames = this.library.map(ex => ({ id: ex.id, name: ex.name }));
+                    const libraryPayload = this.library.map(ex => ({
+                        id: ex.id,
+                        name: ex.name,
+                        muscle_group: ex.muscle_group || null
+                    }));
 
-                    // Call Supabase Edge Function with an array of images
                     const { data, error } = await _client.functions.invoke('ai-workout-import', {
-                        body: { imagesBase64: base64Images, library: libraryNames }
+                        body: { imagesBase64: base64Images, library: libraryPayload }
                     });
 
                     if (error) throw error;
+                    if (data?.error) throw new Error(data.error);
 
-                    if (data && data.exercises && data.exercises.length > 0) {
-                        data.exercises.forEach(id => {
-                            this.addExercise(id);
-                        });
-                        this.showToast("Neural Link Success", `Imported ${data.exercises.length} exercises!`, "sparkles");
-                        if(!this.routine.name) this.routine.name = "Imported AI Protocol";
+                    if (data?.items?.length) {
+                        this.openImportReview(data.items);
                     } else {
-                        this.showToast("Notice", "No matching exercises found in the images.", "alert-circle");
+                        this.showToast("Notice", "No exercises found in the images.", "alert-circle");
                     }
                 } catch (err) {
                     console.error(err);
