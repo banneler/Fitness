@@ -28,6 +28,7 @@
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
+        html.ai-modal-open, body.ai-modal-open { overflow: hidden; overscroll-behavior: none; }
         
         /* Layout */
         /* Solid panels — no backdrop-filter (breaks Android Chrome compositing) */
@@ -97,6 +98,79 @@
         </div>
     </transition>
 
+    <div v-if="aiWorkout.promptOpen" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4 overflow-hidden">
+        <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="closeAiWorkoutPrompt"></div>
+        <div class="relative w-full max-w-lg glass rounded-[2rem] border border-purple-500/20 shadow-2xl max-h-[90vh] min-h-0 flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-white/5">
+                <p class="text-[8px] font-black uppercase tracking-[0.25em] text-purple-400 mb-1">AI Coach</p>
+                <h3 class="text-lg font-black italic uppercase text-white leading-none">Build a Protocol</h3>
+                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-2">Target muscles or leave empty for auto gap-filler</p>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 space-y-5">
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Target Muscles</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button v-for="m in targetMuscleOptions" :key="m" type="button" @click="toggleAiTargetMuscle(m)"
+                                class="px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all"
+                                :class="aiWorkout.targetMuscles.includes(m) ? 'border-purple-500/50 bg-purple-500/20 text-purple-300' : 'border-white/10 bg-slate-950/50 text-slate-500'">
+                            {{ m }}
+                        </button>
+                    </div>
+                    <p v-if="!aiWorkout.targetMuscles.length" class="text-[9px] text-blue-400/80 font-bold mt-3 uppercase tracking-wider">Auto mode — AI picks fresh muscles from your heatmap</p>
+                    <p v-else class="text-[9px] text-purple-400/80 font-bold mt-3 uppercase tracking-wider">Targeting: {{ aiWorkout.targetMuscles.join(' · ') }}</p>
+                </div>
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Instructions <span class="text-slate-600">(optional)</span></label>
+                    <textarea v-model="aiWorkout.userPrompt" rows="4" placeholder="e.g. Keep it to machines only, 5 exercises, supersets friendly..."
+                              class="w-full bg-slate-950 border border-white/10 rounded-xl p-4 text-sm font-bold text-white placeholder-slate-600 outline-none focus:border-purple-500 resize-none"></textarea>
+                </div>
+            </div>
+            <div class="p-4 border-t border-white/5 space-y-2">
+                <button @click="generateAiWorkoutDraft" :disabled="aiWorkout.generating"
+                        class="w-full py-4 rounded-2xl bg-purple-600 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-purple-900/30 active:scale-[0.98] transition-all disabled:opacity-50">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    {{ aiWorkout.generating ? 'Building…' : 'Generate Workout' }}
+                </button>
+                <button @click="closeAiWorkoutPrompt" class="w-full py-3 rounded-xl text-slate-500 font-bold text-[10px] uppercase tracking-widest">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="aiWorkout.reviewOpen" class="fixed inset-0 z-[300] flex items-end justify-center sm:items-center p-4 overflow-hidden">
+        <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" @click="closeAiWorkoutReview"></div>
+        <div class="relative w-full max-w-lg glass rounded-[2rem] border border-purple-500/20 shadow-2xl max-h-[90vh] min-h-0 flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-white/5">
+                <p class="text-[8px] font-black uppercase tracking-[0.25em] text-purple-400 mb-1">Review Protocol</p>
+                <input v-model="aiWorkout.draft.name" class="w-full bg-transparent text-lg font-black italic uppercase text-white outline-none border-none p-0 focus:ring-0 placeholder-slate-600" placeholder="Protocol name">
+                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-2">
+                    {{ aiWorkoutStats.included }} exercises
+                    <span v-if="aiWorkout.draft?.mode === 'targeted'"> · targeted</span>
+                    <span v-else> · auto gap-filler</span>
+                </p>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-2">
+                <div v-for="(ex, idx) in aiWorkout.draft.exercises" :key="ex.exercise_id"
+                     class="rounded-2xl border p-4 flex items-start gap-3 transition-all"
+                     :class="ex.include ? 'border-white/10 bg-slate-950/50' : 'border-white/5 bg-slate-950/20 opacity-60'">
+                    <input type="checkbox" v-model="ex.include" class="mt-1 w-4 h-4 rounded accent-purple-500">
+                    <div class="flex-1 min-w-0">
+                        <span class="text-[8px] font-black uppercase tracking-widest text-slate-600">0{{ idx + 1 }}</span>
+                        <p class="text-sm font-bold text-white leading-tight">{{ ex.name }}</p>
+                        <p class="text-[9px] font-bold uppercase tracking-wider text-purple-400/80 mt-1">{{ ex.muscle_group || '—' }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-white/5 space-y-2">
+                <button @click="saveAiWorkout" :disabled="aiWorkout.applying || !aiWorkoutStats.included"
+                        class="w-full py-4 rounded-2xl bg-purple-600 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-purple-900/30 active:scale-[0.98] transition-all disabled:opacity-50">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    {{ aiWorkout.applying ? 'Saving…' : 'Save Protocol' }}
+                </button>
+                <button @click="backToAiPrompt" class="w-full py-3 rounded-xl text-slate-400 font-bold text-[10px] uppercase tracking-widest">Edit Prompt</button>
+            </div>
+        </div>
+    </div>
+
     <div v-if="bootReady && !loading && !bootError" class="flex flex-col h-full w-full">
         <div class="flex-1 overflow-y-auto no-scrollbar">
             <header class="flex justify-between items-center mb-6">
@@ -105,7 +179,7 @@
                     <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Progressive Overload</p>
                 </div>
                 <div class="flex gap-2">
-                    <button @click="generateAIWorkout" class="w-12 h-12 glass rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-all text-purple-400 hover:text-purple-300"><i data-lucide="sparkles" class="w-5 h-5"></i></button>
+                    <button @click="openAiWorkoutPrompt" class="w-12 h-12 glass rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-all text-purple-400 hover:text-purple-300"><i data-lucide="sparkles" class="w-5 h-5"></i></button>
                     <button @click="confirmLogout" class="w-12 h-12 glass rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-all text-slate-400 hover:text-red-500"><i data-lucide="log-out" class="w-5 h-5"></i></button>
                 </div>
             </header>
@@ -281,10 +355,15 @@
     const { createApp } = Vue;
     const _client = supabase.createClient('https://mvoyrchefjcpjkdtezmz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12b3lyY2hlZmpjcGprZHRlem16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNjkxNzksImV4cCI6MjA4MzY0NTE3OX0.o_dh0rMw0RPYWJjn3ssA6OkKY8udy5vhqVQzN50uvEQ');
     const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Core', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Hips', 'Cardio'];
+    const TARGET_MUSCLES = MUSCLES.filter(m => m !== 'Cardio');
 
     const app = createApp({
-        data() { return { loading: true, bootReady: false, loadingText: 'Loading Data', bootError: null, routines: [], libraryExercises: [], schedule: [], recentSessions: [], rawLogs: [], muscleHeatmap: FitnessHeatmap.defaultStatuses(), heatmapHtml: '', heatmapError: false, scheduleModal: null, previewModal: null, toast: { visible: false, title: '', message: '' }, session: null, resumeSessionName: null, activeFilter: null, muscleGroups: MUSCLES } },
+        data() { return { loading: true, bootReady: false, loadingText: 'Loading Data', bootError: null, routines: [], libraryExercises: [], schedule: [], recentSessions: [], rawLogs: [], muscleHeatmap: FitnessHeatmap.defaultStatuses(), heatmapHtml: '', heatmapError: false, scheduleModal: null, previewModal: null, toast: { visible: false, title: '', message: '' }, session: null, resumeSessionName: null, activeFilter: null, muscleGroups: MUSCLES, targetMuscleOptions: TARGET_MUSCLES, aiWorkout: { promptOpen: false, reviewOpen: false, generating: false, applying: false, userPrompt: '', targetMuscles: [], draft: null } } },
         computed: {
+            aiWorkoutStats() {
+                const exercises = this.aiWorkout.draft?.exercises || [];
+                return { included: exercises.filter(e => e.include).length };
+            },
             upcomingDays() {
                 const days = [];
                 for(let i=0; i<7; i++) { const d = new Date(); d.setDate(d.getDate() + i); days.push({ dateNum: d.getDate(), dayName: d.toLocaleDateString('en-US', {weekday:'short'}), fullDate: d.toLocaleDateString('en-CA') }); }
@@ -305,7 +384,15 @@
             }
         },
         watch: {
-            previewModal(val) { if (val) { this.$nextTick(() => { lucide.createIcons(); }); } }
+            previewModal(val) { if (val) { this.$nextTick(() => { lucide.createIcons(); }); } },
+            'aiWorkout.promptOpen'(open) {
+                this.setAiModalScrollLock(open || this.aiWorkout.reviewOpen);
+                if (open) this.$nextTick(() => lucide.createIcons());
+            },
+            'aiWorkout.reviewOpen'(open) {
+                this.setAiModalScrollLock(open || this.aiWorkout.promptOpen);
+                if (open) this.$nextTick(() => lucide.createIcons());
+            }
         },
         async mounted() {
             this._onPageShow = () => {
@@ -440,36 +527,134 @@
             },
 
             async generateAIWorkout() {
-                this.loading = true;
-                this.loadingText = "Analyzing Biometrics & Fatigue..."; 
-                
+                this.openAiWorkoutPrompt();
+            },
+
+            setAiModalScrollLock(open) {
+                document.documentElement.classList.toggle('ai-modal-open', open);
+                document.body.classList.toggle('ai-modal-open', open);
+            },
+
+            openAiWorkoutPrompt() {
+                this.aiWorkout.promptOpen = true;
+            },
+
+            closeAiWorkoutPrompt(force = false) {
+                if (this.aiWorkout.generating && !force) return;
+                this.aiWorkout.promptOpen = false;
+            },
+
+            closeAiWorkoutReview(force = false) {
+                if (this.aiWorkout.applying && !force) return;
+                this.aiWorkout.reviewOpen = false;
+                this.aiWorkout.draft = null;
+                this.aiWorkout.applying = false;
+            },
+
+            backToAiPrompt() {
+                this.aiWorkout.reviewOpen = false;
+                this.aiWorkout.draft = null;
+                this.aiWorkout.promptOpen = true;
+            },
+
+            toggleAiTargetMuscle(m) {
+                const list = this.aiWorkout.targetMuscles;
+                const idx = list.indexOf(m);
+                if (idx >= 0) list.splice(idx, 1);
+                else list.push(m);
+            },
+
+            async generateAiWorkoutDraft() {
+                this.aiWorkout.generating = true;
                 try {
+                    const library = this.libraryExercises.map(e => ({
+                        id: e.id,
+                        name: e.name,
+                        muscle_group: e.muscle_group || null
+                    }));
+
                     const { data, error } = await _client.functions.invoke('ai-workout-generator', {
-                        body: { user_id: this.session.user.id }
+                        body: {
+                            user_id: this.session.user.id,
+                            library,
+                            target_muscles: this.aiWorkout.targetMuscles,
+                            user_prompt: this.aiWorkout.userPrompt.trim()
+                        }
                     });
 
-                    if (error) throw error;
+                    if (error) {
+                        const msg = await FitnessEdge.parseInvokeError(error, data);
+                        throw new Error(msg);
+                    }
+                    if (data?.error) throw new Error(data.error);
 
-                    const { error: insertError } = await _client.from('routines').insert([{
+                    this.aiWorkout.draft = {
                         name: data.name,
                         icon_name: data.icon_name || 'sparkles',
-                        exercise_order: data.exercise_order,
+                        mode: data.mode,
+                        exercises: (data.exercises || []).map(ex => ({
+                            exercise_id: ex.exercise_id,
+                            name: ex.name,
+                            muscle_group: ex.muscle_group,
+                            include: true
+                        }))
+                    };
+
+                    if (!this.aiWorkout.draft.exercises.length) {
+                        throw new Error('No valid exercises returned.');
+                    }
+
+                    this.closeAiWorkoutPrompt(true);
+                    this.aiWorkout.reviewOpen = true;
+                } catch (err) {
+                    console.error(err);
+                    this.toast = { visible: true, title: 'AI Failed', message: err?.message || 'Could not generate workout.' };
+                    setTimeout(() => { this.toast.visible = false; }, 4000);
+                } finally {
+                    this.aiWorkout.generating = false;
+                }
+            },
+
+            async saveAiWorkout() {
+                const draft = this.aiWorkout.draft;
+                const order = (draft?.exercises || []).filter(e => e.include).map(e => e.exercise_id);
+                if (!order.length) {
+                    this.toast = { visible: true, title: 'Nothing selected', message: 'Include at least one exercise.' };
+                    setTimeout(() => { this.toast.visible = false; }, 3000);
+                    return;
+                }
+                if (!(draft.name || '').trim()) {
+                    this.toast = { visible: true, title: 'Name required', message: 'Give this protocol a name.' };
+                    setTimeout(() => { this.toast.visible = false; }, 3000);
+                    return;
+                }
+
+                this.aiWorkout.applying = true;
+                try {
+                    const { data, error: insertError } = await _client.from('routines').insert([{
+                        name: draft.name.trim(),
+                        icon_name: draft.icon_name || 'sparkles',
+                        exercise_order: order,
                         user_id: this.session.user.id
-                    }]);
+                    }]).select('*').single();
 
                     if (insertError) throw insertError;
 
                     await this.fetchRoutines();
-                    this.toast = { visible: true, title: 'AI Generated', message: `Created: ${data.name}` };
-                    setTimeout(() => this.toast.visible = false, 3000);
+                    this.closeAiWorkoutReview(true);
+                    this.toast = { visible: true, title: 'Protocol Saved', message: draft.name.trim() };
+                    setTimeout(() => { this.toast.visible = false; }, 3000);
 
+                    if (data) this.previewRoutine(data);
                 } catch (err) {
                     console.error(err);
-                    this.toast = { visible: true, title: 'Error', message: 'Neural Link Failed' };
+                    this.toast = { visible: true, title: 'Save Failed', message: err?.message || 'Could not save protocol.' };
+                    setTimeout(() => { this.toast.visible = false; }, 4000);
                 } finally {
-                    this.loading = false;
+                    this.aiWorkout.applying = false;
                 }
             },
+
             getScheduleForDay(dayName) {
                 const entry = this.schedule.find(s => s.day_of_week === dayName);
                 if (!entry?.routines) return null;
