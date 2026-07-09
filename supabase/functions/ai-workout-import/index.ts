@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { GoogleGenerativeAI } from "npm:@google/generative-ai";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,6 +11,7 @@ const MUSCLE_GROUPS = [
 ];
 
 const MATCH_THRESHOLD = 0.82;
+const VALID_STATUS = new Set(['matched', 'fuzzy', 'unmatched']);
 
 type LibraryEntry = { id: string; name: string; muscle_group?: string | null };
 
@@ -23,9 +23,14 @@ type ImportItem = {
   muscle_group: string | null;
 };
 
+function cleanId(raw: unknown): string | null {
+  if (raw == null || raw === '' || raw === 'null' || raw === 'none') return null;
+  return String(raw).trim() || null;
+}
+
 function normalizeStatus(item: ImportItem, libraryIds: Set<string>): ImportItem {
-  let status = item.status;
-  let exercise_id = item.exercise_id != null ? String(item.exercise_id) : null;
+  let status = VALID_STATUS.has(item.status) ? item.status : 'unmatched';
+  let exercise_id = cleanId(item.exercise_id);
   let confidence = Math.max(0, Math.min(1, Number(item.confidence) || 0));
 
   if (exercise_id && !libraryIds.has(exercise_id)) {
@@ -60,6 +65,22 @@ function normalizeStatus(item: ImportItem, libraryIds: Set<string>): ImportItem 
   };
 }
 
+function parseAiItems(raw: unknown): ImportItem[] {
+  if (!raw || typeof raw !== 'object') return [];
+  const items = (raw as { items?: unknown }).items;
+  if (!Array.isArray(items)) return [];
+  return items.map(row => {
+    const obj = row as Record<string, unknown>;
+    return {
+      label: String(obj.label || ''),
+      status: String(obj.status || 'unmatched') as ImportItem['status'],
+      exercise_id: cleanId(obj.exercise_id),
+      confidence: Number(obj.confidence) || 0,
+      muscle_group: obj.muscle_group ? String(obj.muscle_group) : null
+    };
+  });
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -84,74 +105,102 @@ serve(async (req) => {
     }));
     const libraryIds = new Set(libraryEntries.map(e => e.id));
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            items: {
-              type: "ARRAY",
-              items: {
-                type: "OBJECT",
-                properties: {
-                  label: { type: "STRING", description: "Exercise name exactly as written on the image" },
-                  status: { type: "STRING", enum: ["matched", "fuzzy", "unmatched"] },
-                  exercise_id: { type: "STRING", nullable: true },
-                  confidence: { type: "NUMBER", description: "0.0 to 1.0 match confidence" },
-                  muscle_group: { type: "STRING", nullable: true }
-                },
-                required: ["label", "status", "confidence"]
-              }
-            }
-          },
-          required: ["items"]
-        }
-      }
-    });
+    const compactLibrary = libraryEntries.map(e => `${e.id}|${e.name}`).join('\n');
 
     const prompt = `
 You are an elite fitness AI. The user uploaded workout routine image(s). Read them in order.
 
-LIBRARY (only valid exercise_id values — use null if no good match):
-${JSON.stringify(libraryEntries.map(e => ({ id: e.id, name: e.name, muscle_group: e.muscle_group || null })))}
+LIBRARY — each line is "uuid|Exercise Name". Only use these uuid values for exercise_id:
+${compactLibrary}
 
 ALLOWED MUSCLE GROUPS for unmatched items: ${MUSCLE_GROUPS.join(', ')}
 
-For each exercise found on the image(s), in order:
-1. "label" — name as written on the image (clean up abbreviations only slightly).
-2. "status":
-   - "matched" — same movement, confidence >= 0.82, include exercise_id.
-   - "fuzzy" — closest library substitute but not the same movement (e.g. "DB Press" → "Dumbbell Bench Press"), include exercise_id.
-   - "unmatched" — no reasonable library entry; exercise_id must be null.
-3. "exercise_id" — library id when matched/fuzzy, else null. NEVER invent an id.
-4. "confidence" — 0.0 to 1.0.
-5. "muscle_group" — best guess for unmatched items; null when matched/fuzzy.
+For each exercise found on the image(s), in workout order, return JSON:
+{
+  "items": [
+    {
+      "label": "name as written on image",
+      "status": "matched" | "fuzzy" | "unmatched",
+      "exercise_id": "uuid string or empty string if unmatched",
+      "confidence": 0.0 to 1.0,
+      "muscle_group": "muscle name for unmatched only, else empty string"
+    }
+  ]
+}
 
-Skip rest timers, notes, and set/rep counts. Only list distinct exercises in workout order.
+Rules:
+- "matched" = same movement, confidence >= 0.82, include exercise_id.
+- "fuzzy" = closest substitute, include exercise_id.
+- "unmatched" = no good library entry, exercise_id must be empty string.
+- NEVER invent a uuid. Skip rest timers, notes, set/rep counts.
 `;
 
-    const imageParts = imagesBase64.map((base64: string) => ({
-      inlineData: { data: base64, mimeType: "image/jpeg" }
-    }));
+    const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [
+      { text: prompt }
+    ];
+    imagesBase64.forEach((base64: string) => {
+      parts.push({ inlineData: { mimeType: "image/jpeg", data: base64 } });
+    });
 
-    const result = await model.generateContent([prompt, ...imageParts]);
-    const parsed = JSON.parse(result.response.text().trim());
-    const rawItems: ImportItem[] = Array.isArray(parsed?.items) ? parsed.items : [];
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const apiResponse = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              items: {
+                type: "ARRAY",
+                items: {
+                  type: "OBJECT",
+                  properties: {
+                    label: { type: "STRING" },
+                    status: { type: "STRING" },
+                    exercise_id: { type: "STRING" },
+                    confidence: { type: "NUMBER" },
+                    muscle_group: { type: "STRING" }
+                  },
+                  required: ["label", "status", "confidence"]
+                }
+              }
+            },
+            required: ["items"]
+          }
+        }
+      })
+    });
 
+    if (!apiResponse.ok) {
+      const errorBody = await apiResponse.text();
+      throw new Error(`Gemini API error (${apiResponse.status}): ${errorBody.slice(0, 500)}`);
+    }
+
+    const responseJson = await apiResponse.json();
+    const candidate = responseJson?.candidates?.[0];
+    const text = candidate?.content?.parts?.[0]?.text;
+    if (!text) {
+      const blockReason = candidate?.finishReason || responseJson?.promptFeedback?.blockReason;
+      throw new Error(blockReason ? `AI blocked response: ${blockReason}` : "AI returned empty response");
+    }
+
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    const rawItems = parseAiItems(parsed);
     const items = rawItems
       .map(item => normalizeStatus(item, libraryIds))
-      .filter(item => item.label);
+      .filter(item => item.label && item.label !== 'Unknown movement');
 
     return new Response(JSON.stringify({ items }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error("EDGE FUNCTION ERROR:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("EDGE FUNCTION ERROR:", message);
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     });

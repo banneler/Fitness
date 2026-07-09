@@ -721,8 +721,8 @@
                         body: { imagesBase64: base64Images, library: libraryPayload }
                     });
 
-                    if (error) throw error;
                     if (data?.error) throw new Error(data.error);
+                    if (error) throw new Error(error.message || 'Neural link failed');
 
                     if (data?.items?.length) {
                         this.openImportReview(data.items);
@@ -731,7 +731,7 @@
                     }
                 } catch (err) {
                     console.error(err);
-                    this.showToast("Error", "Failed to parse images.", "alert-triangle");
+                    this.showToast("Error", err?.message || "Failed to parse images.", "alert-triangle");
                 } finally {
                     this.loading = false;
                     event.target.value = ''; // Reset file input
