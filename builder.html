@@ -125,11 +125,30 @@
 
                             <div v-if="item.status === 'fuzzy'" class="space-y-2">
                                 <p class="text-[9px] text-amber-400/90 font-bold uppercase tracking-wider">
-                                    Closest match · {{ Math.round(item.confidence * 100) }}% — pick or keep
+                                    Closest match · {{ Math.round(item.confidence * 100) }}%
                                 </p>
-                                <select v-model="item.selectedExerciseId" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl p-3 text-xs font-bold text-white outline-none">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button type="button" @click="item.createNew = false"
+                                            class="py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all"
+                                            :class="!item.createNew ? 'border-amber-500/50 bg-amber-500/15 text-amber-300' : 'border-white/10 bg-slate-900 text-slate-500'">
+                                        Map Existing
+                                    </button>
+                                    <button type="button" @click="item.createNew = true"
+                                            class="py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all"
+                                            :class="item.createNew ? 'border-purple-500/50 bg-purple-500/15 text-purple-300' : 'border-white/10 bg-slate-900 text-slate-500'">
+                                        Create New
+                                    </button>
+                                </div>
+                                <select v-if="!item.createNew" v-model="item.selectedExerciseId" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl p-3 text-xs font-bold text-white outline-none">
                                     <option v-for="ex in library" :key="ex.id" :value="ex.id">{{ ex.name }}</option>
                                 </select>
+                                <template v-else>
+                                    <input v-model="item.editName" placeholder="Exercise name" class="w-full bg-slate-900 border border-purple-500/30 rounded-xl p-3 text-xs font-bold text-white outline-none">
+                                    <select v-model="item.muscleGroup" class="w-full bg-slate-900 border border-purple-500/30 rounded-xl p-3 text-xs font-bold text-white outline-none">
+                                        <option value="" disabled>Select muscle...</option>
+                                        <option v-for="m in muscleGroups" :key="m" :value="m">{{ m }}</option>
+                                    </select>
+                                </template>
                             </div>
 
                             <div v-if="item.status === 'unmatched'" class="space-y-2">
@@ -457,8 +476,8 @@
                 return {
                     included: included.length,
                     matched: included.filter(i => i.status === 'matched').length,
-                    fuzzy: included.filter(i => i.status === 'fuzzy').length,
-                    new: included.filter(i => i.status === 'unmatched').length
+                    fuzzy: included.filter(i => i.status === 'fuzzy' && !i.createNew).length,
+                    new: included.filter(i => i.status === 'unmatched' || (i.status === 'fuzzy' && i.createNew)).length
                 };
             },
             groupedLibrary() {
@@ -577,6 +596,10 @@
                 this.importReview.items = [];
             },
 
+            importItemCreatesNew(item) {
+                return item.status === 'unmatched' || (item.status === 'fuzzy' && item.createNew);
+            },
+
             openImportReview(items) {
                 this.importReview.items = (items || []).map(item => ({
                     label: item.label,
@@ -586,6 +609,7 @@
                     muscleGroup: item.muscle_group || '',
                     editName: item.label,
                     selectedExerciseId: item.exercise_id,
+                    createNew: item.status === 'unmatched',
                     include: true
                 }));
                 this.importReview.visible = true;
@@ -599,11 +623,11 @@
                 }
 
                 for (const item of selected) {
-                    if (item.status === 'unmatched' && !item.muscleGroup) {
+                    if (this.importItemCreatesNew(item) && !item.muscleGroup) {
                         this.showToast("Muscle required", `Pick a muscle group for "${item.editName || item.label}".`, "alert-circle");
                         return;
                     }
-                    if (item.status === 'unmatched' && !(item.editName || item.label).trim()) {
+                    if (this.importItemCreatesNew(item) && !(item.editName || item.label).trim()) {
                         this.showToast("Name required", "New exercises need a name.", "alert-circle");
                         return;
                     }
@@ -617,7 +641,7 @@
                     for (const item of selected) {
                         let id = item.selectedExerciseId || item.exerciseId;
 
-                        if (item.status === 'unmatched' || !id) {
+                        if (this.importItemCreatesNew(item)) {
                             const { data, error } = await _client.from('exercises').insert([{
                                 name: (item.editName || item.label).trim(),
                                 muscle_group: item.muscleGroup,
