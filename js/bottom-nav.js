@@ -35,7 +35,8 @@ window.FitnessBottomNav = {
         if (el.parentElement !== document.body) document.body.appendChild(el);
         const prefs = FitnessUserPrefs.load();
         const tabs = this.visibleTabs(prefs);
-        el.className = `fixed bottom-0 left-0 right-0 glass border-t border-white/5 flex ${tabs.length <= 3 ? 'justify-around' : 'justify-between'} px-6 py-4 safe-area-bottom z-[100]`;
+        el.className = `fixed bottom-0 left-0 right-0 border-t border-white/5 flex ${tabs.length <= 3 ? 'justify-around' : 'justify-between'} px-6 py-4 safe-area-bottom z-[100]`;
+        el.style.background = 'rgba(15, 23, 42, 0.98)';
         el.innerHTML = this.render(activeId, prefs);
         if (typeof lucide !== 'undefined') {
             try { lucide.createIcons(); } catch (e) { console.warn(e); }

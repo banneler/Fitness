@@ -31,17 +31,18 @@
         html, body {
             margin: 0;
             padding: 0;
-            min-height: 100%;
+            height: 100%;
             background-color: #020617;
         }
         body {
             background-color: #020617;
             color: white;
             -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: contain;
+            overflow: hidden;
+            height: 100dvh;
         }
         #app {
-            min-height: 100vh;
+            height: 100%;
             background-color: #020617;
         }
         .workout-footer-bar {
@@ -50,13 +51,15 @@
             right: 0;
             bottom: 0;
             z-index: 40;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: rgba(15, 23, 42, 0.98);
             border-top: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 0.625rem 1.5rem 0.375rem;
+            padding: 0.625rem 1.5rem calc(0.375rem + env(safe-area-inset-bottom));
         }
         #session-container {
+            height: 100%;
+            overflow-y: auto;
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: touch;
             padding-bottom: 8rem;
         }
         
@@ -78,9 +81,9 @@
         .failure-checkbox:checked { background-color: #ef4444; filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.8)); }
         
         /* Cards */
-        .exercise-card { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform, opacity, filter; }
-        .exercise-blurred { opacity: 0.3; filter: grayscale(100%); transform: scale(0.96); pointer-events: none; }
-        .exercise-active { opacity: 1; filter: none; transform: scale(1); border-color: rgba(59, 130, 246, 0.4); background: rgba(30, 41, 59, 0.6); box-shadow: 0 0 40px -10px rgba(59, 130, 246, 0.15); }
+        .exercise-card { transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), filter 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), background 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .exercise-blurred { opacity: 0.3; filter: grayscale(100%); pointer-events: none; }
+        .exercise-active { opacity: 1; filter: none; border-color: rgba(59, 130, 246, 0.4); background: rgba(30, 41, 59, 0.6); box-shadow: 0 0 40px -10px rgba(59, 130, 246, 0.15); }
         
         /* Wheel */
         .picker-container { height: 200px; position: relative; mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent); display: flex; }
@@ -371,12 +374,18 @@
                 newRoutineName: '',       // New: custom Protocol name
                 pickerModal: { visible: false, targetSet: null, weightValues: [], repsValues: [], weightVal: 0, repsVal: 0, targetWeightType: 'combined' },
                 libraryExercises: [], personalRecords: {},
-                profileName: '', streak: 0, shareToast: '', rawLogs: []
+                profileName: '', streak: 0, shareToast: '', rawLogs: [], lastSavedSessionLogs: []
             } 
         },
         computed: {
             muscleHeatmap() {
-                return FitnessHeatmap.compute(this.rawLogs, this.libraryExercises);
+                return FitnessHeatmap.compute(this.heatmapLogs, this.libraryExercises);
+            },
+            heatmapLogs() {
+                if (this.lastSavedSessionLogs.length) {
+                    return [...this.lastSavedSessionLogs, ...this.rawLogs];
+                }
+                return this.rawLogs;
             },
             sessionRecapStats() {
                 return FitnessSocial.computeFromActiveRoutine(this.activeRoutine, this.sessionTimer);
@@ -393,11 +402,7 @@
             activeRoutine: { handler(val) { if(val && val.name) localStorage.setItem('constellation_active_session', JSON.stringify({ activeRoutine: val, sessionStartTime: this.sessionStartTime, activeExerciseIdx: this.activeExerciseIdx, stackTaken: this.stackTaken })); }, deep: true },
             stackTaken() { localStorage.setItem('constellation_active_session', JSON.stringify({ activeRoutine: this.activeRoutine, sessionStartTime: this.sessionStartTime, activeExerciseIdx: this.activeExerciseIdx, stackTaken: this.stackTaken })); },
             activeExerciseIdx(newVal) {
-                this.$nextTick(() => {
-                    const container = document.getElementById('session-container');
-                    const el = document.getElementById('cluster-' + newVal);
-                    if (el && container) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                });
+                this.$nextTick(() => this.scrollExerciseIntoView(newVal));
             }
         },
         async mounted() {
@@ -432,6 +437,16 @@
         updated() { this.$nextTick(() => { lucide.createIcons(); }); },
         methods: {
             haptic() { if (navigator.vibrate) navigator.vibrate(10); },
+
+            scrollExerciseIntoView(idx) {
+                const container = document.getElementById('session-container');
+                const el = document.getElementById('cluster-' + idx);
+                if (!el || !container) return;
+                const containerRect = container.getBoundingClientRect();
+                const elRect = el.getBoundingClientRect();
+                const offset = elRect.top - containerRect.top + container.scrollTop - (container.clientHeight / 2) + (elRect.height / 2);
+                container.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+            },
             isBodyWeight(type) { if(type === true) return true; if(!type) return false; const t = type.toString().toLowerCase(); return t === 'bodyweight' || t === 'body_weight' || t === 'bw' || t === 'true'; },
             hasPrevValue(val) { return val !== '' && val !== null && val !== undefined; },
             hasCurrentValue(val) {
@@ -586,8 +601,8 @@
                 this.swapModal.visible = false;
                 
                 this.$nextTick(() => {
-                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                     this.activeExerciseIdx = this.activeRoutine.data.length - 1;
+                    this.scrollExerciseIntoView(this.activeExerciseIdx);
                 });
             },
 
@@ -693,7 +708,15 @@
                 });
                 if (flatLogs.length) {
                     const { error } = await _client.from('workout_logs').insert(flatLogs);
-                    if (!error) FitnessWorkoutSync.stashPending(flatLogs);
+                    if (!error) {
+                        FitnessWorkoutSync.stashPending(flatLogs);
+                        this.lastSavedSessionLogs = flatLogs.map(l => ({
+                            exercise_name: l.exercise_name,
+                            exercise_id: l.exercise_id,
+                            created_at: l.created_at
+                        }));
+                        this.rawLogs = [...this.lastSavedSessionLogs, ...this.rawLogs];
+                    }
                     try {
                         await FitnessArenaPrs.recordSessionPrs(_client, this.session.user.id, flatLogs);
                     } catch (e) {
