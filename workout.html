@@ -28,22 +28,26 @@
 
     <style>
         [v-cloak] { display: none !important; }
-        html, body {
+        html {
             margin: 0;
             padding: 0;
             height: 100%;
             background-color: #020617;
         }
         body {
+            margin: 0;
+            padding: 0;
             background-color: #020617;
             color: white;
             -webkit-tap-highlight-color: transparent;
             overflow: hidden;
             height: 100%;
-            height: 100dvh;
+            min-height: 100%;
+            min-height: -webkit-fill-available;
         }
         #app {
             height: 100%;
+            min-height: -webkit-fill-available;
             display: flex;
             flex-direction: column;
             background-color: #020617;
@@ -57,11 +61,14 @@
             padding: calc(env(safe-area-inset-top, 0px) + 0.75rem) 1rem 0.75rem;
         }
         .workout-footer-bar {
-            flex-shrink: 0;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
             z-index: 40;
             background: #020617;
             border-top: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 0.5rem 1rem 0.35rem;
+            padding: 0.5rem 1rem 0.25rem;
         }
         #session-container {
             flex: 1 1 auto;
@@ -69,7 +76,8 @@
             overflow-y: auto;
             overscroll-behavior-y: contain;
             -webkit-overflow-scrolling: touch;
-            padding-bottom: 1.5rem;
+            /* Clear the fixed footer (buttons + exit) — keep this in sync if footer height changes */
+            padding-bottom: 5.5rem;
         }
         
         .glass-solid { background: #020617; border-bottom: 1px solid rgba(255,255,255,0.08); }
@@ -222,7 +230,7 @@
                 <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 z-10 relative"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
             </button>
         </div>
-        <button @click="exitModal = true" class="w-full pt-1.5 pb-0.5 text-[10px] text-slate-500 font-black uppercase hover:text-white transition-colors">Exit Workout</button>
+        <button @click="exitModal = true" class="w-full mt-1 text-[10px] leading-none py-1 text-slate-500 font-black uppercase hover:text-white transition-colors">Exit Workout</button>
     </footer>
 
     <teleport to="body">
