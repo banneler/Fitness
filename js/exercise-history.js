@@ -82,7 +82,7 @@ const FitnessExerciseHistory = {
         return list;
     },
 
-    /** Refresh prevWeight/prevReps from latest logs — any protocol, including freeflow. */
+    /** Refresh prevWeight/prevReps from latest working (non-recovery) logs — any protocol, including freeflow. */
     async hydrateRoutine(client, userId, routine) {
         const exercises = this.collectExercises(routine);
         if (!exercises.length) return;
