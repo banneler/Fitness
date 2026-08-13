@@ -49,12 +49,15 @@ const FitnessArenaPrs = {
 
     async recordSessionPrs(client, userId, newLogs, historyLogs = null) {
         if (!newLogs?.length) return [];
+        const workingLogs = newLogs.filter(l => !(l && (l.is_recovery === true || l.is_recovery === 'true')));
+        if (!workingLogs.length) return [];
         let history = historyLogs;
         if (!history) {
             const { data } = await client
                 .from('workout_logs')
-                .select('exercise_id, exercise_name, sets_data, created_at')
+                .select('exercise_id, exercise_name, sets_data, created_at, is_recovery')
                 .eq('user_id', userId)
+                .eq('is_recovery', false)
                 .order('created_at', { ascending: true });
             history = data || [];
         }
@@ -62,7 +65,7 @@ const FitnessArenaPrs = {
         const weekStart = this.weekStartDate();
         const inserted = [];
 
-        for (const log of newLogs) {
+        for (const log of workingLogs) {
             const peak = this.maxWeightFromSets(log.sets_data);
             if (!peak) continue;
 

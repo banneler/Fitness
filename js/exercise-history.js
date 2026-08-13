@@ -1,16 +1,23 @@
 /**
  * Per-exercise weight/rep history from workout_logs — protocol-agnostic.
+ * Recovery logs are stored for history but skipped when preloading previous weights.
  */
 const FitnessExerciseHistory = {
     emptySet(prevWeight = '', prevReps = '') {
         return { weight: '', prevWeight, reps: '', prevReps, done: false, failure: false };
     },
 
-    logFilter(client, userId, exercise) {
+    isRecoveryLog(log) {
+        return !!(log && (log.is_recovery === true || log.is_recovery === 'true'));
+    },
+
+    /** Working (non-recovery) logs only — used for previous-weight / set preload. */
+    logFilter(client, userId, exercise, { includeRecovery = false } = {}) {
         let q = client
             .from('workout_logs')
-            .select('sets_data, protocol_name, created_at, exercise_id, exercise_name')
+            .select('sets_data, protocol_name, created_at, exercise_id, exercise_name, is_recovery')
             .eq('user_id', userId);
+        if (!includeRecovery) q = q.eq('is_recovery', false);
         if (exercise?.id) q = q.eq('exercise_id', exercise.id);
         else if (exercise?.name) q = q.eq('exercise_name', exercise.name);
         else return null;
@@ -24,8 +31,8 @@ const FitnessExerciseHistory = {
         return data;
     },
 
-    async fetchHistory(client, userId, exercise) {
-        const q = this.logFilter(client, userId, exercise);
+    async fetchHistory(client, userId, exercise, opts) {
+        const q = this.logFilter(client, userId, exercise, opts);
         if (!q) return [];
         const { data } = await q.order('created_at', { ascending: false });
         return data || [];

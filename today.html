@@ -338,11 +338,11 @@
     <main class="space-y-6">
         
         <div v-if="resumeSessionName && prefs.today.resumeSession && prefs.pages.gym" class="fixed bottom-24 left-6 right-6 z-[90]">
-            <a href="workout.html" class="flex items-center justify-between bg-blue-600/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/10 shadow-blue-900/20 active:scale-95 transition-all">
+            <a href="workout.html" class="flex items-center justify-between backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/10 active:scale-95 transition-all" :class="resumeIsRecovery ? 'bg-teal-600/90 shadow-teal-900/20' : 'bg-blue-600/90 shadow-blue-900/20'">
                 <div class="flex items-center gap-3">
                     <div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
                     <div>
-                        <div class="text-[10px] font-black uppercase tracking-widest text-blue-200">Session in Progress</div>
+                        <div class="text-[10px] font-black uppercase tracking-widest" :class="resumeIsRecovery ? 'text-teal-100' : 'text-blue-200'">{{ resumeIsRecovery ? 'Recovery in Progress' : 'Session in Progress' }}</div>
                         <div class="text-sm font-bold text-white italic">{{ resumeSessionName }}</div>
                     </div>
                 </div>
@@ -571,7 +571,8 @@
                 libraryExercises: [],
                 streak: 0, 
                 lowStockItems: [], 
-                resumeSessionName: null, 
+                resumeSessionName: null,
+                resumeIsRecovery: false,
                 toast: { visible: false, title: '', message: '' },
                 arenaActivity: [],
                 arenaCheersExpanded: false,
@@ -640,7 +641,8 @@
                 try { 
                     const parsed = JSON.parse(saved); 
                     if (parsed.activeRoutine && parsed.activeRoutine.name) { 
-                        this.resumeSessionName = parsed.activeRoutine.name; 
+                        this.resumeSessionName = parsed.activeRoutine.name;
+                        this.resumeIsRecovery = !!parsed.isRecovery;
                     } 
                 } catch (e) { 
                     localStorage.removeItem('constellation_active_session'); 

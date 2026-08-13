@@ -285,18 +285,21 @@
                             <div class="font-black text-sm uppercase italic text-slate-200">{{ session.name }}</div>
                             <div class="text-[10px] text-slate-500 font-bold mt-1 tracking-wider">{{ session.date }} • {{ session.exerciseCount }} Exercises • {{ session.volume }} Sets</div>
                         </div>
-                        <div class="text-right"><span class="block font-black text-green-500 text-xs">COMPLETED</span></div>
+                        <div class="text-right">
+                            <span v-if="session.isRecovery" class="block font-black text-teal-400 text-xs">RECOVERY</span>
+                            <span v-else class="block font-black text-green-500 text-xs">COMPLETED</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         
         <div v-if="resumeSessionName" class="fixed bottom-24 left-6 right-6 z-[90]">
-            <a href="workout.html" class="flex items-center justify-between bg-blue-600/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/10 shadow-blue-900/20 active:scale-95 transition-all">
+            <a href="workout.html" class="flex items-center justify-between backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/10 active:scale-95 transition-all" :class="resumeIsRecovery ? 'bg-teal-600/90 shadow-teal-900/20' : 'bg-blue-600/90 shadow-blue-900/20'">
                 <div class="flex items-center gap-3">
                     <div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
                     <div>
-                        <div class="text-[10px] font-black uppercase tracking-widest text-blue-200">Session in Progress</div>
+                        <div class="text-[10px] font-black uppercase tracking-widest" :class="resumeIsRecovery ? 'text-teal-100' : 'text-blue-200'">{{ resumeIsRecovery ? 'Recovery in Progress' : 'Session in Progress' }}</div>
                         <div class="text-sm font-bold text-white italic">{{ resumeSessionName }}</div>
                     </div>
                 </div>
@@ -324,9 +327,13 @@
                         <span class="text-sm font-bold text-slate-300">{{ getExerciseName(exId) }}</span>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <button @click="previewModal = null" class="py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase">Cancel</button>
-                    <button @click="prepAndLaunchSession(previewModal)" class="py-3 rounded-xl bg-blue-600 text-white font-black text-xs uppercase shadow-lg shadow-blue-900/20">Start Session</button>
+                <div class="space-y-3">
+                    <div class="grid grid-cols-2 gap-4">
+                        <button @click="previewModal = null" class="py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase">Cancel</button>
+                        <button @click="prepAndLaunchSession(previewModal)" class="py-3 rounded-xl bg-blue-600 text-white font-black text-xs uppercase shadow-lg shadow-blue-900/20">Start Session</button>
+                    </div>
+                    <button @click="prepAndLaunchSession(previewModal, { recovery: true })" class="w-full py-3 rounded-xl bg-slate-900 border border-teal-500/30 text-teal-400 font-black text-xs uppercase hover:bg-teal-500/10 transition-colors">Start Recovery</button>
+                    <p class="text-[9px] text-slate-600 font-bold uppercase tracking-wider text-center leading-relaxed">Recovery logs the session but won’t replace your working weights next time.</p>
                 </div>
             </div>
         </div>
@@ -358,7 +365,7 @@
     const TARGET_MUSCLES = MUSCLES.filter(m => m !== 'Cardio');
 
     const app = createApp({
-        data() { return { loading: true, bootReady: false, loadingText: 'Loading Data', bootError: null, routines: [], libraryExercises: [], schedule: [], recentSessions: [], rawLogs: [], muscleHeatmap: FitnessHeatmap.defaultStatuses(), heatmapHtml: '', heatmapError: false, scheduleModal: null, previewModal: null, toast: { visible: false, title: '', message: '' }, session: null, resumeSessionName: null, activeFilter: null, muscleGroups: MUSCLES, targetMuscleOptions: TARGET_MUSCLES, aiWorkout: { promptOpen: false, reviewOpen: false, generating: false, applying: false, userPrompt: '', targetMuscles: [], draft: null } } },
+        data() { return { loading: true, bootReady: false, loadingText: 'Loading Data', bootError: null, routines: [], libraryExercises: [], schedule: [], recentSessions: [], rawLogs: [], muscleHeatmap: FitnessHeatmap.defaultStatuses(), heatmapHtml: '', heatmapError: false, scheduleModal: null, previewModal: null, toast: { visible: false, title: '', message: '' }, session: null, resumeSessionName: null, resumeIsRecovery: false, activeFilter: null, muscleGroups: MUSCLES, targetMuscleOptions: TARGET_MUSCLES, aiWorkout: { promptOpen: false, reviewOpen: false, generating: false, applying: false, userPrompt: '', targetMuscles: [], draft: null } } },
         computed: {
             aiWorkoutStats() {
                 const exercises = this.aiWorkout.draft?.exercises || [];
@@ -428,7 +435,10 @@
                     if (saved) {
                         try {
                             const parsed = JSON.parse(saved);
-                            if (parsed.activeRoutine?.name) this.resumeSessionName = parsed.activeRoutine.name;
+                            if (parsed.activeRoutine?.name) {
+                                this.resumeSessionName = parsed.activeRoutine.name;
+                                this.resumeIsRecovery = !!parsed.isRecovery;
+                            }
                         } catch (e) {
                             localStorage.removeItem('constellation_active_session');
                         }
@@ -478,7 +488,8 @@
                     activeRoutine: { name: 'Freeflow Session', data: [] }, 
                     sessionStartTime: Date.now(), 
                     activeExerciseIdx: 0, 
-                    stackTaken: false 
+                    stackTaken: false,
+                    isRecovery: false
                 };
                 localStorage.setItem('constellation_active_session', JSON.stringify(state));
                 window.location.href = 'workout.html';
@@ -502,6 +513,7 @@
                 
                 const sessions = []; let currentSession = null;
                 const pushSession = (s) => { s.exerciseCount = s.exercises.size; delete s.exercises; sessions.push(s); };
+                const isRecoveryLog = (log) => !!(log && (log.is_recovery === true || log.is_recovery === 'true'));
                 
                 this.rawLogs.forEach((log) => {
                     const logTime = new Date(log.created_at).getTime();
@@ -509,16 +521,17 @@
                     const displayDate = new Date(log.created_at).toLocaleDateString(); 
 
                     if (!currentSession) {
-                        currentSession = { id: log.id, startTime: logTime, name: log.protocol_name || 'Training Session', date: displayDate, volume: (log.sets_data ? log.sets_data.length : 1), exercises: new Set([log.exercise_name]) };
+                        currentSession = { id: log.id, startTime: logTime, name: log.protocol_name || 'Training Session', date: displayDate, volume: (log.sets_data ? log.sets_data.length : 1), exercises: new Set([log.exercise_name]), isRecovery: isRecoveryLog(log) };
                     } else {
                         const diffMins = Math.abs(currentSession.startTime - logTime) / (1000 * 60);
                         if (diffMins < 60) { 
                             currentSession.volume += (log.sets_data ? log.sets_data.length : 1); 
-                            currentSession.exercises.add(log.exercise_name); 
+                            currentSession.exercises.add(log.exercise_name);
+                            if (isRecoveryLog(log)) currentSession.isRecovery = true;
                         } 
                         else { 
                             pushSession(currentSession); 
-                            currentSession = { id: log.id, startTime: logTime, name: log.protocol_name || 'Training Session', date: displayDate, volume: (log.sets_data ? log.sets_data.length : 1), exercises: new Set([log.exercise_name]) }; 
+                            currentSession = { id: log.id, startTime: logTime, name: log.protocol_name || 'Training Session', date: displayDate, volume: (log.sets_data ? log.sets_data.length : 1), exercises: new Set([log.exercise_name]), isRecovery: isRecoveryLog(log) }; 
                         }
                     }
                 });
@@ -678,10 +691,11 @@
                 return FitnessRoutineLibrary.canEdit(routine, this.session.user.id);
             },
 
-            async prepAndLaunchSession(routine) {
-                this.loading = true; this.loadingText = "Initializing...";
+            async prepAndLaunchSession(routine, { recovery = false } = {}) {
+                this.loading = true; this.loadingText = recovery ? "Starting recovery..." : "Initializing...";
                 const personalRecords = {};
                 this.rawLogs.forEach(l => {
+                     if (l.is_recovery === true || l.is_recovery === 'true') return;
                      if(l.sets_data) l.sets_data.forEach(s => { const w = parseFloat(s.weight)||0; if(w > (personalRecords[l.exercise_name]||0)) personalRecords[l.exercise_name] = w; });
                 });
 
@@ -710,7 +724,7 @@
                     }
                 }
 
-                const state = { activeRoutine: draftRoutine, sessionStartTime: Date.now(), activeExerciseIdx: 0, stackTaken: false };
+                const state = { activeRoutine: draftRoutine, sessionStartTime: Date.now(), activeExerciseIdx: 0, stackTaken: false, isRecovery: !!recovery };
                 localStorage.setItem('constellation_active_session', JSON.stringify(state));
                 
                 window.location.href = 'workout.html';
