@@ -125,7 +125,13 @@
                 </div>
                 <h2 class="text-xl font-black italic uppercase leading-none">{{ activeRoutine.name }}</h2>
             </div>
-            <div class="font-mono text-2xl font-bold text-slate-300 tracking-tight">{{ formatTimer(sessionTimer) }}</div>
+            <div class="flex items-end gap-4">
+                <div class="text-right">
+                    <div class="text-[9px] font-black uppercase tracking-widest text-slate-500 leading-none mb-1">Tonnage</div>
+                    <div class="font-mono text-lg font-black text-blue-400 tracking-tight leading-none tabular-nums">{{ formatTonnage(sessionTonnage) }}</div>
+                </div>
+                <div class="font-mono text-2xl font-bold text-slate-300 tracking-tight tabular-nums">{{ formatTimer(sessionTimer) }}</div>
+            </div>
         </div>
     </header>
 
@@ -407,6 +413,9 @@
             sessionRecapStats() {
                 return FitnessSocial.computeFromActiveRoutine(this.activeRoutine, this.sessionTimer);
             },
+            sessionTonnage() {
+                return this.sessionRecapStats.tonnage || 0;
+            },
             libraryModalExercises() {
                 let list = this.libraryExercises || [];
                 if (this.swapMuscleFilter) {
@@ -657,6 +666,12 @@
                 }
             },
             formatTimer(s) { if(s < 0) s = 0; return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
+            formatTonnage(lbs) {
+                if (typeof FitnessSocial !== 'undefined' && FitnessSocial.formatNumber) {
+                    return FitnessSocial.formatNumber(lbs);
+                }
+                return (parseInt(lbs, 10) || 0).toLocaleString();
+            },
 
             async shareWorkout() {
                 this.haptic();
