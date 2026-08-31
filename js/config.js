@@ -16,9 +16,9 @@ window.FitnessWorkoutSync = {
         try {
             const pending = JSON.parse(raw);
             const list = [...(fetched || [])];
-            const keys = new Set(list.map(log => `${log.exercise_name}|${log.created_at}`));
+            const keys = new Set(list.map(log => `${log.session_id || ''}|${log.exercise_name}|${log.created_at}`));
             pending.forEach(log => {
-                const key = `${log.exercise_name}|${log.created_at}`;
+                const key = `${log.session_id || ''}|${log.exercise_name}|${log.created_at}`;
                 if (!keys.has(key)) {
                     list.unshift(log);
                     keys.add(key);

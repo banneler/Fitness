@@ -123,7 +123,7 @@ createApp({
 
             if (logsError) throw logsError;
 
-            const sessionLogs = FitnessSocial.findSessionLogs(logs || [], startTime, 3600000, anchorId);
+            const sessionLogs = FitnessSocial.findSessionLogs(logs || [], startTime, 120000, anchorId);
             if (!sessionLogs.length) {
                 this.error = 'This workout session could not be loaded.';
                 this.loading = false;

@@ -72,21 +72,172 @@ const FitnessSocial = {
         return formatted ? formatted.html : null;
     },
 
-    findSessionLogs(rawWorkouts, startTime, windowMs = 3600000, anchorId = null) {
-        let t = parseInt(startTime, 10);
-        if (anchorId && rawWorkouts?.length) {
-            const anchor = rawWorkouts.find(log => log.id === anchorId);
-            if (anchor) t = new Date(anchor.created_at).getTime();
+    /** Weight × reps for one set. Skips explicitly incomplete sets if they ever appear in sets_data. */
+    setLoad(set) {
+        if (!set || set.done === false) return 0;
+        const w = parseFloat(set.weight) || 0;
+        const r = parseInt(set.reps, 10) || 0;
+        return w * r;
+    },
+
+    logTonnage(log) {
+        return (log?.sets_data || []).reduce((acc, s) => acc + this.setLoad(s), 0);
+    },
+
+    logSetCount(log) {
+        return (log?.sets_data || []).filter(s => s && s.done !== false).length;
+    },
+
+    isRecoveryLog(log) {
+        return !!(log && (log.is_recovery === true || log.is_recovery === 'true'));
+    },
+
+    newSessionId() {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
         }
-        if (!t || !rawWorkouts?.length) return [];
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    },
+
+    /**
+     * Resolve logs for one finished workout.
+     * Prefer session_id (exact). Legacy fallback: same protocol + duration within a tight window
+     * (finish batches are written milliseconds apart — the old 60-minute window merged neighboring workouts).
+     */
+    findSessionLogs(rawWorkouts, startTime, windowMs = 120000, anchorId = null) {
+        if (!rawWorkouts?.length) return [];
+
+        let anchor = null;
+        if (anchorId) {
+            anchor = rawWorkouts.find(log => log.id === anchorId) || null;
+        }
+
+        if (anchor?.session_id) {
+            return rawWorkouts.filter(log => log.session_id === anchor.session_id);
+        }
+
+        let t = parseInt(startTime, 10);
+        if (anchor) t = new Date(anchor.created_at).getTime();
+        if (!t) return anchor ? [anchor] : [];
+
+        const protocol = anchor?.protocol_name || null;
+        const duration = anchor?.duration_seconds;
         const matched = rawWorkouts.filter(log => {
             const logTime = new Date(log.created_at).getTime();
-            return Math.abs(logTime - t) <= windowMs;
+            if (Math.abs(logTime - t) > windowMs) return false;
+            if (protocol != null && (log.protocol_name || null) !== protocol) return false;
+            if (duration != null && log.duration_seconds != null && log.duration_seconds !== duration) return false;
+            return true;
         });
         if (matched.length) return matched;
-        if (!anchorId) return [];
-        const anchor = rawWorkouts.find(log => log.id === anchorId);
         return anchor ? [anchor] : [];
+    },
+
+    buildSessionFromLogs(sessionLogs) {
+        if (!sessionLogs?.length) return null;
+        const ordered = [...sessionLogs].sort(
+            (a, b) => new Date(a.created_at) - new Date(b.created_at)
+        );
+        const first = ordered[0];
+        const startTime = new Date(first.created_at).getTime();
+        const session = {
+            id: first.id,
+            session_id: first.session_id || null,
+            protocol_name: first.protocol_name || 'Generic Session',
+            name: first.protocol_name || 'Training Session',
+            startTime,
+            date: new Date(startTime).toLocaleDateString(),
+            setCount: 0,
+            volume: 0,
+            tonnage: 0,
+            duration: 0,
+            exercises: new Set(),
+            isRecovery: false,
+            logs: ordered
+        };
+
+        ordered.forEach(log => {
+            const sets = this.logSetCount(log);
+            session.setCount += sets;
+            session.volume += sets;
+            session.tonnage += this.logTonnage(log);
+            if (log.exercise_name) session.exercises.add(log.exercise_name);
+            if ((log.duration_seconds || 0) > session.duration) {
+                session.duration = log.duration_seconds;
+            }
+            if (this.isRecoveryLog(log)) session.isRecovery = true;
+            if (log.protocol_name) {
+                session.protocol_name = log.protocol_name;
+                session.name = log.protocol_name;
+            }
+        });
+
+        return session;
+    },
+
+    /**
+     * Group workout_logs into finished sessions.
+     * Logs with session_id always stay together and never merge with other sessions.
+     * Legacy rows (no session_id) only merge when protocol + duration match inside a short window.
+     */
+    groupSessionsFromLogs(logs, options = {}) {
+        const legacyWindowMs = options.legacyWindowMs ?? 120000;
+        const list = [...(logs || [])].sort(
+            (a, b) => new Date(a.created_at) - new Date(b.created_at)
+        );
+
+        const bySessionId = new Map();
+        const orphans = [];
+
+        list.forEach(log => {
+            if (log.session_id) {
+                if (!bySessionId.has(log.session_id)) bySessionId.set(log.session_id, []);
+                bySessionId.get(log.session_id).push(log);
+            } else {
+                orphans.push(log);
+            }
+        });
+
+        const sessions = [];
+        bySessionId.forEach(sessionLogs => {
+            const session = this.buildSessionFromLogs(sessionLogs);
+            if (session) sessions.push(session);
+        });
+
+        let currentLogs = [];
+        let currentKey = null;
+        let currentLastTime = 0;
+
+        const flushLegacy = () => {
+            if (!currentLogs.length) return;
+            const session = this.buildSessionFromLogs(currentLogs);
+            if (session) sessions.push(session);
+            currentLogs = [];
+            currentKey = null;
+            currentLastTime = 0;
+        };
+
+        orphans.forEach(log => {
+            const logTime = new Date(log.created_at).getTime();
+            const key = `${log.protocol_name || ''}|${log.duration_seconds ?? ''}`;
+            const canMerge = currentLogs.length
+                && currentKey === key
+                && Math.abs(logTime - currentLastTime) <= legacyWindowMs;
+
+            if (!canMerge) {
+                flushLegacy();
+                currentKey = key;
+            }
+            currentLogs.push(log);
+            currentLastTime = logTime;
+        });
+        flushLegacy();
+
+        return sessions.sort((a, b) => b.startTime - a.startTime);
     },
 
     computeFromActiveRoutine(activeRoutine, sessionTimer) {
@@ -134,9 +285,9 @@ const FitnessSocial = {
             exercises.add(log.exercise_name);
             const sets = [];
             (log.sets_data || []).forEach(s => {
-                const w = parseFloat(s.weight) || 0;
-                const r = parseInt(s.reps, 10) || 0;
-                tonnage += w * r;
+                if (s && s.done === false) return;
+                const load = this.setLoad(s);
+                tonnage += load;
                 setCount++;
                 const formatted = this.formatSetLabel(s);
                 if (formatted) sets.push(formatted);
@@ -172,35 +323,6 @@ const FitnessSocial = {
         return (rawWorkouts || []).filter(log => new Date(log.created_at).getTime() >= startMs);
     },
 
-    groupSessionsFromLogs(logs) {
-        const sessions = [];
-        let currentSession = null;
-        [...(logs || [])].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).forEach(log => {
-            const logTime = new Date(log.created_at).getTime();
-            const logTonnage = (log.sets_data || []).reduce(
-                (acc, s) => acc + (parseFloat(s.weight || 0) * parseInt(s.reps || 0, 10)),
-                0
-            );
-            if (!currentSession || Math.abs(currentSession.startTime - logTime) > 3600000) {
-                currentSession = {
-                    startTime: logTime,
-                    setCount: 0,
-                    tonnage: 0,
-                    duration: log.duration_seconds || 0,
-                    exercises: new Set()
-                };
-                sessions.push(currentSession);
-            }
-            currentSession.setCount += (log.sets_data?.length || 0);
-            currentSession.tonnage += logTonnage;
-            currentSession.exercises.add(log.exercise_name);
-            if ((log.duration_seconds || 0) > currentSession.duration) {
-                currentSession.duration = log.duration_seconds;
-            }
-        });
-        return sessions;
-    },
-
     computeFromWeekLogs(rawWorkouts, options = {}) {
         const days = options.days ?? 7;
         const { startMs, weekSeed, weekLabel } = this.getWeekWindow(days);
@@ -217,11 +339,11 @@ const FitnessSocial = {
             const name = log.exercise_name || 'Exercise';
             if (!byExercise[name]) byExercise[name] = { sets: [], tonnage: 0 };
             (log.sets_data || []).forEach(s => {
-                const w = parseFloat(s.weight) || 0;
-                const r = parseInt(s.reps, 10) || 0;
-                tonnage += w * r;
+                if (s && s.done === false) return;
+                const load = this.setLoad(s);
+                tonnage += load;
                 setCount++;
-                byExercise[name].tonnage += w * r;
+                byExercise[name].tonnage += load;
                 const formatted = this.formatSetLabel(s);
                 if (formatted) byExercise[name].sets.push(formatted);
             });

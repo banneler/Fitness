@@ -702,8 +702,13 @@
                     return;
                 }
                 const sorted = [...this.todayWorkoutLogs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-                const latestTime = new Date(sorted[0].created_at).getTime();
-                const sessionLogs = sorted.filter(log => Math.abs(new Date(log.created_at).getTime() - latestTime) <= 3600000);
+                const latest = sorted[0];
+                const sessionLogs = FitnessSocial.findSessionLogs(
+                    sorted,
+                    new Date(latest.created_at).getTime(),
+                    120000,
+                    latest.id
+                );
                 const duration = Math.max(...sessionLogs.map(l => l.duration_seconds || 0), 0);
                 const protocolName = sessionLogs[0]?.protocol_name || this.todaysWorkout || 'Today\'s Training';
                 const stats = FitnessSocial.computeFromSessionLogs(sessionLogs, { protocol_name: protocolName, duration });

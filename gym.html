@@ -510,33 +510,18 @@
                 await this.refreshHeatmap();
 
                 if (!this.rawLogs.length) { this.recentSessions = []; return; }
-                
-                const sessions = []; let currentSession = null;
-                const pushSession = (s) => { s.exerciseCount = s.exercises.size; delete s.exercises; sessions.push(s); };
-                const isRecoveryLog = (log) => !!(log && (log.is_recovery === true || log.is_recovery === 'true'));
-                
-                this.rawLogs.forEach((log) => {
-                    const logTime = new Date(log.created_at).getTime();
-                    
-                    const displayDate = new Date(log.created_at).toLocaleDateString(); 
 
-                    if (!currentSession) {
-                        currentSession = { id: log.id, startTime: logTime, name: log.protocol_name || 'Training Session', date: displayDate, volume: (log.sets_data ? log.sets_data.length : 1), exercises: new Set([log.exercise_name]), isRecovery: isRecoveryLog(log) };
-                    } else {
-                        const diffMins = Math.abs(currentSession.startTime - logTime) / (1000 * 60);
-                        if (diffMins < 60) { 
-                            currentSession.volume += (log.sets_data ? log.sets_data.length : 1); 
-                            currentSession.exercises.add(log.exercise_name);
-                            if (isRecoveryLog(log)) currentSession.isRecovery = true;
-                        } 
-                        else { 
-                            pushSession(currentSession); 
-                            currentSession = { id: log.id, startTime: logTime, name: log.protocol_name || 'Training Session', date: displayDate, volume: (log.sets_data ? log.sets_data.length : 1), exercises: new Set([log.exercise_name]), isRecovery: isRecoveryLog(log) }; 
-                        }
-                    }
-                });
-                if (currentSession) pushSession(currentSession);
-                this.recentSessions = sessions.slice(0, 5);
+                this.recentSessions = FitnessSocial.groupSessionsFromLogs(this.rawLogs)
+                    .slice(0, 5)
+                    .map(session => ({
+                        id: session.id,
+                        startTime: session.startTime,
+                        name: session.name,
+                        date: session.date,
+                        volume: session.volume,
+                        exerciseCount: session.exercises.size,
+                        isRecovery: session.isRecovery
+                    }));
             },
 
             async generateAIWorkout() {

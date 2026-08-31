@@ -739,15 +739,24 @@
 
                 // WORKOUT LOGGING
                 const flatLogs = [];
+                const sessionId = FitnessSocial.newSessionId();
+                const finishedAt = new Date().toISOString();
                 this.activeRoutine.data.forEach(group => {
                     group.exercises.forEach(ex => {
-                        const validSets = ex.sets.filter(s => s.done);
+                        const validSets = ex.sets
+                            .filter(s => s.done)
+                            .map(s => ({
+                                weight: s.weight,
+                                reps: s.reps,
+                                failure: !!s.failure
+                            }));
                         if (validSets.length > 0) {
                             flatLogs.push(FitnessExerciseLibrary.logPayload(this.session.user.id, ex, {
                                 protocol_name: this.activeRoutine.name,
                                 sets_data: validSets,
                                 duration_seconds: this.sessionTimer,
-                                created_at: new Date().toISOString(),
+                                created_at: finishedAt,
+                                session_id: sessionId,
                                 is_recovery: !!this.isRecovery
                             }));
                         }
@@ -761,6 +770,7 @@
                             exercise_name: l.exercise_name,
                             exercise_id: l.exercise_id,
                             created_at: l.created_at,
+                            session_id: l.session_id,
                             is_recovery: !!l.is_recovery
                         }));
                         this.rawLogs = [...this.lastSavedSessionLogs, ...this.rawLogs];
