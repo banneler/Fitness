@@ -264,8 +264,8 @@
                     <span class="text-[10px] font-black uppercase tracking-widest flex-1"><span class="block text-slate-400">Inventory</span><span :class="stackTaken ? 'text-blue-400' : 'text-slate-600'">Log Stack Consumption?</span></span>
                 </label>
                 <div class="space-y-3">
-                    <button @click="confirmFinishSession" class="w-full py-4 rounded-xl bg-green-600 text-white font-black text-sm uppercase shadow-lg shadow-green-900/20 hover:bg-green-500 transition-all active:scale-95">Save Workout</button>
-                    <button @click="finishModal = false" class="w-full py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors">Resume Training</button>
+                    <button @click="confirmFinishSession" :disabled="isSaving" class="w-full py-4 rounded-xl bg-green-600 text-white font-black text-sm uppercase shadow-lg shadow-green-900/20 hover:bg-green-500 transition-all active:scale-95 disabled:opacity-60 disabled:pointer-events-none">{{ isSaving ? 'Saving…' : 'Save Workout' }}</button>
+                    <button @click="finishModal = false" :disabled="isSaving" class="w-full py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors disabled:opacity-60">Resume Training</button>
                 </div>
             </div>
         </div>
@@ -311,9 +311,9 @@
                     <p class="text-xs text-slate-500 font-bold text-center mt-2">Unsaved progress will be permanently lost.</p>
                 </div>
                 <div class="space-y-3">
-                    <button @click="confirmFinishSession" class="w-full py-3 rounded-xl bg-slate-800 text-green-500 font-black text-xs uppercase hover:bg-slate-700">Save & Finish</button>
-                    <button @click="discardSession" class="w-full py-3 rounded-xl bg-red-600 text-white font-black text-xs uppercase shadow-lg shadow-red-900/20 hover:bg-red-500">Discard Data</button>
-                    <button @click="exitModal = false" class="w-full py-2 text-[10px] text-slate-500 font-black uppercase hover:text-white">Cancel</button>
+                    <button @click="confirmFinishSession" :disabled="isSaving" class="w-full py-3 rounded-xl bg-slate-800 text-green-500 font-black text-xs uppercase hover:bg-slate-700 disabled:opacity-60 disabled:pointer-events-none">{{ isSaving ? 'Saving…' : 'Save & Finish' }}</button>
+                    <button @click="discardSession" :disabled="isSaving" class="w-full py-3 rounded-xl bg-red-600 text-white font-black text-xs uppercase shadow-lg shadow-red-900/20 hover:bg-red-500 disabled:opacity-60">Discard Data</button>
+                    <button @click="exitModal = false" :disabled="isSaving" class="w-full py-2 text-[10px] text-slate-500 font-black uppercase hover:text-white">Cancel</button>
                 </div>
             </div>
         </div>
@@ -388,7 +388,7 @@
             return { 
                 session: null, activeRoutine: { name: '', data: [] }, activeExerciseIdx: 0, stackTaken: false, isRecovery: false,
                 sessionTimer: 0, sessionStartTime: null, sessionInterval: null, restTimer: 0, restTimerRunning: false, restInterval: null,
-                finishModal: false, exitModal: false, sharePromptModal: false,
+                finishModal: false, exitModal: false, sharePromptModal: false, isSaving: false,
                 swapModal: { visible: false, groupIdx: null, exIdx: null },
                 libraryModalMode: 'swap',
                 swapMuscleFilter: null,
@@ -710,8 +710,11 @@
             },
             
             async confirmFinishSession() {
+                if (this.isSaving) return;
+                this.isSaving = true;
                 clearInterval(this.sessionInterval);
 
+                try {
                 // PROTOCOL CREATION
                 if (this.saveAsRoutine && this.newRoutineName) {
                     const exerciseOrder = [];
@@ -794,6 +797,10 @@
                     this.$nextTick(() => lucide.createIcons());
                 } else {
                     this.leaveWorkoutAfterShare();
+                }
+                } catch (e) {
+                    console.error('Finish session failed', e);
+                    this.isSaving = false;
                 }
             },
             discardSession() {
