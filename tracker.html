@@ -194,11 +194,12 @@
                             <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">30-Day Weight</h3>
                         </div>
                         <div class="text-right">
-                            <span class="block text-[8px] text-slate-500 uppercase font-black tracking-widest">LATEST</span>
-                            <span class="text-2xl font-black italic text-white">{{ currentWeight }} <span class="text-sm text-slate-500 not-italic">lbs</span></span>
+                            <span class="block text-[8px] text-slate-500 uppercase font-black tracking-widest">{{ selectedWeightPoint ? 'SELECTED' : 'LATEST' }}</span>
+                            <span class="text-2xl font-black italic text-white">{{ displayWeight }} <span class="text-sm text-slate-500 not-italic">lbs</span></span>
+                            <span v-if="selectedWeightPoint?.label" class="block text-[9px] text-blue-400/80 font-bold mt-0.5">{{ selectedWeightPoint.label }}</span>
                         </div>
                     </div>
-                    <div class="h-40 w-full relative">
+                    <div class="h-40 w-full relative" @click="clearWeightPoint">
                         <svg v-if="chartPath" class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
                             <defs>
                                 <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -207,10 +208,33 @@
                             </defs>
                             <polygon :points="chartFillPath" fill="url(#chartGradient)" />
                             <polyline :points="chartPath" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" />
-                            <circle :cx="lastPoint.x" :cy="lastPoint.y" r="4" fill="#fff" stroke="#3b82f6" stroke-width="2" />
+                            <line v-if="selectedWeightPoint"
+                                  :x1="selectedWeightPoint.x" :x2="selectedWeightPoint.x" y1="0" y2="150"
+                                  stroke="rgba(148,163,184,0.45)" stroke-width="1.5" stroke-dasharray="4 4" />
+                            <circle v-for="(p, i) in weightPoints" :key="'wh-'+i"
+                                    :cx="p.x" :cy="p.y" r="14" fill="transparent"
+                                    class="cursor-pointer" style="pointer-events: all"
+                                    @click.stop="selectWeightPoint(p)" />
+                            <circle v-for="(p, i) in weightPoints" :key="'wd-'+i"
+                                    :cx="p.x" :cy="p.y"
+                                    :r="selectedWeightPoint && selectedWeightPoint.i === i ? 5 : 3"
+                                    :fill="selectedWeightPoint && selectedWeightPoint.i === i ? '#fff' : '#020617'"
+                                    stroke="#3b82f6" stroke-width="2" style="pointer-events: none" />
                         </svg>
-                        <div v-else class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-600 uppercase font-bold italic">Not Enough Data</div>
+                        <div v-if="selectedWeightPoint"
+                             class="absolute z-10 pointer-events-none -translate-x-1/2 -translate-y-full"
+                             :style="{ left: (selectedWeightPoint.x / 300 * 100) + '%', top: (selectedWeightPoint.y / 150 * 100) + '%', marginTop: '-10px' }">
+                            <div class="px-2 py-1 rounded-lg bg-slate-950/95 border border-blue-500/40 shadow-xl whitespace-nowrap text-center">
+                                <div>
+                                    <span class="text-sm font-black italic text-white">{{ selectedWeightPoint.weight }}</span>
+                                    <span class="text-[9px] text-slate-500 font-bold uppercase ml-1">lbs</span>
+                                </div>
+                                <div v-if="selectedWeightPoint.label" class="text-[8px] text-blue-300/80 font-bold uppercase tracking-wider">{{ selectedWeightPoint.label }}</div>
+                            </div>
+                        </div>
+                        <div v-else-if="!chartPath" class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-600 uppercase font-bold italic">Not Enough Data</div>
                     </div>
+                    <p v-if="chartPath && weightPoints.length > 1" class="text-[8px] text-slate-600 font-bold uppercase tracking-widest mt-2 text-center">Tap a point to inspect</p>
                 </section>
 
                 <section class="glass p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
@@ -445,7 +469,7 @@
                             <button @click="mvmtChartMode = 'volume'" :class="mvmtChartMode === 'volume' ? 'bg-orange-600 text-white' : 'text-slate-500 hover:text-white'" class="flex-1 py-2 rounded-md text-[9px] font-black uppercase tracking-widest transition-all">Volume Load</button>
                         </div>
 
-                        <div class="h-48 w-full relative bg-slate-950/20 rounded-xl border border-white/5">
+                        <div class="h-48 w-full relative bg-slate-950/20 rounded-xl border border-white/5" @click="clearMvmtPoint">
                             <svg v-if="mvmtChartPath" class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
                                 <defs>
                                     <linearGradient id="mvmtGradient" x1="0" y1="0" x2="0" y2="1">
@@ -455,10 +479,35 @@
                                 </defs>
                                 <polygon :points="mvmtFillPath" fill="url(#mvmtGradient)" />
                                 <polyline :points="mvmtChartPath" fill="none" :stroke="mvmtChartMode==='strength'?'#3b82f6':'#f97316'" stroke-width="3" stroke-linecap="round" />
-                                <circle v-for="p in mvmtPoints" :key="p.x" :cx="p.x" :cy="p.y" r="3" fill="#020617" :stroke="mvmtChartMode==='strength'?'#3b82f6':'#f97316'" stroke-width="2" />
+                                <line v-if="selectedMvmtPoint"
+                                      :x1="selectedMvmtPoint.x" :x2="selectedMvmtPoint.x" y1="0" y2="150"
+                                      stroke="rgba(148,163,184,0.45)" stroke-width="1.5" stroke-dasharray="4 4" />
+                                <circle v-for="(p, i) in mvmtPoints" :key="'mh-'+i"
+                                        :cx="p.x" :cy="p.y" r="14" fill="transparent"
+                                        class="cursor-pointer" style="pointer-events: all"
+                                        @click.stop="selectMvmtPoint(p)" />
+                                <circle v-for="(p, i) in mvmtPoints" :key="'md-'+i"
+                                        :cx="p.x" :cy="p.y"
+                                        :r="selectedMvmtPoint && selectedMvmtPoint.i === i ? 5 : 3"
+                                        :fill="selectedMvmtPoint && selectedMvmtPoint.i === i ? '#fff' : '#020617'"
+                                        :stroke="mvmtChartMode==='strength'?'#3b82f6':'#f97316'" stroke-width="2"
+                                        style="pointer-events: none" />
                             </svg>
-                            <div v-else class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-600 uppercase font-bold italic">Insufficient Data</div>
+                            <div v-if="selectedMvmtPoint"
+                                 class="absolute z-10 pointer-events-none -translate-x-1/2 -translate-y-full"
+                                 :style="{ left: (selectedMvmtPoint.x / 300 * 100) + '%', top: (selectedMvmtPoint.y / 150 * 100) + '%', marginTop: '-10px' }">
+                                <div class="px-2 py-1 rounded-lg bg-slate-950/95 border border-white/10 shadow-xl whitespace-nowrap text-center"
+                                     :class="mvmtChartMode==='strength' ? 'border-blue-500/40' : 'border-orange-500/40'">
+                                    <div>
+                                        <span class="text-sm font-black italic text-white">{{ formatMvmtValue(selectedMvmtPoint.value) }}</span>
+                                        <span class="text-[9px] text-slate-500 font-bold uppercase ml-1">{{ mvmtChartMode === 'strength' ? 'est 1RM' : 'lbs' }}</span>
+                                    </div>
+                                    <div v-if="selectedMvmtPoint.label" class="text-[8px] text-slate-400 font-bold uppercase tracking-wider">{{ selectedMvmtPoint.label }}</div>
+                                </div>
+                            </div>
+                            <div v-else-if="!mvmtChartPath" class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-600 uppercase font-bold italic">Insufficient Data</div>
                         </div>
+                        <p v-if="mvmtChartPath && mvmtPoints.length > 1" class="text-[8px] text-slate-600 font-bold uppercase tracking-widest mt-2 text-center">Tap a point to inspect</p>
                     </div>
                 </section>
             </div>
@@ -502,7 +551,8 @@
                 targets: { protein: 0, cals: 0, carbs: 0, fat: 0 },
                 
                 // CHARTS
-                chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0}, 
+                chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0},
+                weightPoints: [], selectedWeightPoint: null,
                 vitals: { sleepPath: '', energyPath: '', rhrPath: '' },
                 
                 latestRHR: '--', latestSleep: '--', latestEnergy: '--',
@@ -512,13 +562,17 @@
                 library: [], mvmtSearch: '', showMvmtList: false, 
                 selectedMovement: null, mvmtHistory: [], mvmtChartMode: 'strength',
                 activeFilter: null, muscleGroups: MUSCLES,
-                mvmtChartPath: '', mvmtFillPath: '', mvmtPoints: [], mvmtStats: { max1RM: 0 }
+                mvmtChartPath: '', mvmtFillPath: '', mvmtPoints: [], selectedMvmtPoint: null, mvmtStats: { max1RM: 0 }
             }
         },
         computed: {
             currentWeight() { 
                 const latest = this.allMetrics.find(m => m.weight);
                 return latest ? latest.weight : '--'; 
+            },
+            displayWeight() {
+                if (this.selectedWeightPoint) return this.selectedWeightPoint.weight;
+                return this.currentWeight;
             },
             globalMaxMacros() {
                 // 1. Group logs by LOCAL date (Timezone Fix)
@@ -654,7 +708,7 @@
             filteredExercises() { return this.library; }
         },
         watch: {
-            mvmtChartMode() { this.calculateMvmtChart(); },
+            mvmtChartMode() { this.selectedMvmtPoint = null; this.calculateMvmtChart(); },
             showMvmtList(val) { if(val) this.$nextTick(() => lucide.createIcons()); }
         },
         async mounted() {
@@ -736,8 +790,9 @@
                 this.mvmtHistory = data || []; this.calculateMvmtChart();
             },
             calculateMvmtChart() {
-                if(!this.mvmtHistory.length) { this.mvmtChartPath = ''; this.mvmtStats.max1RM = 0; return; }
-                const points = this.mvmtHistory.map(log => {
+                this.selectedMvmtPoint = null;
+                if(!this.mvmtHistory.length) { this.mvmtChartPath = ''; this.mvmtPoints = []; this.mvmtStats.max1RM = 0; return; }
+                const values = this.mvmtHistory.map(log => {
                     let val = 0;
                     if(this.mvmtChartMode === 'strength') {
                         const maxEst = (log.sets_data || []).reduce((max, s) => {
@@ -749,13 +804,38 @@
                     } else { val = (log.sets_data || []).reduce((acc, s) => acc + (parseFloat(s.weight||0) * parseInt(s.reps||0)), 0); }
                     return val;
                 });
-                this.mvmtStats.max1RM = Math.max(0, ...points).toFixed(1);
-                if(points.length < 2) { this.mvmtChartPath = `0,75 300,75`; return; }
-                const min = Math.min(...points) * 0.9; const max = Math.max(...points) * 1.1; const range = max - min || 1;
-                const coords = points.map((val, i) => ({ x: (i / (points.length - 1)) * 300, y: 150 - ((val - min) / range * 130) - 10 }));
+                this.mvmtStats.max1RM = Math.max(0, ...values).toFixed(1);
+                if(values.length < 2) {
+                    const v = values[0] || 0;
+                    this.mvmtChartPath = `0,75 300,75`;
+                    this.mvmtFillPath = `0,150 0,75 300,75 300,150`;
+                    this.mvmtPoints = [{ i: 0, x: 300, y: 75, value: v, label: this.formatChartDate(this.mvmtHistory[0]?.created_at) }];
+                    return;
+                }
+                const min = Math.min(...values) * 0.9; const max = Math.max(...values) * 1.1; const range = max - min || 1;
+                const coords = values.map((val, i) => ({
+                    i,
+                    x: (i / (values.length - 1)) * 300,
+                    y: 150 - ((val - min) / range * 130) - 10,
+                    value: val,
+                    label: this.formatChartDate(this.mvmtHistory[i]?.created_at)
+                }));
                 this.mvmtPoints = coords;
                 this.mvmtChartPath = coords.map(p => `${p.x},${p.y}`).join(' ');
                 this.mvmtFillPath = `0,150 ${this.mvmtChartPath} 300,150`;
+            },
+            selectMvmtPoint(p) { this.selectedMvmtPoint = p; },
+            clearMvmtPoint() { this.selectedMvmtPoint = null; },
+            formatMvmtValue(val) {
+                const n = parseFloat(val);
+                if (isNaN(n)) return '--';
+                return n >= 100 ? Math.round(n).toLocaleString() : (Math.round(n * 10) / 10).toString();
+            },
+            formatChartDate(iso) {
+                if (!iso) return '';
+                const d = new Date(iso);
+                if (isNaN(d.getTime())) return '';
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             },
             async runAnalysis() {
                 this.isAnalyzing = true;
@@ -799,18 +879,44 @@
                 }
             },
             calculateWeightGraph(data) {
+                this.selectedWeightPoint = null;
                 const weights = data.map(d => d.weight);
-                if (weights.length === 0) { this.chartPath = ''; return; }
-                if (weights.length === 1) { this.chartPath = "0,75 300,75"; this.chartFillPath = "0,150 0,75 300,75 300,150"; this.lastPoint = { x: 300, y: 75 }; return; }
+                if (weights.length === 0) {
+                    this.chartPath = '';
+                    this.chartFillPath = '';
+                    this.weightPoints = [];
+                    return;
+                }
+                if (weights.length === 1) {
+                    const point = {
+                        i: 0, x: 300, y: 75,
+                        weight: weights[0],
+                        label: this.formatChartDate(data[0]?.created_at)
+                    };
+                    this.chartPath = "0,75 300,75";
+                    this.chartFillPath = "0,150 0,75 300,75 300,150";
+                    this.lastPoint = point;
+                    this.weightPoints = [point];
+                    return;
+                }
 
                 const min = Math.min(...weights) - 1;
                 const max = Math.max(...weights) + 1;
                 const range = max - min || 1;
-                const points = weights.map((w, i) => ({ x: (i / (weights.length - 1)) * 300, y: 150 - ((w - min) / range * 150) }));
+                const points = weights.map((w, i) => ({
+                    i,
+                    x: (i / (weights.length - 1)) * 300,
+                    y: 150 - ((w - min) / range * 150),
+                    weight: w,
+                    label: this.formatChartDate(data[i]?.created_at)
+                }));
                 this.chartPath = points.map(p => `${p.x},${p.y}`).join(' ');
                 this.chartFillPath = `0,150 ${this.chartPath} 300,150`;
                 this.lastPoint = points[points.length - 1];
+                this.weightPoints = points;
             },
+            selectWeightPoint(p) { this.selectedWeightPoint = p; },
+            clearWeightPoint() { this.selectedWeightPoint = null; },
             calculateVitalsGraph(data) {
                 const latest = data[data.length-1];
                 this.latestRHR = latest.resting_hr || '--';
