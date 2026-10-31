@@ -191,7 +191,7 @@
                     <div class="flex justify-between items-end mb-4 relative z-10">
                         <div class="flex items-center gap-2 opacity-60">
                             <i data-lucide="trending-up" class="w-4 h-4 text-blue-400"></i>
-                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">30-Day Weight</h3>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-300">Weight Tracker</h3>
                         </div>
                         <div class="text-right">
                             <span class="block text-[8px] text-slate-500 uppercase font-black tracking-widest">{{ selectedWeightPoint ? 'SELECTED' : 'LATEST' }}</span>
@@ -199,7 +199,16 @@
                             <span v-if="selectedWeightPoint?.label" class="block text-[9px] text-blue-400/80 font-bold mt-0.5">{{ selectedWeightPoint.label }}</span>
                         </div>
                     </div>
-                    <div class="h-40 w-full relative" @click="clearWeightPoint">
+                    <div class="h-40 w-full flex" @click="clearWeightPoint">
+                        <div v-if="weightAxisTicks.length" class="relative w-10 shrink-0 h-full pointer-events-none" aria-hidden="true">
+                            <div v-for="(tick, i) in weightAxisTicks" :key="'wt-'+i"
+                                 class="absolute right-0 flex items-center gap-1 -translate-y-1/2"
+                                 :style="{ top: tick.pct + '%' }">
+                                <span class="text-[8px] font-bold text-slate-500 tabular-nums leading-none">{{ tick.label }}</span>
+                                <span class="block w-1.5 shrink-0 bg-slate-500" style="height:1px"></span>
+                            </div>
+                        </div>
+                        <div class="relative flex-1 h-full min-w-0">
                         <svg v-if="chartPath" class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none">
                             <defs>
                                 <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -233,6 +242,7 @@
                             </div>
                         </div>
                         <div v-else-if="!chartPath" class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-600 uppercase font-bold italic">Not Enough Data</div>
+                        </div>
                     </div>
                     <p v-if="chartPath && weightPoints.length > 1" class="text-[8px] text-slate-600 font-bold uppercase tracking-widest mt-2 text-center">Tap a point to inspect</p>
                 </section>
@@ -552,7 +562,7 @@
                 
                 // CHARTS
                 chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0},
-                weightPoints: [], selectedWeightPoint: null,
+                weightPoints: [], selectedWeightPoint: null, weightAxisTicks: [],
                 vitals: { sleepPath: '', energyPath: '', rhrPath: '' },
                 
                 latestRHR: '--', latestSleep: '--', latestEnergy: '--',
@@ -885,6 +895,7 @@
                     this.chartPath = '';
                     this.chartFillPath = '';
                     this.weightPoints = [];
+                    this.weightAxisTicks = [];
                     return;
                 }
                 if (weights.length === 1) {
@@ -897,6 +908,7 @@
                     this.chartFillPath = "0,150 0,75 300,75 300,150";
                     this.lastPoint = point;
                     this.weightPoints = [point];
+                    this.weightAxisTicks = this.buildWeightAxisTicks(weights[0] - 1, weights[0] + 1);
                     return;
                 }
 
@@ -914,6 +926,39 @@
                 this.chartFillPath = `0,150 ${this.chartPath} 300,150`;
                 this.lastPoint = points[points.length - 1];
                 this.weightPoints = points;
+                this.weightAxisTicks = this.buildWeightAxisTicks(min, max);
+            },
+            niceWeightStep(range) {
+                const raw = range / 4;
+                if (!(raw > 0)) return 1;
+                const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+                const n = raw / pow;
+                const nice = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+                return nice * pow;
+            },
+            formatAxisWeight(value) {
+                const n = Math.round(value * 10) / 10;
+                if (Math.abs(n - Math.round(n)) < 1e-6) return String(Math.round(n));
+                return n.toFixed(1);
+            },
+            buildWeightAxisTicks(min, max) {
+                const range = max - min;
+                if (!(range > 0)) {
+                    return [{ label: this.formatAxisWeight(min), pct: 50 }];
+                }
+                const step = this.niceWeightStep(range);
+                const ticks = [{ label: this.formatAxisWeight(max), pct: 0 }];
+                const epsilon = step / 1e6;
+                const first = Math.ceil((min + epsilon) / step) * step;
+                for (let i = 0; i < 8; i++) {
+                    const rounded = Math.round((first + i * step) * 1000) / 1000;
+                    if (rounded >= max - epsilon) break;
+                    const pct = ((max - rounded) / range) * 100;
+                    if (pct < 10 || pct > 90) continue;
+                    ticks.push({ label: this.formatAxisWeight(rounded), pct });
+                }
+                ticks.push({ label: this.formatAxisWeight(min), pct: 100 });
+                return ticks;
             },
             selectWeightPoint(p) { this.selectedWeightPoint = p; },
             clearWeightPoint() { this.selectedWeightPoint = null; },
