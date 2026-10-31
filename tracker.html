@@ -199,7 +199,8 @@
                             <span v-if="selectedWeightPoint?.label" class="block text-[9px] text-blue-400/80 font-bold mt-0.5">{{ selectedWeightPoint.label }}</span>
                         </div>
                     </div>
-                    <div class="h-40 w-full flex" @click="clearWeightPoint">
+                    <div @click="clearWeightPoint">
+                    <div class="h-40 w-full flex">
                         <div v-if="weightAxisTicks.length" class="relative w-10 shrink-0 h-full pointer-events-none" aria-hidden="true">
                             <div v-for="(tick, i) in weightAxisTicks" :key="'wt-'+i"
                                  class="absolute right-0 flex items-center gap-1 -translate-y-1/2"
@@ -243,6 +244,19 @@
                         </div>
                         <div v-else-if="!chartPath" class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-600 uppercase font-bold italic">Not Enough Data</div>
                         </div>
+                    </div>
+                    <div v-if="weightDateTicks.length" class="mt-2 flex pointer-events-none" aria-hidden="true">
+                        <div class="w-10 shrink-0"></div>
+                        <div class="relative flex-1 h-5">
+                            <div v-for="(tick, i) in weightDateTicks" :key="'wdt-'+i"
+                                 class="absolute top-0 flex flex-col"
+                                 :class="tick.align === 'start' ? 'items-start' : tick.align === 'end' ? 'items-end' : 'items-center -translate-x-1/2'"
+                                 :style="tick.align === 'end' ? { right: '0' } : { left: tick.pct + '%' }">
+                                <span class="block w-px shrink-0 bg-slate-500" style="height:4px"></span>
+                                <span class="text-[8px] font-bold text-slate-500 tabular-nums leading-none whitespace-nowrap mt-0.5">{{ tick.label }}</span>
+                            </div>
+                        </div>
+                    </div>
                     </div>
                     <p v-if="chartPath && weightPoints.length > 1" class="text-[8px] text-slate-600 font-bold uppercase tracking-widest mt-2 text-center">Tap a point to inspect</p>
                 </section>
@@ -562,7 +576,7 @@
                 
                 // CHARTS
                 chartPath: '', chartFillPath: '', lastPoint: {x:0, y:0},
-                weightPoints: [], selectedWeightPoint: null, weightAxisTicks: [],
+                weightPoints: [], selectedWeightPoint: null, weightAxisTicks: [], weightDateTicks: [],
                 vitals: { sleepPath: '', energyPath: '', rhrPath: '' },
                 
                 latestRHR: '--', latestSleep: '--', latestEnergy: '--',
@@ -896,6 +910,7 @@
                     this.chartFillPath = '';
                     this.weightPoints = [];
                     this.weightAxisTicks = [];
+                    this.weightDateTicks = [];
                     return;
                 }
                 if (weights.length === 1) {
@@ -909,6 +924,7 @@
                     this.lastPoint = point;
                     this.weightPoints = [point];
                     this.weightAxisTicks = this.buildWeightAxisTicks(weights[0] - 1, weights[0] + 1);
+                    this.weightDateTicks = this.buildWeightDateTicks(data);
                     return;
                 }
 
@@ -927,6 +943,37 @@
                 this.lastPoint = points[points.length - 1];
                 this.weightPoints = points;
                 this.weightAxisTicks = this.buildWeightAxisTicks(min, max);
+                this.weightDateTicks = this.buildWeightDateTicks(data);
+            },
+            buildWeightDateTicks(data) {
+                const n = data.length;
+                if (!n) return [];
+                const labelAt = (index) => this.formatChartDate(data[index]?.created_at);
+                if (n === 1) {
+                    const label = labelAt(0);
+                    return label ? [{ label, pct: 100, align: 'end' }] : [];
+                }
+                const interior = n >= 6 ? 4 : Math.max(0, n - 2);
+                const total = Math.min(n, interior + 2);
+                const ticks = [];
+                const used = new Set();
+                for (let i = 0; i < total; i++) {
+                    const pct = (i / (total - 1)) * 100;
+                    const index = i === 0 ? 0 : i === total - 1 ? n - 1 : Math.round((pct / 100) * (n - 1));
+                    const label = labelAt(index);
+                    if (!label) continue;
+                    if (i === total - 1) {
+                        const dup = ticks.findIndex(tick => tick.label === label && tick.align === 'mid');
+                        if (dup !== -1) ticks.splice(dup, 1);
+                    } else if (used.has(label)) continue;
+                    used.add(label);
+                    ticks.push({
+                        label,
+                        pct,
+                        align: i === 0 ? 'start' : i === total - 1 ? 'end' : 'mid'
+                    });
+                }
+                return ticks;
             },
             niceWeightStep(range) {
                 const raw = range / 4;
