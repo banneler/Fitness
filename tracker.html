@@ -162,27 +162,27 @@
                     <div class="flex justify-between items-center mb-6">
                         <div class="flex items-center gap-2">
                             <i data-lucide="brain-circuit" class="w-5 h-5 text-purple-400"></i>
-                            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-white">Neural Analyst</h3>
+                            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-white">Coach's Take</h3>
                         </div>
                         <button @click="runAnalysis" :disabled="isAnalyzing" class="px-4 py-2 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-400 text-[10px] font-black uppercase italic active:scale-95 transition-all">
-                            <span v-if="!isAnalyzing">SYNC LINK</span>
-                            <span v-else class="animate-pulse">ANALYZING...</span>
+                            <span v-if="isAnalyzing" class="animate-pulse">ANALYZING...</span>
+                            <span v-else>{{ analysis ? 'Refresh' : 'Recap' }}</span>
                         </button>
                     </div>
 
                     <div v-if="analysis" class="space-y-4">
                         <div class="bg-slate-950/50 p-5 rounded-3xl border border-white/5">
-                            <p class="text-[10px] text-purple-400 font-black uppercase mb-2 tracking-widest">Executive Briefing</p>
+                            <p class="text-[10px] text-purple-400 font-black uppercase mb-2 tracking-widest">This Week</p>
                             <p class="text-sm italic leading-relaxed text-slate-200">{{ analysis.summary }}</p>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                                <p class="text-[8px] text-orange-400 font-black uppercase mb-1">Prediction</p>
-                                <p class="text-[10px] font-bold text-slate-300 italic">{{ analysis.prediction }}</p>
+                            <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5 min-w-0">
+                                <p class="text-[8px] text-orange-400 font-black uppercase mb-1">What to Expect</p>
+                                <p class="text-[13px] font-normal not-italic leading-relaxed text-slate-200 break-words">{{ analysis.prediction }}</p>
                             </div>
-                            <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                                <p class="text-[8px] text-emerald-400 font-black uppercase mb-1">Growth Vector</p>
-                                <p class="text-[10px] font-bold text-slate-300 italic">{{ analysis.advice }}</p>
+                            <div class="bg-slate-950/50 p-4 rounded-2xl border border-white/5 min-w-0">
+                                <p class="text-[8px] text-emerald-400 font-black uppercase mb-1">Next Move</p>
+                                <p class="text-[13px] font-normal not-italic leading-relaxed text-slate-200 break-words">{{ analysis.advice }}</p>
                             </div>
                         </div>
                     </div>
@@ -868,7 +868,7 @@
                     const { data, error } = await _client.functions.invoke('ai-performance-summary', { body: { user_id: this.session.user.id } });
                     if (error) throw error;
                     this.analysis = data; this.$nextTick(() => lucide.createIcons());
-                } catch (e) { console.error("Neural link failed", e); } finally { this.isAnalyzing = false; }
+                } catch (e) { console.error("Coach summary failed", e); } finally { this.isAnalyzing = false; }
             },
             async fetchBodyHistory() { const { data } = await _client.from('body_metrics').select('*').order('created_at', { ascending: true }); this.bodyHistory = data || []; },
             getLatestMetric(m) { const valid = this.bodyHistory.filter(h => h[m] !== null); return valid.length ? valid[valid.length-1][m] : '--'; },
