@@ -13,6 +13,9 @@ BEGIN;
 --   ALTER VIEW public.daily_nutrition_totals SET (security_invoker = false);
 --   -- Then recreate the previous view body from a backup if the WHERE auth.uid()
 --   -- wrapper was applied. pg_get_viewdef before this migration is the backup.
+--   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon;
+--   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon;
+--   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon;
 
 CREATE OR REPLACE FUNCTION public.fitness_standard_owner_id()
 RETURNS uuid
@@ -78,16 +81,17 @@ BEGIN
     END LOOP;
 END $$;
 
+-- Any logged-in user can read every exercise. Friends store each other's
+-- custom exercise ids on their own routines and workout_logs, and the gym
+-- resolves those ids from this list. Writes stay own-row only. Anon is
+-- blocked by the revoke below, not by this policy.
 DROP POLICY IF EXISTS exercises_select ON public.exercises;
 DROP POLICY IF EXISTS exercises_insert ON public.exercises;
 DROP POLICY IF EXISTS exercises_update ON public.exercises;
 DROP POLICY IF EXISTS exercises_delete ON public.exercises;
 CREATE POLICY exercises_select ON public.exercises
     FOR SELECT TO authenticated
-    USING (
-        user_id = auth.uid()
-        OR user_id = public.fitness_standard_owner_id()
-    );
+    USING (true);
 CREATE POLICY exercises_insert ON public.exercises
     FOR INSERT TO authenticated
     WITH CHECK (user_id = auth.uid());
@@ -218,5 +222,11 @@ END $$;
 -- Belt and suspenders: the anon API role should not have table privileges in public.
 -- Authenticated grants are left as they are. service_role is untouched.
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
+
+-- Future tables, sequences, and functions created by the role that runs this
+-- script (postgres, in the SQL editor) must not be granted to anon again.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM anon;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON FUNCTIONS FROM anon;
 
 COMMIT;

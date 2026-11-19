@@ -79,13 +79,11 @@ DROP POLICY IF EXISTS "exercises_insert" ON exercises;
 DROP POLICY IF EXISTS "exercises_update" ON exercises;
 DROP POLICY IF EXISTS "exercises_delete" ON exercises;
 
--- Standard library + own personal exercises only
+-- Logged-in users can read every exercise. Friends reference each other's
+-- custom ids from their own routines and logs. Writes stay own-row only.
 CREATE POLICY "exercises_select" ON exercises
     FOR SELECT TO authenticated
-    USING (
-        user_id = auth.uid()
-        OR user_id = public.fitness_standard_owner_id()
-    );
+    USING (true);
 
 CREATE POLICY "exercises_insert" ON exercises
     FOR INSERT TO authenticated

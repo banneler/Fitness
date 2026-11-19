@@ -71,18 +71,35 @@ BEGIN
         prev := '{}'::jsonb;
     END IF;
 
+    -- The leaderboard view includes the caller when they are hidden
+    -- (is_hidden = false OR id = auth.uid()). auth.uid() inside this
+    -- definer function is still the caller, so a hidden person would be
+    -- written into the public timeline and the order would change depending
+    -- on who opened the app. Snapshot only people who are not hidden.
     SELECT jsonb_build_object(
         'volume', coalesce((
-            SELECT jsonb_agg(user_id ORDER BY total_volume DESC NULLS LAST, user_id)
-            FROM public.leaderboard
+            SELECT jsonb_agg(l.user_id ORDER BY l.total_volume DESC NULLS LAST, l.user_id)
+            FROM public.leaderboard l
+            WHERE l.user_id IN (
+                SELECT p.id FROM public.profiles p
+                WHERE coalesce(p.is_hidden, false) = false
+            )
         ), '[]'::jsonb),
         'sessions', coalesce((
-            SELECT jsonb_agg(user_id ORDER BY sessions_count DESC NULLS LAST, user_id)
-            FROM public.leaderboard
+            SELECT jsonb_agg(l.user_id ORDER BY l.sessions_count DESC NULLS LAST, l.user_id)
+            FROM public.leaderboard l
+            WHERE l.user_id IN (
+                SELECT p.id FROM public.profiles p
+                WHERE coalesce(p.is_hidden, false) = false
+            )
         ), '[]'::jsonb),
         'streak', coalesce((
-            SELECT jsonb_agg(user_id ORDER BY current_streak DESC NULLS LAST, user_id)
-            FROM public.leaderboard
+            SELECT jsonb_agg(l.user_id ORDER BY l.current_streak DESC NULLS LAST, l.user_id)
+            FROM public.leaderboard l
+            WHERE l.user_id IN (
+                SELECT p.id FROM public.profiles p
+                WHERE coalesce(p.is_hidden, false) = false
+            )
         ), '[]'::jsonb)
     ) INTO next;
 
