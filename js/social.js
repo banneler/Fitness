@@ -425,7 +425,8 @@ const FitnessSocial = {
         })[metric] || { title: 'Arena Standings', statCaption: 'LAST 7 DAYS', color: '#a855f7' };
     },
 
-    ARENA_SNAPSHOT_KEY: 'constellation_arena_ranks',
+    ARENA_SNAPSHOT_KEY: 'ba_fitness_arena_ranks',
+    ARENA_SNAPSHOT_LEGACY: 'constellation_arena_ranks',
     ARENA_METRICS: ['volume', 'sessions', 'streak'],
 
     sortLeaderboardByMetric(users, metric) {
@@ -456,7 +457,9 @@ const FitnessSocial = {
 
     loadArenaSnapshot() {
         try {
-            const raw = localStorage.getItem(this.ARENA_SNAPSHOT_KEY);
+            const raw = window.FitnessStorage
+                ? FitnessStorage.read(this.ARENA_SNAPSHOT_KEY, this.ARENA_SNAPSHOT_LEGACY)
+                : (localStorage.getItem(this.ARENA_SNAPSHOT_KEY) || localStorage.getItem(this.ARENA_SNAPSHOT_LEGACY));
             return raw ? JSON.parse(raw) : null;
         } catch (e) {
             return null;
@@ -465,7 +468,9 @@ const FitnessSocial = {
 
     saveArenaSnapshot(snapshot) {
         try {
-            localStorage.setItem(this.ARENA_SNAPSHOT_KEY, JSON.stringify(snapshot));
+            const payload = JSON.stringify(snapshot);
+            if (window.FitnessStorage) FitnessStorage.write(this.ARENA_SNAPSHOT_KEY, this.ARENA_SNAPSHOT_LEGACY, payload);
+            else localStorage.setItem(this.ARENA_SNAPSHOT_KEY, payload);
         } catch (e) { /* ignore quota */ }
     },
 

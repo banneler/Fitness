@@ -2,6 +2,16 @@
 
 Progressive overload PWA — Vue 3 + Supabase.
 
+## Security update (apply before relying on the fixes)
+
+The app update is safe to ship before or after the database change. The anon-key leak stays open until these SQL files are run, in order, in the Supabase SQL editor (or `supabase/run-remote-sql.sh`):
+
+1. `supabase/migrations/20261119140000_lock_down_personal_data.sql`
+2. `supabase/migrations/20261119140100_rank_history_and_function_hardening.sql`
+3. `supabase/migrations/20261119140200_dedupe_policies_and_fk_indexes.sql`
+
+Then deploy the four functions in `supabase/functions/` (`ai-performance-summary`, `ai-workout-generator`, `ai-nutrition-parser`, `ai-workout-import`). Each file has a rollback note at the top. Do not run anything else in `supabase/*.sql` again; those are the older one-time scripts.
+
 ## Social features
 
 ### Share workout

@@ -2,8 +2,10 @@
  * Arena rank history — detect leaderboard position changes and display a community timeline.
  */
 const FitnessArenaHistory = {
-    SNAPSHOT_KEY: 'constellation_arena_full_ranks',
-    LOCAL_HISTORY_KEY: 'constellation_arena_rank_history',
+    SNAPSHOT_KEY: 'ba_fitness_arena_full_ranks',
+    SNAPSHOT_LEGACY: 'constellation_arena_full_ranks',
+    LOCAL_HISTORY_KEY: 'ba_fitness_arena_rank_history',
+    LOCAL_HISTORY_LEGACY: 'constellation_arena_rank_history',
     METRICS: ['volume', 'sessions', 'streak'],
     MAX_LOCAL_EVENTS: 300,
 
@@ -16,9 +18,19 @@ const FitnessArenaHistory = {
         return snap;
     },
 
+    _read(key, legacy) {
+        if (window.FitnessStorage) return FitnessStorage.read(key, legacy);
+        try { return localStorage.getItem(key) || localStorage.getItem(legacy); } catch (e) { return null; }
+    },
+
+    _write(key, legacy, value) {
+        if (window.FitnessStorage) FitnessStorage.write(key, legacy, value);
+        else localStorage.setItem(key, value);
+    },
+
     loadSnapshot() {
         try {
-            const raw = localStorage.getItem(this.SNAPSHOT_KEY);
+            const raw = this._read(this.SNAPSHOT_KEY, this.SNAPSHOT_LEGACY);
             return raw ? JSON.parse(raw) : null;
         } catch (e) {
             return null;
@@ -27,13 +39,13 @@ const FitnessArenaHistory = {
 
     saveSnapshot(snapshot) {
         try {
-            localStorage.setItem(this.SNAPSHOT_KEY, JSON.stringify(snapshot));
+            this._write(this.SNAPSHOT_KEY, this.SNAPSHOT_LEGACY, JSON.stringify(snapshot));
         } catch (e) { /* ignore quota */ }
     },
 
     loadLocalHistory() {
         try {
-            const raw = localStorage.getItem(this.LOCAL_HISTORY_KEY);
+            const raw = this._read(this.LOCAL_HISTORY_KEY, this.LOCAL_HISTORY_LEGACY);
             return raw ? JSON.parse(raw) : [];
         } catch (e) {
             return [];
@@ -46,7 +58,7 @@ const FitnessArenaHistory = {
             .sort((a, b) => new Date(b.created_at || b.at) - new Date(a.created_at || a.at))
             .slice(0, this.MAX_LOCAL_EVENTS);
         try {
-            localStorage.setItem(this.LOCAL_HISTORY_KEY, JSON.stringify(merged));
+            this._write(this.LOCAL_HISTORY_KEY, this.LOCAL_HISTORY_LEGACY, JSON.stringify(merged));
         } catch (e) { /* ignore quota */ }
     },
 
@@ -139,8 +151,18 @@ const FitnessArenaHistory = {
         return events;
     },
 
+    rpcMissing(error) {
+        if (!error) return false;
+        const msg = `${error.message || ''} ${error.details || ''}`;
+        return error.code === 'PGRST202' || msg.includes('record_arena_rank_changes');
+    },
+
     async seedOpeningBoardIfEmpty(client, users) {
         if (!users?.length) return false;
+        const { error: rpcError } = await client.rpc('record_arena_rank_changes');
+        if (!rpcError) return true;
+        if (!this.rpcMissing(rpcError)) return false;
+
         const { count, error } = await client
             .from('arena_rank_events')
             .select('*', { count: 'exact', head: true });
@@ -154,6 +176,18 @@ const FitnessArenaHistory = {
     },
 
     async recordChanges(client, users) {
+        const { error: rpcError } = await client.rpc('record_arena_rank_changes');
+        if (!rpcError) {
+            this.saveSnapshot(this.buildFullSnapshot(users));
+            return [];
+        }
+        // Direct inserts are closed once the migration is applied. Only the
+        // pre-migration app (function not deployed yet) may write rows itself.
+        if (!this.rpcMissing(rpcError)) {
+            console.warn('Rank history was not recorded', rpcError);
+            return [];
+        }
+
         const prev = this.loadSnapshot();
         const next = this.buildFullSnapshot(users);
         const events = this.diffSnapshots(prev, next);

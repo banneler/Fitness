@@ -1,2 +1,2 @@
--- Per-user app layout preferences (mirrors localStorage constellation_user_prefs)
+-- Per-user app layout preferences (mirrors localStorage ba_fitness_user_prefs)
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS layout_prefs jsonb;

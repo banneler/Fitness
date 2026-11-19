@@ -1,9 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai"
+import { corsHeaders, requireUser } from "../_shared/require-user.ts"
 
 const systemPrompt = `
-You are the CONSTELLATION Neural Analyst, a world-class bio-hacker and performance coach. 
+You are the BA Fitness coach, a world-class bio-hacker and performance coach. 
 Your goal is to analyze the user's "Performance Intelligence" data and provide a high-agency executive briefing.
 
 TONE: 
@@ -34,17 +34,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // 2. Validate Request Body
-    const body = await req.json().catch(() => null);
-    if (!body || !body.user_id) {
-      throw new Error("Invalid request: missing user_id");
-    }
-    const { user_id } = body;
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    // Identity comes from the caller's JWT. A user id in the body is ignored.
+    const auth = await requireUser(req)
+    if ('response' in auth) return auth.response
+    const { user, client } = auth
+    const user_id = user.id
 
     const genAI = new GoogleGenerativeAI(Deno.env.get('GEMINI_API_KEY')!)
     const model = genAI.getGenerativeModel({ 
@@ -55,9 +49,9 @@ Deno.serve(async (req) => {
     // 3. Gather Intelligence (Last 7 Days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     const [workouts, nutrition, biometrics] = await Promise.all([
-      supabase.from('workout_logs').select('*').eq('user_id', user_id).gte('created_at', sevenDaysAgo),
-      supabase.from('food_logs').select('*').eq('user_id', user_id).gte('created_at', sevenDaysAgo),
-      supabase.from('daily_metrics').select('*').eq('user_id', user_id).gte('created_at', sevenDaysAgo).order('created_at', {ascending: false})
+      client.from('workout_logs').select('*').eq('user_id', user_id).gte('created_at', sevenDaysAgo),
+      client.from('food_logs').select('*').eq('user_id', user_id).gte('created_at', sevenDaysAgo),
+      client.from('daily_metrics').select('*').eq('user_id', user_id).gte('created_at', sevenDaysAgo).order('created_at', {ascending: false})
     ])
 
     const context = {
@@ -81,7 +75,7 @@ Deno.serve(async (req) => {
     return new Response(text, { 
       headers: { 
         "Content-Type": "application/json",
-        'Access-Control-Allow-Origin': '*' 
+        ...corsHeaders
       } 
     })
 

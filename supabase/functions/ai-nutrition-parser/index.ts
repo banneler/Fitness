@@ -1,9 +1,5 @@
 // File: supabase/functions/ai-nutrition-parser/index.ts
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-};
+import { corsHeaders, requireUser } from '../_shared/require-user.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,6 +7,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const auth = await requireUser(req);
+    if ('response' in auth) return auth.response;
+
     const { image, query } = await req.json();
     
     if (!image && !query) {

@@ -1,0 +1,19 @@
+/*
+ * Muted Tailwind grays fail WCAG AA on the #020617 background:
+ * slate-500 is about 4.2:1, slate-600 about 2.7:1, slate-700 about 2.0:1.
+ * slate-400 (#94a3b8) is about 7.9:1. Loaded after the Tailwind CDN; !important
+ * wins over utilities the CDN injects.
+ */
+.text-slate-500,
+.text-slate-600 {
+    color: #94a3b8 !important;
+}
+
+.text-slate-700 {
+    color: #cbd5e1 !important;
+}
+
+::placeholder {
+    color: #94a3b8 !important;
+    opacity: 1;
+}

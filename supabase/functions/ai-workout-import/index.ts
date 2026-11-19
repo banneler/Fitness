@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser } from "../_shared/require-user.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -87,6 +88,9 @@ serve(async (req) => {
   }
 
   try {
+    const auth = await requireUser(req);
+    if ('response' in auth) return auth.response;
+
     const { imagesBase64, library } = await req.json();
 
     if (!imagesBase64?.length || !library?.length) {

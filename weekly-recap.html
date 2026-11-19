@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#020617">
-    <title>Weekly Recap | Constellation</title>
+    <title>Weekly Recap | BA Fitness</title>
 
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -14,9 +14,10 @@
     <link rel="manifest" href="manifest.json">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <link rel="stylesheet" href="css/a11y.css">
+    <script src="https://unpkg.com/vue@3.5.45/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@1.76.0/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/exercise-library.js"></script>
@@ -76,12 +77,12 @@
         </button>
     </main>
 
-    <div v-if="!loading && error" class="flex-1 flex flex-col items-center justify-center text-center px-6">
+    <main v-if="!loading && error" class="flex-1 flex flex-col items-center justify-center text-center px-6">
         <i data-lucide="calendar-x" class="w-12 h-12 text-slate-600 mb-4"></i>
         <h2 class="text-lg font-black italic uppercase text-white mb-2">Week Not Ready</h2>
         <p class="text-xs text-slate-500 mb-6">{{ error }}</p>
         <button @click="goBack" class="px-6 py-3 rounded-xl bg-purple-600 text-white font-black text-xs uppercase">Back to Tracker</button>
-    </div>
+    </main>
 </div>
 
 <script>

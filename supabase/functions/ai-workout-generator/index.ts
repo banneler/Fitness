@@ -1,9 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { corsHeaders, requireUser } from '../_shared/require-user.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 const VALID_ICONS = new Set([
   'dumbbell', 'biceps-flexed', 'weight', 'disc', 'anchor', 'sword', 'shield',
@@ -52,13 +48,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { user_id, library, target_muscles, user_prompt } = await req.json();
-    if (!user_id) throw new Error('Missing user_id in request body');
+    const auth = await requireUser(req);
+    if ('response' in auth) return auth.response;
+    const { user, client } = auth;
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const { library, target_muscles, user_prompt } = await req.json();
+    const user_id = user.id;
 
     let libraryEntries: LibraryEntry[] = [];
     if (library?.length) {
@@ -68,8 +63,7 @@ Deno.serve(async (req) => {
         muscle_group: e.muscle_group ?? null
       }));
     } else {
-      const { data } = await supabase.from('exercises').select('id, name, muscle_group')
-        .or(`user_id.eq.${user_id},user_id.is.null`);
+      const { data } = await client.from('exercises').select('id, name, muscle_group');
       libraryEntries = (data || []).map((e: LibraryEntry) => ({
         id: String(e.id),
         name: e.name,
@@ -86,7 +80,7 @@ Deno.serve(async (req) => {
     const hasTargets = targets.length > 0;
     const promptNote = (user_prompt || '').trim();
 
-    const { data: recentLogs } = await supabase.from('workout_logs')
+    const { data: recentLogs } = await client.from('workout_logs')
       .select('exercise_name, created_at')
       .eq('user_id', user_id)
       .order('created_at', { ascending: false })
