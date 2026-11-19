@@ -14,7 +14,8 @@
     <link rel="manifest" href="manifest.json">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <link rel="stylesheet" href="css/a11y.css">
+    <script src="https://unpkg.com/vue@3.5.45/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@0.469.0"></script>
     <script src="js/config.js"></script>
@@ -25,6 +26,7 @@
     <script src="js/heatmap.js"></script>
     <script src="js/exercise-history.js"></script>
     <script src="js/social.js"></script>
+    <script src="js/arena-prs.js"></script>
     
     <style>
         [v-cloak] { display: none !important; }
@@ -173,7 +175,7 @@
     </div>
 
     <div v-if="bootReady && !loading && !bootError" class="flex flex-col h-full w-full">
-        <div class="flex-1 overflow-y-auto no-scrollbar">
+        <main class="flex-1 overflow-y-auto no-scrollbar">
             <header class="flex justify-between items-center mb-6">
                 <div>
                     <h1 class="text-3xl font-black italic text-blue-500 uppercase">Performance</h1>
@@ -293,14 +295,14 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
         
         <div v-if="resumeSessionName" class="fixed bottom-24 left-6 right-6 z-[90]">
             <a href="workout.html" class="flex items-center justify-between backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/10 active:scale-95 transition-all" :class="resumeIsRecovery ? 'bg-teal-600/90 shadow-teal-900/20' : 'bg-blue-600/90 shadow-blue-900/20'">
                 <div class="flex items-center gap-3">
                     <div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
                     <div>
-                        <div class="text-[10px] font-black uppercase tracking-widest" :class="resumeIsRecovery ? 'text-teal-100' : 'text-blue-200'">{{ resumeIsRecovery ? 'Recovery in Progress' : 'Session in Progress' }}</div>
+                        <div class="text-[10px] font-black uppercase tracking-widest" :class="resumeUnsaved ? 'text-red-100' : (resumeIsRecovery ? 'text-teal-100' : 'text-blue-200')">{{ resumeUnsaved ? 'Finish didn’t save — open to retry' : (resumeIsRecovery ? 'Recovery in Progress' : 'Session in Progress') }}</div>
                         <div class="text-sm font-bold text-white italic">{{ resumeSessionName }}</div>
                     </div>
                 </div>
@@ -366,7 +368,7 @@
     const TARGET_MUSCLES = MUSCLES.filter(m => m !== 'Cardio');
 
     const app = createApp({
-        data() { return { loading: true, bootReady: false, loadingText: 'Loading Data', bootError: null, routines: [], libraryExercises: [], schedule: [], recentSessions: [], rawLogs: [], muscleHeatmap: FitnessHeatmap.defaultStatuses(), heatmapHtml: '', heatmapError: false, scheduleModal: null, previewModal: null, toast: { visible: false, title: '', message: '' }, session: null, resumeSessionName: null, resumeIsRecovery: false, activeFilter: null, muscleGroups: MUSCLES, targetMuscleOptions: TARGET_MUSCLES, aiWorkout: { promptOpen: false, reviewOpen: false, generating: false, applying: false, userPrompt: '', targetMuscles: [], draft: null } } },
+        data() { return { loading: true, bootReady: false, loadingText: 'Loading Data', bootError: null, routines: [], libraryExercises: [], schedule: [], recentSessions: [], rawLogs: [], muscleHeatmap: FitnessHeatmap.defaultStatuses(), heatmapHtml: '', heatmapError: false, scheduleModal: null, previewModal: null, toast: { visible: false, title: '', message: '' }, session: null, resumeSessionName: null, resumeIsRecovery: false, resumeUnsaved: false, activeFilter: null, muscleGroups: MUSCLES, targetMuscleOptions: TARGET_MUSCLES, aiWorkout: { promptOpen: false, reviewOpen: false, generating: false, applying: false, userPrompt: '', targetMuscles: [], draft: null } } },
         computed: {
             aiWorkoutStats() {
                 const exercises = this.aiWorkout.draft?.exercises || [];
@@ -407,10 +409,13 @@
                 if (this.session && this.bootReady) this.fetchHistory();
             };
             window.addEventListener('pageshow', this._onPageShow);
+            this._onOnline = () => { if (this.session) this.refreshSavedSession(); };
+            window.addEventListener('online', this._onOnline);
             await this.boot();
         },
         beforeUnmount() {
             window.removeEventListener('pageshow', this._onPageShow);
+            window.removeEventListener('online', this._onOnline);
         },
         updated() {
             this.$nextTick(() => { lucide.createIcons(); });
@@ -425,6 +430,7 @@
                         throw new Error('App scripts failed to load. Tap Clear Cache & Reload below.');
                     }
 
+                    if (window.FitnessPwa) FitnessPwa.disableStaleWorker();
                     const { data: { session }, error } = await _client.auth.getSession();
                     if (error || !session) { window.location.href = 'index.html'; return; }
                     this.session = session;
@@ -432,18 +438,7 @@
                     await FitnessUserPrefs.hydrate(_client, session.user.id);
                     if (!FitnessUserPrefs.guardPage('gym')) return;
 
-                    const saved = localStorage.getItem('constellation_active_session');
-                    if (saved) {
-                        try {
-                            const parsed = JSON.parse(saved);
-                            if (parsed.activeRoutine?.name) {
-                                this.resumeSessionName = parsed.activeRoutine.name;
-                                this.resumeIsRecovery = !!parsed.isRecovery;
-                            }
-                        } catch (e) {
-                            localStorage.removeItem('constellation_active_session');
-                        }
-                    }
+                    await this.refreshSavedSession();
 
                     await Promise.all([this.fetchExercises(), this.fetchSchedule()]);
                     await this.fetchRoutines();
@@ -472,6 +467,24 @@
                 }
             },
             retryBoot() { this.boot(); },
+            async refreshSavedSession() {
+                if (this.session) await FitnessWorkoutSync.flush(_client);
+                this.resumeSessionName = null;
+                this.resumeIsRecovery = false;
+                this.resumeUnsaved = false;
+                const saved = FitnessStorage.read(FitnessKeys.activeSession[0], FitnessKeys.activeSession[1]);
+                if (!saved) return;
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.activeRoutine?.name) {
+                        this.resumeSessionName = parsed.activeRoutine.name;
+                        this.resumeIsRecovery = !!parsed.isRecovery;
+                        this.resumeUnsaved = !!parsed.pendingFinishSessionId;
+                    }
+                } catch (e) {
+                    FitnessStorage.remove(FitnessKeys.activeSession[0], FitnessKeys.activeSession[1]);
+                }
+            },
             async clearCacheAndReload() {
                 try {
                     const keys = await caches.keys();
@@ -492,7 +505,7 @@
                     stackTaken: false,
                     isRecovery: false
                 };
-                localStorage.setItem('constellation_active_session', JSON.stringify(state));
+                FitnessStorage.write(FitnessKeys.activeSession[0], FitnessKeys.activeSession[1], JSON.stringify(state));
                 window.location.href = 'workout.html';
             },
 
@@ -711,7 +724,7 @@
                 }
 
                 const state = { activeRoutine: draftRoutine, sessionStartTime: Date.now(), activeExerciseIdx: 0, stackTaken: false, isRecovery: !!recovery };
-                localStorage.setItem('constellation_active_session', JSON.stringify(state));
+                FitnessStorage.write(FitnessKeys.activeSession[0], FitnessKeys.activeSession[1], JSON.stringify(state));
                 
                 window.location.href = 'workout.html';
             }

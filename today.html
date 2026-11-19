@@ -14,9 +14,10 @@
     <link rel="manifest" href="manifest.json">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <link rel="stylesheet" href="css/a11y.css">
+    <script src="https://unpkg.com/vue@3.5.45/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@1.76.0/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/user-prefs.js"></script>
@@ -27,6 +28,7 @@
     <script src="js/animal-volume.js"></script>
     <script src="js/social.js"></script>
     <script src="js/arena-history.js"></script>
+    <script src="js/arena-prs.js"></script>
     <style>
         [v-cloak] { display: none !important; }
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
@@ -342,7 +344,7 @@
                 <div class="flex items-center gap-3">
                     <div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
                     <div>
-                        <div class="text-[10px] font-black uppercase tracking-widest" :class="resumeIsRecovery ? 'text-teal-100' : 'text-blue-200'">{{ resumeIsRecovery ? 'Recovery in Progress' : 'Session in Progress' }}</div>
+                        <div class="text-[10px] font-black uppercase tracking-widest" :class="resumeUnsaved ? 'text-red-100' : (resumeIsRecovery ? 'text-teal-100' : 'text-blue-200')">{{ resumeUnsaved ? 'Finish didn’t save — open to retry' : (resumeIsRecovery ? 'Recovery in Progress' : 'Session in Progress') }}</div>
                         <div class="text-sm font-bold text-white italic">{{ resumeSessionName }}</div>
                     </div>
                 </div>
@@ -573,6 +575,7 @@
                 lowStockItems: [], 
                 resumeSessionName: null,
                 resumeIsRecovery: false,
+                resumeUnsaved: false,
                 toast: { visible: false, title: '', message: '' },
                 arenaActivity: [],
                 arenaCheersExpanded: false,
@@ -629,25 +632,16 @@
             }
         },
         async mounted() {
+            if (window.FitnessPwa) FitnessPwa.disableStaleWorker();
             const { data: { session } } = await _client.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             this.session = session;
             this.prefs = await FitnessUserPrefs.hydrate(_client, session.user.id);
             FitnessBottomNav.mount('app-bottom-nav', 'today');
 
-            // Check for active session for banner
-            const saved = localStorage.getItem('constellation_active_session');
-            if (saved) { 
-                try { 
-                    const parsed = JSON.parse(saved); 
-                    if (parsed.activeRoutine && parsed.activeRoutine.name) { 
-                        this.resumeSessionName = parsed.activeRoutine.name;
-                        this.resumeIsRecovery = !!parsed.isRecovery;
-                    } 
-                } catch (e) { 
-                    localStorage.removeItem('constellation_active_session'); 
-                } 
-            }
+            await this.refreshSavedSession();
+            this._onOnline = () => this.refreshSavedSession();
+            window.addEventListener('online', this._onOnline);
             
             const fetches = [
                 this.fetchMetrics(),
@@ -669,6 +663,24 @@
         },
         updated() { this.$nextTick(() => lucide.createIcons()); },
         methods: {
+            async refreshSavedSession() {
+                if (this.session) await FitnessWorkoutSync.flush(_client);
+                this.resumeSessionName = null;
+                this.resumeIsRecovery = false;
+                this.resumeUnsaved = false;
+                const saved = FitnessStorage.read(FitnessKeys.activeSession[0], FitnessKeys.activeSession[1]);
+                if (!saved) return;
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.activeRoutine && parsed.activeRoutine.name) {
+                        this.resumeSessionName = parsed.activeRoutine.name;
+                        this.resumeIsRecovery = !!parsed.isRecovery;
+                        this.resumeUnsaved = !!parsed.pendingFinishSessionId;
+                    }
+                } catch (e) {
+                    FitnessStorage.remove(FitnessKeys.activeSession[0], FitnessKeys.activeSession[1]);
+                }
+            },
             // FIX: Helper for Local Midnight Timezone correction
             getLocalMidnightISO() {
                 const date = new Date();

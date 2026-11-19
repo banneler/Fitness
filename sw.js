@@ -1,4 +1,18 @@
-const CACHE_NAME = 'constellation-v3.86';
+/*
+ * Not registered on purpose.
+ *
+ * index.html (and the other entry pages) unregister any existing worker.
+ * A previous worker cached the app shell and broke the iOS home-screen app:
+ * it could open a stale page or a blank one, and the only fix was deleting
+ * the icon. This file is cache-first for third-party CDN scripts, which is
+ * the same failure mode. Workouts already live in localStorage, and a failed
+ * Finish is queued and retried when the phone is back online.
+ *
+ * Do not call navigator.serviceWorker.register('sw.js').
+ * There is no AGENTS.md in this repo; the unregister already in index.html
+ * and the "Clear Cache & Reload" path in gym.html are what keep the iOS PWA working.
+ */
+const CACHE_NAME = 'ba-fitness-v1';
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -40,9 +54,9 @@ const CORE_ASSETS = [
   '/js/animal-volume.js',
   'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
   'https://cdn.tailwindcss.com',
-  'https://unpkg.com/vue@3/dist/vue.global.prod.js',
+  'https://unpkg.com/vue@3.5.45/dist/vue.global.prod.js',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-  'https://unpkg.com/lucide@0.469.0',
+  'https://unpkg.com/lucide@1.76.0/dist/umd/lucide.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js'
 ];
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>BA Fitness</title>
+    <title>Log in | BA Fitness</title>
     
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -14,9 +14,11 @@
     <link rel="manifest" href="manifest.json">
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <link rel="stylesheet" href="css/a11y.css">
+    <script src="https://unpkg.com/vue@3.5.45/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@1.76.0/dist/umd/lucide.min.js"></script>
+    <script src="js/config.js"></script>
     
     <style>
         [v-cloak] { display: none !important; }
@@ -82,7 +84,7 @@
     </div>
 
     <transition name="fade">
-        <div v-if="!loading" class="flex flex-col items-center justify-center p-10 w-full max-w-lg mx-auto">
+        <main v-if="!loading" class="flex flex-col items-center justify-center p-10 w-full max-w-lg mx-auto">
             <div class="mb-12 text-center w-full">
                 <div class="flex justify-center w-full mb-8">
                     <div class="svg-inject auth-logo" v-html="logoSvg"></div>
@@ -92,29 +94,45 @@
                     <span class="text-blue-500">BA</span> FITNESS
                 </h1>
                 <p class="text-slate-500 text-[10px] uppercase tracking-[0.4em] mt-4 font-black italic">
-                    {{ isSignUp ? 'Initialize New Profile' : 'Performance Lifestyle' }}
+                    {{ headline }}
                 </p>
             </div>
             
-            <div class="w-full space-y-4">
-                <input type="email" v-model="email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-white placeholder-slate-600">
-                <input type="password" v-model="password" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-white placeholder-slate-600">
+            <form class="w-full space-y-4" @submit.prevent="handleAuth">
+                <div v-if="mode !== 'reset'">
+                    <label for="email" class="sr-only">Email</label>
+                    <input id="email" type="email" autocomplete="email" v-model="email" placeholder="Email" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-white placeholder-slate-400">
+                </div>
+                <div v-if="mode !== 'forgot'">
+                    <label for="password" class="sr-only">{{ mode === 'reset' ? 'New password' : 'Password' }}</label>
+                    <input id="password" type="password" :autocomplete="mode === 'login' ? 'current-password' : 'new-password'" v-model="password" :placeholder="mode === 'reset' ? 'New password' : 'Password'" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-white placeholder-slate-400">
+                </div>
+                <div v-if="mode === 'reset'">
+                    <label for="password2" class="sr-only">Confirm new password</label>
+                    <input id="password2" type="password" autocomplete="new-password" v-model="password2" placeholder="Confirm new password" class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-5 px-8 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-white placeholder-slate-400">
+                </div>
                 
-                <button @click="handleAuth" :disabled="processing" class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all tracking-tighter uppercase italic flex items-center justify-center">
-                    <span v-if="!processing">{{ isSignUp ? 'CREATE ACCOUNT' : 'LOG IN' }}</span>
+                <button type="submit" :disabled="processing" class="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all tracking-tighter uppercase italic flex items-center justify-center">
+                    <span v-if="!processing">{{ submitLabel }}</span>
                     <span v-else>CONNECTING...</span>
                 </button>
 
-                <div class="text-center pt-4">
-                    <button @click="isSignUp = !isSignUp" class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-blue-400 transition-colors">
-                        {{ isSignUp ? 'Already have a profile? Log In' : 'No Access? Initialize Profile' }}
+                <div class="text-center pt-4 space-y-3">
+                    <button v-if="mode === 'login'" type="button" @click="mode = 'forgot'" class="block w-full text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-blue-400 transition-colors">
+                        Forgot password?
+                    </button>
+                    <button v-if="mode === 'login' || mode === 'signup'" type="button" @click="toggleSignUp" class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-blue-400 transition-colors">
+                        {{ mode === 'signup' ? 'Already have a profile? Log In' : 'No account? Create one' }}
+                    </button>
+                    <button v-if="mode === 'forgot' || mode === 'reset'" type="button" @click="mode = 'login'" class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-blue-400 transition-colors">
+                        Back to log in
                     </button>
                 </div>
                 
-                <p v-if="errorMsg" class="text-center text-red-500 text-xs font-bold mt-4 px-4 leading-relaxed">{{ errorMsg }}</p>
-                <p v-if="successMsg" class="text-center text-green-500 text-xs font-bold mt-4 px-4 leading-relaxed">{{ successMsg }}</p>
-            </div>
-        </div>
+                <p v-if="errorMsg" role="alert" class="text-center text-red-400 text-xs font-bold mt-4 px-4 leading-relaxed">{{ errorMsg }}</p>
+                <p v-if="successMsg" role="status" class="text-center text-green-400 text-xs font-bold mt-4 px-4 leading-relaxed">{{ successMsg }}</p>
+            </form>
+        </main>
     </transition>
 </div>
 
@@ -130,29 +148,67 @@
             return { 
                 loading: true, 
                 processing: false, 
-                isSignUp: false,
+                mode: 'login',
                 email: '', 
-                password: '', 
+                password: '',
+                password2: '',
                 errorMsg: '',
                 successMsg: '',
                 logoSvg: '' 
             } 
         },
-        async mounted() {
-            // Force-kill Service Workers if they are hanging around
-            if ('serviceWorker' in navigator) {
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                for (let registration of registrations) {
-                    await registration.unregister();
-                }
+        computed: {
+            headline() {
+                if (this.mode === 'signup') return 'Create your profile';
+                if (this.mode === 'forgot') return 'Reset your password';
+                if (this.mode === 'reset') return 'Choose a new password';
+                return 'Performance Lifestyle';
+            },
+            submitLabel() {
+                if (this.mode === 'signup') return 'Create account';
+                if (this.mode === 'forgot') return 'Email me a link';
+                if (this.mode === 'reset') return 'Save new password';
+                return 'Log in';
             }
+        },
+        watch: {
+            mode() {
+                this.errorMsg = '';
+                this.successMsg = '';
+                const titles = {
+                    login: 'Log in | BA Fitness',
+                    signup: 'Create account | BA Fitness',
+                    forgot: 'Reset password | BA Fitness',
+                    reset: 'New password | BA Fitness'
+                };
+                document.title = titles[this.mode] || 'BA Fitness';
+            }
+        },
+        async mounted() {
+            // Leave the service worker off. Registering sw.js cached the shell and
+            // broke the iOS home-screen app (stale or blank launch).
+            if (window.FitnessPwa) await FitnessPwa.disableStaleWorker();
 
             fetch('c-logo.svg')
                 .then(res => res.text())
                 .then(data => { this.logoSvg = data; })
                 .catch(err => console.error("Logo load failed", err));
 
+            const hash = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+            const recovery = hash.get('type') === 'recovery';
+            _client.auth.onAuthStateChange((event) => {
+                if (event === 'PASSWORD_RECOVERY') {
+                    this.mode = 'reset';
+                    this.loading = false;
+                }
+            });
+
             const { data: { session } } = await _client.auth.getSession();
+            if (recovery) {
+                this.mode = 'reset';
+                this.loading = false;
+                return;
+            }
             if (session) {
                 window.location.href = 'today.html';
             } else {
@@ -161,33 +217,65 @@
             }
         },
         methods: {
+            friendly(error) {
+                return (window.FitnessAuth ? FitnessAuth.friendlyError(error?.message) : null) || 'Something went wrong. Try again.';
+            },
+            toggleSignUp() {
+                this.mode = this.mode === 'signup' ? 'login' : 'signup';
+            },
             async handleAuth() {
                 this.processing = true;
                 this.errorMsg = '';
                 this.successMsg = '';
+                const email = (this.email || '').trim();
+                const password = this.password || '';
 
-                if (this.isSignUp) {
-                    const { data, error } = await _client.auth.signUp({ 
-                        email: this.email, 
-                        password: this.password 
-                    });
-                    if (error) {
-                        this.errorMsg = error.message;
-                    } else {
-                        this.successMsg = "Initialization Link Sent. Check your email.";
+                try {
+                    if (this.mode === 'forgot') {
+                        if (!email) {
+                            this.errorMsg = 'Enter the email on your account.';
+                            return;
+                        }
+                        const { error } = await _client.auth.resetPasswordForEmail(email, {
+                            redirectTo: `${window.location.origin}/index.html`
+                        });
+                        if (error) this.errorMsg = this.friendly(error);
+                        else this.successMsg = 'Check your email for a link to choose a new password.';
+                        return;
                     }
+
+                    if (this.mode === 'reset') {
+                        if (password.length < 6) {
+                            this.errorMsg = 'Use a password with at least 6 characters.';
+                            return;
+                        }
+                        if (password !== this.password2) {
+                            this.errorMsg = 'Those passwords don’t match.';
+                            return;
+                        }
+                        const { error } = await _client.auth.updateUser({ password });
+                        if (error) this.errorMsg = this.friendly(error);
+                        else window.location.href = 'today.html';
+                        return;
+                    }
+
+                    if (!email || !password) {
+                        this.errorMsg = 'Enter your email and a password.';
+                        return;
+                    }
+
+                    if (this.mode === 'signup') {
+                        const { error } = await _client.auth.signUp({ email, password });
+                        if (error) this.errorMsg = this.friendly(error);
+                        else this.successMsg = 'Check your email to confirm the account, then log in.';
+                        return;
+                    }
+
+                    const { error } = await _client.auth.signInWithPassword({ email, password });
+                    if (error) this.errorMsg = this.friendly(error);
+                    else window.location.href = 'today.html';
+                } finally {
                     this.processing = false;
-                } else {
-                    const { data, error } = await _client.auth.signInWithPassword({ 
-                        email: this.email, 
-                        password: this.password 
-                    });
-                    if (error) {
-                        this.errorMsg = error.message;
-                        this.processing = false;
-                    } else {
-                        window.location.href = 'today.html';
-                    }
                 }
             }
         }

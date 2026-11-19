@@ -2,6 +2,18 @@
 
 Progressive overload PWA — Vue 3 + Supabase.
 
+## Security update (apply before relying on the fixes)
+
+The app update is safe to ship before or after the database change. The anon-key leak stays open until these SQL files are run, in order, in the Supabase SQL editor (or `supabase/run-remote-sql.sh`):
+
+1. `supabase/migrations/20261119140000_lock_down_personal_data.sql`
+2. `supabase/migrations/20261119140100_rank_history_and_function_hardening.sql`
+3. `supabase/migrations/20261119140200_dedupe_policies_and_fk_indexes.sql`
+
+The four AI functions are already deployed from this branch. Do not redeploy them for this follow-up. Each migration file has a rollback note at the top. Do not run the older scripts in `supabase/*.sql` again.
+
+Logged-in users can read every exercise name (friends' routines point at each other's custom lifts). They still cannot insert, edit, or delete someone else's exercise. Personal protocols stay private: own routines plus the standard library. Hidden people are left out of rank history no matter who opens the app.
+
 ## Social features
 
 ### Share workout
@@ -12,7 +24,7 @@ Progressive overload PWA — Vue 3 + Supabase.
 Share uses `html2canvas` to render a single recap **image** (stats, all lifts, real body heatmap SVG). No separate text message — image only, with plain-text fallback if sharing fails.
 
 ### Exercise library (standard + personal)
-Exercises owned by **Bryan Anneler** (`6f471a6f-3697-4826-a0d8-34404ea5980d`) are the global **standard** library — visible to everyone. Any other user’s custom exercises are **personal** and only visible to them.
+Exercises owned by **Bryan Anneler** (`6f471a6f-3697-4826-a0d8-34404ea5980d`) are the global **standard** library. Any logged-in user can also read other people's custom exercises, because those ids are saved on friends' routines and workout logs. Only the owner can edit or delete a custom exercise.
 
 **One-time setup:** run `supabase/exercises_schema.sql` in the Supabase SQL Editor. This adds RLS policies, links `workout_logs.exercise_id`, dedupes standard exercises, and enforces one canonical name per standard lift.
 

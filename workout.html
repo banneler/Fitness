@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#020617">
-    <title>Active Session</title>
+    <title>Active Session | BA Fitness</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -12,9 +12,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <link rel="stylesheet" href="css/a11y.css">
+    <script src="https://unpkg.com/vue@3.5.45/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@1.76.0/dist/umd/lucide.min.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -263,9 +264,10 @@
                     <div class="relative"><input type="checkbox" v-model="stackTaken" @change="haptic" class="sr-only peer"><div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div></div>
                     <span class="text-[10px] font-black uppercase tracking-widest flex-1"><span class="block text-slate-400">Inventory</span><span :class="stackTaken ? 'text-blue-400' : 'text-slate-600'">Log Stack Consumption?</span></span>
                 </label>
+                <p v-if="saveError" role="alert" class="mb-4 text-sm text-red-300 font-bold leading-relaxed text-center">{{ saveError }}</p>
                 <div class="space-y-3">
-                    <button @click="confirmFinishSession" :disabled="isSaving" class="w-full py-4 rounded-xl bg-green-600 text-white font-black text-sm uppercase shadow-lg shadow-green-900/20 hover:bg-green-500 transition-all active:scale-95 disabled:opacity-60 disabled:pointer-events-none">{{ isSaving ? 'Saving…' : 'Save Workout' }}</button>
-                    <button @click="finishModal = false" :disabled="isSaving" class="w-full py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs uppercase hover:bg-slate-800 transition-colors disabled:opacity-60">Resume Training</button>
+                    <button @click="confirmFinishSession" :disabled="isSaving" class="w-full py-4 rounded-xl bg-green-600 text-white font-black text-sm uppercase shadow-lg shadow-green-900/20 hover:bg-green-500 transition-all active:scale-95 disabled:opacity-60 disabled:pointer-events-none">{{ isSaving ? 'Saving…' : (saveError ? 'Retry Save' : 'Save Workout') }}</button>
+                    <button @click="finishModal = false" :disabled="isSaving" class="w-full py-3 rounded-xl bg-slate-900 text-slate-300 font-bold text-xs uppercase hover:bg-slate-800 transition-colors disabled:opacity-60">Resume Training</button>
                 </div>
             </div>
         </div>
@@ -388,7 +390,7 @@
             return { 
                 session: null, activeRoutine: { name: '', data: [] }, activeExerciseIdx: 0, stackTaken: false, isRecovery: false,
                 sessionTimer: 0, sessionStartTime: null, sessionInterval: null, restTimer: 0, restTimerRunning: false, restInterval: null,
-                finishModal: false, exitModal: false, sharePromptModal: false, isSaving: false,
+                finishModal: false, exitModal: false, sharePromptModal: false, isSaving: false, saveError: '', finishDirty: false,
                 swapModal: { visible: false, groupIdx: null, exIdx: null },
                 libraryModalMode: 'swap',
                 swapMuscleFilter: null,
@@ -425,7 +427,13 @@
             }
         },
         watch: {
-            activeRoutine: { handler(val) { if(val && val.name) this.persistActiveSession(); }, deep: true },
+            activeRoutine: { handler(val) {
+                if (this.saveError) {
+                    this.finishDirty = true;
+                    this.saveError = 'You changed this workout after the failed save. Tap Retry to save what’s on screen now.';
+                }
+                if(val && val.name) this.persistActiveSession();
+            }, deep: true },
             stackTaken() { this.persistActiveSession(); },
             isRecovery() { this.persistActiveSession(); },
             activeExerciseIdx(newVal) {
@@ -445,7 +453,7 @@
             this.rawLogs = historyLogs || [];
             this.libraryExercises = await FitnessExerciseLibrary.fetch(_client);
             
-            const savedSession = localStorage.getItem('constellation_active_session');
+            const savedSession = FitnessStorage.read(FitnessKeys.activeSession[0], FitnessKeys.activeSession[1]);
             if (savedSession) {
                 try {
                     const parsed = JSON.parse(savedSession);
@@ -455,11 +463,20 @@
                         this.activeExerciseIdx = parsed.activeExerciseIdx || 0;
                         this.stackTaken = parsed.stackTaken || false;
                         this.isRecovery = !!parsed.isRecovery;
+                        if (parsed.pendingFinishSessionId) {
+                            this.saveError = FitnessWorkoutSync.failureMessage({});
+                            this.finishModal = true;
+                        }
                         this.startSessionTimer();
                         await FitnessExerciseHistory.hydrateRoutine(_client, session.user.id, this.activeRoutine);
                     } else { throw new Error("Invalid Session"); }
                 } catch (e) { window.location.href = 'gym.html'; }
             } else { window.location.href = 'gym.html'; }
+
+            this._onOnline = () => {
+                if (this.saveError && !this.finishDirty && !this.isSaving) this.confirmFinishSession();
+            };
+            window.addEventListener('online', this._onOnline);
             
             this.$nextTick(() => { lucide.createIcons(); });
         },
@@ -467,14 +484,22 @@
         methods: {
             haptic() { if (navigator.vibrate) navigator.vibrate(10); },
 
-            persistActiveSession() {
+            persistActiveSession(extra = {}) {
+                if (this.isSaving && !extra.force) return;
                 if (!this.activeRoutine?.name) return;
-                localStorage.setItem('constellation_active_session', JSON.stringify({
+                const current = FitnessWorkoutSync.readActiveSession();
+                const pendingFinishSessionId = Object.prototype.hasOwnProperty.call(extra, 'pendingFinishSessionId')
+                    ? extra.pendingFinishSessionId
+                    : (current?.pendingFinishSessionId || null);
+                const [key, legacy] = FitnessKeys.activeSession;
+                FitnessStorage.write(key, legacy, JSON.stringify({
                     activeRoutine: this.activeRoutine,
                     sessionStartTime: this.sessionStartTime,
                     activeExerciseIdx: this.activeExerciseIdx,
                     stackTaken: this.stackTaken,
-                    isRecovery: !!this.isRecovery
+                    isRecovery: !!this.isRecovery,
+                    updatedAt: extra.updatedAt || Date.now(),
+                    pendingFinishSessionId
                 }));
             },
 
@@ -712,10 +737,9 @@
             async confirmFinishSession() {
                 if (this.isSaving) return;
                 this.isSaving = true;
-                clearInterval(this.sessionInterval);
+                this.saveError = '';
 
                 try {
-                // PROTOCOL CREATION
                 if (this.saveAsRoutine && this.newRoutineName) {
                     const exerciseOrder = [];
                     const supersets = [];
@@ -731,18 +755,19 @@
                         });
                     });
 
-                    await _client.from('routines').insert({
+                    const { error: routineError } = await _client.from('routines').insert({
                         user_id: this.session.user.id,
                         name: this.newRoutineName,
                         icon_name: 'zap', 
                         exercise_order: exerciseOrder,
                         supersets: supersets
                     });
+                    if (routineError) console.error('Protocol save failed', routineError);
                 }
 
-                // WORKOUT LOGGING
                 const flatLogs = [];
-                const sessionId = FitnessSocial.newSessionId();
+                const existing = FitnessWorkoutSync.readActiveSession();
+                const sessionId = existing?.pendingFinishSessionId || FitnessSocial.newSessionId();
                 const finishedAt = new Date().toISOString();
                 this.activeRoutine.data.forEach(group => {
                     group.exercises.forEach(ex => {
@@ -765,32 +790,50 @@
                         }
                     });
                 });
-                if (flatLogs.length) {
-                    const { error } = await _client.from('workout_logs').insert(flatLogs);
-                    if (!error) {
-                        FitnessWorkoutSync.stashPending(flatLogs);
-                        this.lastSavedSessionLogs = flatLogs.map(l => ({
-                            exercise_name: l.exercise_name,
-                            exercise_id: l.exercise_id,
-                            created_at: l.created_at,
-                            session_id: l.session_id,
-                            is_recovery: !!l.is_recovery
-                        }));
-                        this.rawLogs = [...this.lastSavedSessionLogs, ...this.rawLogs];
-                    }
-                    if (!this.isRecovery) {
-                        try {
-                            await FitnessArenaPrs.recordSessionPrs(_client, this.session.user.id, flatLogs);
-                        } catch (e) {
-                            console.error('PR recording failed', e);
-                        }
-                    }
+
+                if (!flatLogs.length && existing?.pendingFinishSessionId) {
+                    FitnessWorkoutSync.saveQueue(
+                        FitnessWorkoutSync.loadQueue().filter(item => item.sessionId !== existing.pendingFinishSessionId)
+                    );
                 }
-                if(this.stackTaken) { const { data: inv } = await _client.from('inventory').select('*'); if(inv && inv.length) { const updates = inv.map(i => _client.from('inventory').update({servings_left: Math.max(0, i.servings_left - 1)}).eq('id', i.id)); await Promise.all(updates); } }
-                
-                localStorage.removeItem('constellation_active_session');
+                if (flatLogs.length) {
+                    const queuedAt = Date.now();
+                    FitnessWorkoutSync.enqueueFinish({
+                        sessionId,
+                        logs: flatLogs,
+                        stackTaken: this.stackTaken,
+                        isRecovery: this.isRecovery,
+                        userId: this.session.user.id,
+                        queuedAt
+                    });
+                    this.persistActiveSession({
+                        force: true,
+                        updatedAt: queuedAt,
+                        pendingFinishSessionId: sessionId
+                    });
+                    const result = await FitnessWorkoutSync.flush(_client);
+                    if (result.pending || !result.saved) {
+                        this.saveError = FitnessWorkoutSync.failureMessage(result);
+                        this.finishDirty = false;
+                        this.isSaving = false;
+                        this.$nextTick(() => lucide.createIcons());
+                        return;
+                    }
+                    this.lastSavedSessionLogs = flatLogs.map(l => ({
+                        exercise_name: l.exercise_name,
+                        exercise_id: l.exercise_id,
+                        created_at: l.created_at,
+                        session_id: l.session_id,
+                        is_recovery: !!l.is_recovery
+                    }));
+                    this.rawLogs = [...this.lastSavedSessionLogs, ...this.rawLogs];
+                }
+
+                clearInterval(this.sessionInterval);
+                FitnessStorage.remove(FitnessKeys.activeSession[0], FitnessKeys.activeSession[1]);
                 this.finishModal = false;
                 this.exitModal = false;
+                this.saveError = '';
 
                 if (this.sessionRecapStats.setCount) {
                     this.sharePromptModal = true;
@@ -800,11 +843,19 @@
                 }
                 } catch (e) {
                     console.error('Finish session failed', e);
+                    this.saveError = FitnessWorkoutSync.failureMessage({});
+                    this.finishDirty = false;
                     this.isSaving = false;
                 }
             },
             discardSession() {
-                localStorage.removeItem('constellation_active_session');
+                const pending = FitnessWorkoutSync.readActiveSession();
+                if (pending?.pendingFinishSessionId) {
+                    FitnessWorkoutSync.saveQueue(
+                        FitnessWorkoutSync.loadQueue().filter(item => item.sessionId !== pending.pendingFinishSessionId)
+                    );
+                }
+                FitnessStorage.remove(FitnessKeys.activeSession[0], FitnessKeys.activeSession[1]);
                 window.location.href = 'gym.html';
             }
         }

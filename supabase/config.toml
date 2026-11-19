@@ -1,0 +1,16 @@
+# Applied when these functions are deployed (supabase functions deploy).
+# verify_jwt rejects calls that send no Authorization header.
+# The anon key is itself a JWT, so each function also calls auth.getUser()
+# and refuses anything that is not a logged-in user.
+
+[functions.ai-performance-summary]
+verify_jwt = true
+
+[functions.ai-workout-generator]
+verify_jwt = true
+
+[functions.ai-nutrition-parser]
+verify_jwt = true
+
+[functions.ai-workout-import]
+verify_jwt = true

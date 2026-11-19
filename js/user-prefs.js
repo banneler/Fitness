@@ -5,7 +5,8 @@
  * Save: write to both localStorage and profiles.layout_prefs.
  */
 window.FitnessUserPrefs = {
-    STORAGE_KEY: 'constellation_user_prefs',
+    STORAGE_KEY: 'ba_fitness_user_prefs',
+    LEGACY_KEY: 'constellation_user_prefs',
 
     defaults() {
         return {
@@ -30,17 +31,22 @@ window.FitnessUserPrefs = {
         };
     },
 
-    hasLocal() {
+    _read() {
+        if (window.FitnessStorage) return FitnessStorage.read(this.STORAGE_KEY, this.LEGACY_KEY);
         try {
-            return !!localStorage.getItem(this.STORAGE_KEY);
+            return localStorage.getItem(this.STORAGE_KEY) || localStorage.getItem(this.LEGACY_KEY);
         } catch (e) {
-            return false;
+            return null;
         }
+    },
+
+    hasLocal() {
+        return !!this._read();
     },
 
     load() {
         try {
-            const raw = localStorage.getItem(this.STORAGE_KEY);
+            const raw = this._read();
             if (!raw) return this.defaults();
             return this.merge(JSON.parse(raw));
         } catch (e) {
@@ -50,7 +56,9 @@ window.FitnessUserPrefs = {
     },
 
     save(prefs) {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(prefs));
+        const payload = JSON.stringify(prefs);
+        if (window.FitnessStorage) FitnessStorage.write(this.STORAGE_KEY, this.LEGACY_KEY, payload);
+        else localStorage.setItem(this.STORAGE_KEY, payload);
     },
 
     async hydrate(client, userId) {
